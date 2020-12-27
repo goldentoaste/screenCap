@@ -1,5 +1,6 @@
-build/
-__pycache__/
-.vscode/
+build
+dist
+__pycache__
+.vscode
 build.bat
 tempCodeRunnerFile.py
