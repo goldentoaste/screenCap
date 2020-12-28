@@ -1,5 +1,6 @@
+from snapshot import Snapshot
 from pystray import MenuItem as item
-from PIL import Image
+from PIL import Image, ImageGrab
 import pystray
 from win32com.client import Dispatch
 from configparser import ConfigParser
@@ -8,8 +9,7 @@ from pynput import keyboard
 from tkinter import IntVar, Tk, Frame, Checkbutton, Button, TOP, LEFT, Label, BOTH, RIGHT, X
 import sys
 import pythoncom
-from os import path, getcwd, getenv, mkdir, remove
-print("startng.....")
+from os import path, getenv, mkdir, remove
 
 seperator = "(*)"
 # replace with screenCap.exe if compiling to exe!
@@ -82,7 +82,7 @@ class MainWindow:
         self.config.set("screenCap", "startMin", str(self.startMin.get()))
         self.config.set("screenCap", "combo",
                         "(*)".join([key for key in self.combo]))
-        self.config.set("screenCap", "key_string", self.getKeyString())
+        self.config.set("screenCap", "key_string", self.hotkeyButton['text'])
 
         # write config to ini file
         if not path.isdir(configDir):
@@ -111,7 +111,6 @@ class MainWindow:
             self.main.protocol("WM_DELETE_WINDOW", self.main.quit)
 
     def on_press(self, key):
-        print(key)
 
         self.currentKeys.add(key)
         if self.detect:
@@ -140,7 +139,7 @@ class MainWindow:
         return s[:-1]
 
     def capture(self):
-        print("combo detected")
+        Snapshot(self.main)
 
     def getVk(self, key):
         if "vk" in dir(key):

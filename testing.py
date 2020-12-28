@@ -35,11 +35,15 @@
 # stuff = [1,3,"b","x",2,"x","a","f",3]
 # print(sorted(stuff, key=numLetterKey))
 
-# class testing:
+import tkinter as tk
 
-#     def __init__(self):
-#         self.var1 = 0
-#         self.text = "a"
+
+class testing:
+
+    def __init__(self):
+        self.var1 = 0
+        self.text = "a"
+
 
 # from enum import Enum
 
@@ -65,9 +69,7 @@
 # print(keyboard.Key.ctrl)
 # main.mainloop()
 
-import tkinter as tk
 
 root = tk.Tk()
 root.protocol("WM_DELETE_WINDOW", root.withdraw)
 root.mainloop()
-
