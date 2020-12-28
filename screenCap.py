@@ -1,22 +1,27 @@
-
-import os
-from tkinter import IntVar, Tk, Frame, Checkbutton, Button, TOP, LEFT, Label, BOTH, RIGHT, X
-from pynput import keyboard
-from values import conversionTable, modifiers
-from configparser import ConfigParser
+from pystray import MenuItem as item
+from PIL import Image
+import pystray
 from win32com.client import Dispatch
-
+from configparser import ConfigParser
+from values import conversionTable, modifiers
+from pynput import keyboard
+from tkinter import IntVar, Tk, Frame, Checkbutton, Button, TOP, LEFT, Label, BOTH, RIGHT, X
+import sys
+import pythoncom
+from os import path, getcwd, getenv, mkdir, remove
+print("startng.....")
 
 seperator = "(*)"
 # replace with screenCap.exe if compiling to exe!
 executable = "screenCap.exe"
-configDir = os.path.join(os.getenv("appdata"),
-                         "screenCap")
-configFile = os.path.join(configDir, "config.ini")
+iconName = "icon.ico"
+configDir = path.join(getenv("appdata"),
+                      "screenCap")
+configFile = path.join(configDir, "config.ini")
 
-shortCutDest = os.path.join(
-    os.getenv("appdata"), "Microsoft\Windows\Start Menu\Programs\Startup")
-shortCutFile = os.path.join(shortCutDest, "screenCap.lnk")
+shortCutDest = path.join(
+    getenv("appdata"), "Microsoft\Windows\Start Menu\Programs\Startup")
+shortCutFile = path.join(shortCutDest, "screenCap.lnk")
 
 
 class MainWindow:
@@ -24,7 +29,13 @@ class MainWindow:
     def __init__(self):
 
         self.main = Tk()
+        self.main.title("screenCap")
+        self.initialize()
+        self.main.mainloop()
 
+    def initialize(self):
+
+        # initialize variables
         self.config = ConfigParser()
 
         self.currentKeys = set()
@@ -35,18 +46,17 @@ class MainWindow:
         self.minimize = IntVar()
         self.startMin = IntVar()
 
-        self.initialize()
-        self.main.mainloop()
-
-    def initialize(self):
+        # initialize icon
+        self.main.iconbitmap(path.join(self.resource_path(iconName)))
 
         # reading config file
         self.makeUI()
         self.config.read(configFile)
         if not self.config.has_section("screenCap"):
             self.config.add_section("screenCap")
+
         # init vals only if config exist
-        if os.path.isfile(configFile):
+        if path.isfile(configFile):
             self.startup.set(self.config.getint("screenCap", "startup"))
             self.minimize.set(self.config.getint("screenCap", "minimize"))
             self.startMin.set(self.config.getint("screenCap", "startMin"))
@@ -54,12 +64,18 @@ class MainWindow:
                 "screenCap", "combo").split(seperator))
             self.hotkeyButton["text"] = self.config.get(
                 "screenCap", "key_string")
+
+        # updating things to reflect settings
+        self.update()
+        # withdraw if the program is to minimalize on startup
+        if self.startMin.get() == 1:
+            self.withdraw()
         # starting keyboard event listener
         listrener = keyboard.Listener(
             on_press=self.on_press, on_release=self.on_release)
         listrener.start()
 
-    def updateConfig(self):
+    def update(self):
         # updating ini file
         self.config.set("screenCap", "startup", str(self.startup.get()))
         self.config.set("screenCap", "minimize", str(self.minimize.get()))
@@ -68,18 +84,31 @@ class MainWindow:
                         "(*)".join([key for key in self.combo]))
         self.config.set("screenCap", "key_string", self.getKeyString())
 
-        # setup startup shortcut
-        target = os.path.join(os.getcwd(), executable)
-        shell = Dispatch("WScript.Shell")
-        shortcut = shell.CreateShortCut(shortCutFile)
-        shortcut.Targetpath = target
-        shortcut.WindowStyle = 7
-        shortcut.save()
-
-        if not os.path.isdir(configDir):
-            os.mkdir(configDir)
+        # write config to ini file
+        if not path.isdir(configDir):
+            mkdir(configDir)
         with open(configFile, 'w') as file:
             self.config.write(file)
+
+        # setup startup shortcut
+        if self.startup.get() == 1:
+            pythoncom.CoInitialize()
+            target = path.join(self.resource_path(
+                path.dirname(path.abspath(__file__))), executable)
+            shell = Dispatch("WScript.Shell")
+            shortcut = shell.CreateShortCut(shortCutFile)
+            shortcut.Targetpath = target
+            shortcut.WindowStyle = 7
+            shortcut.save()
+        else:
+            if path.isfile(shortCutFile):
+                remove(shortCutFile)
+
+        # setup on close action
+        if self.minimize.get() == 1:
+            self.main.protocol("WM_DELETE_WINDOW", self.withdraw)
+        else:
+            self.main.protocol("WM_DELETE_WINDOW", self.main.quit)
 
     def on_press(self, key):
         print(key)
@@ -98,7 +127,7 @@ class MainWindow:
                 self.detect = False
 
                 #!!! update must be called before currentKeys is cleared
-                self.updateConfig()
+                self.update()
                 self.currentKeys.clear()
                 return True
 
@@ -125,6 +154,26 @@ class MainWindow:
             return 1
         return sorted(list(self.currentKeys), key=modKey)
 
+    # quit, show, and withdraw is meant for handling system tray
+    def quit(self):
+        self.icon.stop()
+        self.main.destroy()
+
+    def show(self):
+        self.icon.stop()
+        self.main.title("screenCap")
+        self.main.deiconify()
+
+    def withdraw(self):
+        iconImage = Image.open(self.resource_path(iconName))
+        menu = pystray.Menu(item("Quit", self.quit), item(
+            "Capture!", self.capture), item("show", self.show, default=True, visible=False))
+        self.icon = pystray.Icon(
+            "screenCap", iconImage, "screenCap", menu)
+        self.detect = False
+        self.main.withdraw()
+        self.icon.run()
+
     def reset(self):
         self.combo.clear()
         self.hotkeyButton["text"] = ""
@@ -135,15 +184,23 @@ class MainWindow:
         self.combo.clear()
         self.main.title("input new hotkey (do not exit!)")
 
+    def resource_path(self, relative_path):
+        """ Get absolute path to resource, works for dev and for PyInstaller """
+        try:
+            base_path = sys._MEIPASS
+        except Exception:
+            base_path = path.abspath(".")
+        return path.join(base_path, relative_path)
+
     def makeUI(self):
         self.frame0 = Frame(self.main)
-        self.startUpCheck = Checkbutton(self.frame0, variable=self.startup, command=self.updateConfig,  text="run when computer starts?").pack(
+        self.startUpCheck = Checkbutton(self.frame0, variable=self.startup, command=self.update,  text="run when computer starts?").pack(
             side=TOP, anchor="w", padx=10)
 
         self.minToTrayCheck = Checkbutton(
-            self.frame0, variable=self.minimize,  command=self.updateConfig, text="minimize to tray when 'X' is pressed?").pack(side=TOP, anchor="w", padx=10)
+            self.frame0, variable=self.minimize,  command=self.update, text="minimize to tray when 'X' is pressed?").pack(side=TOP, anchor="w", padx=10)
 
-        self.startMinCheck = Checkbutton(self.frame0, command=self.updateConfig, variable=self.startMin,
+        self.startMinCheck = Checkbutton(self.frame0, command=self.update, variable=self.startMin,
                                          text="start minimalized?").pack(side=TOP, anchor="w", padx=10)
 
         self.frame0.pack(side=TOP, anchor="w", expand=True, fill=BOTH)
