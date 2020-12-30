@@ -35,6 +35,12 @@
 # stuff = [1,3,"b","x",2,"x","a","f",3]
 # print(sorted(stuff, key=numLetterKey))
 
+from pynput import keyboard
+import tkinter
+from elevate import elevate
+import os
+import sys
+import ctypes
 import tkinter as tk
 
 
@@ -70,6 +76,37 @@ class testing:
 # main.mainloop()
 
 
-root = tk.Tk()
-root.protocol("WM_DELETE_WINDOW", root.withdraw)
-root.mainloop()
+# root = tk.Tk()
+# root.protocol("WM_DELETE_WINDOW", root.withdraw)
+# root.mainloop()
+
+
+# print(__file__)
+# input(">")
+# ctypes.windll.shell32.ShellExecuteW(
+#     None, 'runas', sys.executable, sys.argv[0], None, 1)
+
+# print("check2")
+# ???????????//
+
+
+def is_root():
+    return ctypes.windll.shell32.IsUserAnAdmin()
+
+
+print("before ", is_root())
+if not is_root():
+    ctypes.windll.shell32.ShellExecuteW(
+        None, 'runas',
+        '"' + sys.executable + '"',
+        '"' + os.getcwd() + '\\testing.py' + '"',  # leave empty for deployment
+        None, 1)
+
+main = tkinter.Tk()
+main.title(str(is_root()))
+tkinter.Button(main, text="text").pack()
+print(keyboard.Key.ctrl)
+main.mainloop()
+
+print("after ", is_root())
+input("press enter to exit")

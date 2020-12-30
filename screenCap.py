@@ -1,6 +1,6 @@
 from snapshot import Snapshot
 from pystray import MenuItem as item
-from PIL import Image, ImageGrab
+from PIL import Image, ImageGrab, ImageTk
 import pystray
 from win32com.client import Dispatch
 from configparser import ConfigParser
@@ -9,7 +9,19 @@ from pynput import keyboard
 from tkinter import IntVar, Tk, Frame, Checkbutton, Button, TOP, LEFT, Label, BOTH, RIGHT, X
 import sys
 import pythoncom
+import ctypes
 from os import path, getenv, mkdir, remove
+
+
+'''
+TODO implement admin rights, program cannot read keyboard 
+    inputs of higher priviledge.
+
+'''
+
+
+
+
 
 seperator = "(*)"
 # replace with screenCap.exe if compiling to exe!
@@ -50,6 +62,7 @@ class MainWindow:
         self.main.iconbitmap(path.join(self.resource_path(iconName)))
 
         # reading config file
+        self.main.resizable(0, 0)
         self.makeUI()
         self.config.read(configFile)
         if not self.config.has_section("screenCap"):
@@ -113,6 +126,7 @@ class MainWindow:
     def on_press(self, key):
 
         self.currentKeys.add(key)
+        print(self.currentKeys)
         if self.detect:
             self.hotkeyButton.configure(text=self.getKeyString())
         elif all(c in [str(key) for key in self.currentKeys] for c in self.combo) and len(self.combo) > 0:
@@ -139,7 +153,8 @@ class MainWindow:
         return s[:-1]
 
     def capture(self):
-        Snapshot(self.main)
+        pass
+        # Snapshot(self.main).fromFullScreen()
 
     def getVk(self, key):
         if "vk" in dir(key):
@@ -224,6 +239,20 @@ class MainWindow:
         self.frame3.pack(side=TOP, padx=10, pady=(
             10, 5), expand=True, fill=BOTH)
 
+def is_admin():
+    try:
+        return ctypes.windll.shell32.IsUserAnAdmin()
+    except:
+        return False
+
 
 if __name__ == "__main__":
-    main = MainWindow()
+    print("check1")
+    if False:
+        main = MainWindow()
+    else:
+        ctypes.windll.shell32.ShellExecuteW(
+        None, 'runas', sys.executable, ' '.join(sys.argv), None, None)
+        exit(0)
+
+print("check2")

@@ -3,11 +3,11 @@
 block_cipher = None
 
 
-a = Analysis(['screenCap.py'],
+a = Analysis(['testing.py'],
              pathex=['D:\\Python Project\\screenCap'],
              binaries=[],
-             datas=[('icon.ico', '.'), ('@bread.cur', '.')],
-             hiddenimports=['pynput.keyboard._win32', 'pynput.mouse._win32', 'pystray._win32'],
+             datas=[],
+             hiddenimports=[],
              hookspath=[],
              runtime_hooks=[],
              excludes=[],
@@ -23,12 +23,11 @@ exe = EXE(pyz,
           a.zipfiles,
           a.datas,
           [],
-          name='screenCap',
+          name='testing',
           debug=False,
           bootloader_ignore_signals=False,
           strip=False,
           upx=True,
           upx_exclude=[],
           runtime_tmpdir=None,
-          console=True,
-          icon='icon.ico' )
+          console=True )
