@@ -90,23 +90,42 @@ class testing:
 # ???????????//
 
 
-def is_root():
-    return ctypes.windll.shell32.IsUserAnAdmin()
+# def is_root():
+#     return ctypes.windll.shell32.IsUserAnAdmin()
 
 
-print("before ", is_root())
-if not is_root():
-    ctypes.windll.shell32.ShellExecuteW(
-        None, 'runas',
-        '"' + sys.executable + '"',
-        '"' + os.getcwd() + '\\testing.py' + '"',  # leave empty for deployment
-        None, 1)
+# print("before ", is_root())
+# if not is_root():
+#     ctypes.windll.shell32.ShellExecuteW(
+#         None, 'runas',
+#         '"' + sys.executable + '"',
+#         '"' + os.getcwd() + '\\testing.py' + '"',  # leave empty for deployment
+#         None, 1)
+
+# main = tkinter.Tk()
+# main.title(str(is_root()))
+# tkinter.Button(main, text="text").pack()
+# print(keyboard.Key.ctrl)
+# main.mainloop()
+
+# print("after ", is_root())
+# input("press enter to exit")
+
 
 main = tkinter.Tk()
-main.title(str(is_root()))
-tkinter.Button(main, text="text").pack()
-print(keyboard.Key.ctrl)
-main.mainloop()
+from PIL import Image
+import pystray
+def newTop():
+    t = tkinter.Toplevel(main)
+    tkinter.Button(t, text="stuff", command=lambda:print("stuff")).pack()
+    iconImage = Image.open("icon.ico")
+    # menu = pystray.Menu(item("Quit", self.quit), item(
+    #     "Capture!", self.capture), item("show", self.show, default=True, visible=False))
+    menu = pystray.Menu()
+    icon = pystray.Icon(
+        "screenCap", iconImage, "screenCap", menu)
+    icon.run()
+    main.withdraw()
 
-print("after ", is_root())
-input("press enter to exit")
+tkinter.Button(main, text="new window", command=newTop).pack()
+main.mainloop()

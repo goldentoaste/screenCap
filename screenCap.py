@@ -7,7 +7,7 @@ from win32com.client import Dispatch
 from configparser import ConfigParser
 from values import conversionTable, modifiers
 from pynput import keyboard
-from tkinter import Entry, IntVar, StringVar, Tk, Frame, Checkbutton, Button, TOP, LEFT, Label, BOTH, RIGHT, X
+from tkinter import Entry, IntVar, StringVar, Tk, Frame, Checkbutton, Button, TOP, LEFT, Label, BOTH, RIGHT, Toplevel, X
 import sys
 import pythoncom
 import ctypes
@@ -127,6 +127,7 @@ class MainWindow:
     def on_press(self, key):
 
         self.currentKeys.add(key)
+        print(self.currentKeys)
         if self.detect:
             self.hotkeyButton.configure(text=self.getKeyString())
         elif all(c in [str(key) for key in self.currentKeys] for c in self.combo) and len(self.combo) > 0:
@@ -154,7 +155,11 @@ class MainWindow:
 
     def capture(self):
         gc.collect()
-        Snapshot().fromFullScreen(self.main)
+        Snapshot().fromFullScreen()
+        # self.test = Toplevel(self.main)
+        # Button(self.test, text="stuff", command=lambda: print(
+        #     "stuff happended")).pack()
+        # self.test.attributes("-topmost", True)
 
     def getVk(self, key):
         if "vk" in dir(key):
@@ -182,11 +187,12 @@ class MainWindow:
         iconImage = Image.open(self.resource_path(iconName))
         menu = pystray.Menu(item("Quit", self.quit), item(
             "Capture!", self.capture), item("show", self.show, default=True, visible=False))
+        menu = pystray.Menu()
         self.icon = pystray.Icon(
             "screenCap", iconImage, "screenCap", menu)
         self.detect = False
-        self.main.withdraw()
         self.icon.run()
+        self.main.withdraw()
 
     def reset(self):
         self.combo.clear()

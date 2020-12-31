@@ -62,6 +62,8 @@ class Snapshot(Toplevel):
         self.bind("<Button-3>", self.__mouseRight)
         self.bind("<Double-Button-1>", self.__mouseDouble)
 
+        # setup right click menuItem
+
     def fromImage(self):
         self.firstCrop = False
         pass
@@ -77,7 +79,6 @@ class Snapshot(Toplevel):
     def __exit(self):
         if (self.firstCrop and self.cropping) or (
                 not self.firstCrop and not self.cropping):
-            print("deletings1")
             self.destroy()
 
         else:
@@ -95,6 +96,7 @@ class Snapshot(Toplevel):
         self['cursor'] = ""
 
     def __mouseDown(self, event):
+        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
         self.mousePos = (event.x, event.y)
         self.windowPos = (self.winfo_x(), self.winfo_y())
         if self.cropping:
@@ -107,7 +109,8 @@ class Snapshot(Toplevel):
                 self.startPos[0],
                 self.startPos[1],
                 event.x, event.y,
-                outline="white"
+                outline="white",
+                fill="black", stipple='gray50'
             )
         elif not self.moveLock:
             dx = event.x - self.mousePos[0]
@@ -124,7 +127,6 @@ class Snapshot(Toplevel):
         if self.cropping:
             self.canvas.delete(self.rectangle)
             self.__stopCrop()
-
             self.pilImage = self.pilImage.crop(
                 [self.startPos[0], self.startPos[1], event.x, event.y])
             self.image = ImageTk.PhotoImage(self.pilImage)
