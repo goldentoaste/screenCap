@@ -41,6 +41,7 @@ class MainWindow:
         self.main = Tk()
         self.main.title("screenCap")
         self.initialize()
+
         self.main.mainloop()
 
     def initialize(self):
@@ -126,7 +127,6 @@ class MainWindow:
     def on_press(self, key):
 
         self.currentKeys.add(key)
-        print(self.currentKeys)
         if self.detect:
             self.hotkeyButton.configure(text=self.getKeyString())
         elif all(c in [str(key) for key in self.currentKeys] for c in self.combo) and len(self.combo) > 0:
