@@ -38,7 +38,7 @@ class Snapshot(Toplevel):
         self.cropping = False
         # press esc to close the snap or to quit cropping
 
-        self.bind("<Escape>", lambda event: self.__exit)
+        self.bind("<Escape>", lambda event: self.__exit())
 
         # settings up mouse event listener
         self.bind("<B1-Motion>", self.__mouseDrag)
@@ -62,9 +62,11 @@ class Snapshot(Toplevel):
     def __exit(self):
         if (self.firstCrop and self.cropping) or (
                 not self.firstCrop and not self.cropping):
+            print("deletings1")
             self.destroy()
-            del self
+
         else:
+            print("stopping")
             self.__stopCrop()
 
     def __crop(self):

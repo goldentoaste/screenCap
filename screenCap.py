@@ -1,3 +1,4 @@
+import gc
 from snapshot import Snapshot
 from pystray import MenuItem as item
 from PIL import Image, ImageGrab, ImageTk
@@ -6,7 +7,7 @@ from win32com.client import Dispatch
 from configparser import ConfigParser
 from values import conversionTable, modifiers
 from pynput import keyboard
-from tkinter import IntVar, Tk, Frame, Checkbutton, Button, TOP, LEFT, Label, BOTH, RIGHT, X
+from tkinter import Entry, IntVar, StringVar, Tk, Frame, Checkbutton, Button, TOP, LEFT, Label, BOTH, RIGHT, X
 import sys
 import pythoncom
 import ctypes
@@ -18,9 +19,6 @@ TODO implement admin rights, program cannot read keyboard
     inputs of higher priviledge.
 
 '''
-
-
-
 
 
 seperator = "(*)"
@@ -57,6 +55,8 @@ class MainWindow:
         self.startup = IntVar()
         self.minimize = IntVar()
         self.startMin = IntVar()
+        self.admin = IntVar()
+        self.recycleSize = StringVar()
 
         # initialize icon
         self.main.iconbitmap(path.join(self.resource_path(iconName)))
@@ -153,8 +153,8 @@ class MainWindow:
         return s[:-1]
 
     def capture(self):
-        pass
-        # Snapshot(self.main).fromFullScreen()
+        gc.collect()
+        Snapshot().fromFullScreen(self.main)
 
     def getVk(self, key):
         if "vk" in dir(key):
@@ -191,6 +191,7 @@ class MainWindow:
     def reset(self):
         self.combo.clear()
         self.hotkeyButton["text"] = ""
+        self.update()
         self.main.title("hotkey cleared")
 
     def record(self):
@@ -217,7 +218,21 @@ class MainWindow:
         self.startMinCheck = Checkbutton(self.frame0, command=self.update, variable=self.startMin,
                                          text="start minimalized?").pack(side=TOP, anchor="w", padx=10)
 
+        Checkbutton(self.frame0, text="Start as Admin?", variable=self.admin,
+                    command=self.update).pack(side=TOP, anchor="w", padx=10)
+
         self.frame0.pack(side=TOP, anchor="w", expand=True, fill=BOTH)
+
+        recycleFrame = Frame(self.main)
+        Label(recycleFrame, text="Recycler capcity :").pack(side=LEFT)
+        self.recycleEntry = Entry(recycleFrame, width=10, justify='center')
+        self.recycleEntry.pack(side=LEFT)
+        self.recycleEntry.bind('<Return>', lambda event: (
+            self.recycleEntry.configure(state='disabled'), self.update()))
+        self.recycleEntry.bind(
+            "<Button-1>", lambda event: self.recycleEntry.configure(state='normal'))
+        #Button(recycleFrame, text="Set", command=self.update).pack(side=LEFT)
+        recycleFrame.pack(side=TOP, padx=10, pady=(0, 5), fill=X)
 
         self.frame1 = Frame(self.main)
         self.hotKeyLabel = Label(
@@ -239,6 +254,7 @@ class MainWindow:
         self.frame3.pack(side=TOP, padx=10, pady=(
             10, 5), expand=True, fill=BOTH)
 
+
 def is_admin():
     try:
         return ctypes.windll.shell32.IsUserAnAdmin()
@@ -247,12 +263,5 @@ def is_admin():
 
 
 if __name__ == "__main__":
-    print("check1")
-    if False:
-        main = MainWindow()
-    else:
-        ctypes.windll.shell32.ShellExecuteW(
-        None, 'runas', sys.executable, ' '.join(sys.argv), None, None)
-        exit(0)
 
-print("check2")
+    main = MainWindow()
