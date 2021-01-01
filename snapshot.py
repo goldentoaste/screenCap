@@ -1,19 +1,23 @@
 
 
-from tkinter import Canvas, Label, Toplevel, PhotoImage
+from tkinter import Canvas, Menu, Toplevel, PhotoImage, filedialog, messagebox
 from tkinter.constants import BOTH, NW, YES
 from PIL import Image, ImageGrab, ImageTk
 import sys
 from os import path
-from PIL.ImageFilter import BoxBlur
+from PIL.ImageFilter import GaussianBlur
 import gc
+import io
+import win32clipboard as clipboard
+
 #ImageGrab.grab().save("stuff.jpg", format="JPEG", quality = 100, subsampling=0)
 # use this when saving jpg!!!
 
 
 class Snapshot(Toplevel):
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, master, *args, **kwargs):
+        self.master = master
         super(Snapshot, self).__init__(*args, **kwargs)
 
     ''' 
@@ -50,7 +54,9 @@ class Snapshot(Toplevel):
         # move lock is used to fix a behaviour when double clicking and drag is happening at the same time
         self.moveLock = False
 
-        self.clickTime = 0
+        # for resizing
+        self.scale = 1
+
         # press esc to close the snap or to quit cropping
 
         self.bind("<Escape>", lambda event: self.__exit())
@@ -59,14 +65,101 @@ class Snapshot(Toplevel):
         self.bind("<B1-Motion>", self.__mouseDrag)
         self.bind("<Button-1>", self.__mouseDown)
         self.bind("<ButtonRelease-1>", self.__mouseUp)
-        self.bind("<Button-3>", self.__mouseRight)
+        self.bind("<ButtonRelease-3>", self.__mouseRight)
         self.bind("<Double-Button-1>", self.__mouseDouble)
 
-        # setup right click menuItem
+        # keyboard short bindings
+        self.bind("<Control-c>", lambda event: self.__copy())
+        self.bind("<Control-x>", lambda event: self.__cut())
+        self.bind("<Control-s>", lambda event: self.__save())
 
-    def fromImage(self):
+        # setup right click menuItem
+        self.rightMenu = Menu(self, tearoff=0)
+        self.rightMenu.add_command(
+            label="Close", font=("", 11), command=self.__exit)
+        self.rightMenu.add_separator()
+        self.rightMenu.add_command(
+            label="Save", font=("", 11), command=self.__save)
+        self.rightMenu.add_command(
+            label="Copy", font=("", 11), command=self.__copy)
+        self.rightMenu.add_command(
+            label="Cut", font=("", 11), command=self.__cut)
+        self.rightMenu.add_command(
+            label="Paste", font=("", 11), command=self.__paste)
+        self.rightMenu.add_separator()
+        self.rightMenu.add_command(
+            label="Enlarge", font=("", 11), command=self.__enlarge)
+        self.rightMenu.add_command(
+            label="Shrink", font=("", 11), command=self.__shrink)
+        self.rightMenu.add_command(
+            label="Reset", font=("", 11), command=self.__resetSize)
+        self.rightMenu.add_separator()
+        self.rightMenu.add_command(
+            label="Crop", font=("", 11), command=self.__crop)
+
+    def __paste(self):
+        image = ImageGrab.grabclipboard()
+        if image:
+            Snapshot(master=self.master).fromImage(image=image)
+
+    def __resetSize(self):
+        self.scale = 1
+        self.__resize()
+
+    def __shrink(self):
+        self.scale = max(0, self.scale - 0.20)
+        self.__resize()
+
+    def __enlarge(self):
+        self.scale = min(2, self.scale + 0.20)
+        self.__resize()
+
+    def __resize(self):
+        image = self.pilImage.copy().resize(
+            (int(self.pilImage.width * self.scale), int(self.pilImage.height * self.scale)), Image.ANTIALIAS)
+        self.__updateImage(image)
+
+    def __cut(self):
+        self.__copy()
+        self.__exit()
+
+    def __save(self):
+        # do double click action to get image out of the way
+        self.withdraw()
+        file = filedialog.asksaveasfilename(initialdir="/", title="Save image", defaultextension="*.*", filetypes=(
+            ("jpeg image", "*.jpg"), ("png image", "*.png")))
+
+        if file is not None:
+            path = str(file)
+            # file type check
+            fType = path[-4:]
+
+            if fType == ".jpg":
+                self.pilImage.save(path, format="JPEG",
+                                   quality=100, subsampling=0)
+            elif fType == ".png":
+                self.pilImage.save(path, format="PNG")
+            else:
+                messagebox.showerror(title="File type not supported!",
+                                     text="The requested file type is not supported, only jpg and png is supported")
+        self.deiconify()
+
+    def __copy(self):
+        output = io.BytesIO()
+        self.pilImage.save(output, "BMP")
+        clipboard.OpenClipboard()
+        clipboard.EmptyClipboard()
+        clipboard.SetClipboardData(clipboard.CF_DIB, output.getvalue()[14:])
+        clipboard.CloseClipboard()
+        output.close()
+
+    # this 'image' should be a pillow image
+    def fromImage(self, image, *args, **kwargs):
         self.firstCrop = False
-        pass
+        self.pilImage = image
+        self.image = ImageTk.PhotoImage(self.pilImage)
+        self.__initialize((self.pilImage.width,
+                           self.pilImage.height), *args, **kwargs)
 
     def fromFullScreen(self, *args, **kwargs):
         self.pilImage = ImageGrab.grab(())
@@ -81,12 +174,12 @@ class Snapshot(Toplevel):
                 not self.firstCrop and not self.cropping):
             self.destroy()
         else:
-            print("stopping")
             self.__stopCrop()
         gc.collect()
 
     def __crop(self):
         self.cropping = True
+        self.__resetSize()
         self.configure(
             cursor='\"@'+self.resource_path('bread.cur').replace("\\", '/')+"\"")
 
@@ -135,32 +228,36 @@ class Snapshot(Toplevel):
             self.canvas.configure(width=self.pilImage.width,
                                   height=self.pilImage.height)
             self.canvas.create_image(0, 0, anchor=NW, image=self.image)
-            self.geometry(f"+{self.startPos[0]}+{self.startPos[1]}")
+            self.geometry(
+                f"+{self.startPos[0] + self.winfo_x()}+{self.startPos[1] + self.winfo_y()}")
             self.__stopCrop()
 
     def __mouseRight(self, event):
-        pass
+        self.rightMenu.tk_popup(event.x_root, event.y_root, 0)
+        self.rightMenu.grab_release()
 
     def __mouseDouble(self, event):
         self.moveLock = True
 
-        def min(a, b):
-            return a if a < b else b
-
         if not self.mini:
+            cropSize = min(min(120, self.pilImage.width),
+                           min(120, self.pilImage.height))
+            halfCrop = cropSize / 2
 
-            x = max(0, event.x - 50)
-            y = max(0, event.y - 50)
+            x = int(min(max(0, event.x - halfCrop),
+                        self.pilImage.width - cropSize))
+            y = int(min(max(0, event.y - halfCrop),
+                        self.pilImage.height - cropSize))
 
-            tempImage = self.pilImage.filter(BoxBlur(4)).crop(
+            tempImage = self.pilImage.filter(GaussianBlur(3)).crop(
                 [x,
                  y,
-                 min(self.pilImage.width, x + 100),
-                 min(self.pilImage.height, y + 100)])
+                 min(self.pilImage.width, x + cropSize),
+                 min(self.pilImage.height, y + cropSize)])
             self.prevPos = (self.winfo_x(), self.winfo_y())
             self.__updateImage(tempImage)
             self.geometry(
-                f"+{self.prevPos[0] + max(0, event.x - 50) }+{self.prevPos[1] + max(0, event.y - 50)}")
+                f"+{self.prevPos[0] + x }+{self.prevPos[1] + y}")
             self.mini = True
 
         else:
@@ -181,3 +278,9 @@ class Snapshot(Toplevel):
         except Exception:
             base_path = path.abspath(".")
         return path.join(base_path, relative_path)
+
+    def min(a, b):
+        return a if a < b else b
+
+    def max(a, b):
+        return a if a > b else b

@@ -37,6 +37,7 @@
 
 import pystray
 from PIL import Image
+import infi.systray
 from infi.systray.traybar import SysTrayIcon
 from pynput import keyboard
 import tkinter

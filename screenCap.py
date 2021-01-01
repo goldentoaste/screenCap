@@ -9,8 +9,10 @@ from tkinter import Entry, IntVar, StringVar, Tk, Frame, Checkbutton, Button, TO
 import sys
 import pythoncom
 import ctypes
+import os
 from os import path, getenv, mkdir, remove
 from infi.systray import SysTrayIcon
+import infi.systray.win32_adapter as win32
 
 '''
 TODO implement admin rights, program cannot read keyboard 
@@ -123,9 +125,7 @@ class MainWindow:
             self.main.protocol("WM_DELETE_WINDOW", self.main.quit)
 
     def on_press(self, key):
-
         self.currentKeys.add(key)
-        print(self.currentKeys)
         if self.detect:
             self.hotkeyButton.configure(text=self.getKeyString())
         elif all(c in [str(key) for key in self.currentKeys] for c in self.combo) and len(self.combo) > 0:
@@ -153,7 +153,7 @@ class MainWindow:
 
     def capture(self):
         gc.collect()
-        Snapshot().fromFullScreen()
+        Snapshot(master=self).fromFullScreen()
         # self.test = Toplevel(self.main)
         # Button(self.test, text="stuff", command=lambda: print(
         #     "stuff happended")).pack()
@@ -173,19 +173,19 @@ class MainWindow:
 
     # quit, show, and withdraw is meant for handling system tray
     def quit(self):
-        print("shutting down")
-        self.main.destroy()
+        self.main.quit()
+        os._exit(0)
 
     def show(self):
         self.main.title("screenCap")
         self.main.deiconify()
-        self.tray.shutdown()
+        win32.DestroyWindow(self.tray._hwnd)
 
     def withdraw(self):
         menu = (("Capture!", None, lambda tray: self.capture()),
-                ("show", None, lambda tray: self.show()))
+                ("show", None, lambda tray: self.show()), ("Quit", None, lambda tray: self.quit()))
         self.tray = SysTrayIcon(self.resource_path(
-            iconName), "screenCap", menu, default_menu_index=1, on_quit=lambda tray: self.quit())
+            iconName), "screenCap", menu, default_menu_index=1)
         self.detect = False
         self.tray.start()
         self.main.withdraw()
@@ -248,7 +248,7 @@ class MainWindow:
         self.frame3 = Frame(self.main)
         self.captureButton = Button(self.frame3, command=self.capture, text="Capture!").pack(
             side=LEFT, anchor="w")
-        self.exitButton = Button(self.frame3, text="Exit", command=self.main.quit).pack(
+        self.exitButton = Button(self.frame3, text="Exit", command=self.quit).pack(
             side=RIGHT, anchor="e")
         self.aboutButton = Button(self.frame3, text="About").pack(
             side=RIGHT, anchor="e")
