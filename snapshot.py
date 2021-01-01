@@ -6,7 +6,7 @@ from PIL import Image, ImageGrab, ImageTk
 import sys
 from os import path
 from PIL.ImageFilter import BoxBlur
-from time import time
+import gc
 #ImageGrab.grab().save("stuff.jpg", format="JPEG", quality = 100, subsampling=0)
 # use this when saving jpg!!!
 
@@ -80,10 +80,10 @@ class Snapshot(Toplevel):
         if (self.firstCrop and self.cropping) or (
                 not self.firstCrop and not self.cropping):
             self.destroy()
-
         else:
             print("stopping")
             self.__stopCrop()
+        gc.collect()
 
     def __crop(self):
         self.cropping = True
@@ -91,12 +91,14 @@ class Snapshot(Toplevel):
             cursor='\"@'+self.resource_path('bread.cur').replace("\\", '/')+"\"")
 
     def __stopCrop(self):
+
         self.cropping = False
         self.firstCrop = False
         self['cursor'] = ""
+        if self.pilImage.width < 5 or self.pilImage.height < 5:
+            self.__exit()
 
     def __mouseDown(self, event):
-        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
         self.mousePos = (event.x, event.y)
         self.windowPos = (self.winfo_x(), self.winfo_y())
         if self.cropping:
@@ -126,7 +128,6 @@ class Snapshot(Toplevel):
         self.moveLock = False
         if self.cropping:
             self.canvas.delete(self.rectangle)
-            self.__stopCrop()
             self.pilImage = self.pilImage.crop(
                 [self.startPos[0], self.startPos[1], event.x, event.y])
             self.image = ImageTk.PhotoImage(self.pilImage)
@@ -135,6 +136,7 @@ class Snapshot(Toplevel):
                                   height=self.pilImage.height)
             self.canvas.create_image(0, 0, anchor=NW, image=self.image)
             self.geometry(f"+{self.startPos[0]}+{self.startPos[1]}")
+            self.__stopCrop()
 
     def __mouseRight(self, event):
         pass

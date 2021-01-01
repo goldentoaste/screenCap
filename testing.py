@@ -35,6 +35,9 @@
 # stuff = [1,3,"b","x",2,"x","a","f",3]
 # print(sorted(stuff, key=numLetterKey))
 
+import pystray
+from PIL import Image
+from infi.systray.traybar import SysTrayIcon
 from pynput import keyboard
 import tkinter
 from elevate import elevate
@@ -113,11 +116,11 @@ class testing:
 
 
 main = tkinter.Tk()
-from PIL import Image
-import pystray
+
+
 def newTop():
     t = tkinter.Toplevel(main)
-    tkinter.Button(t, text="stuff", command=lambda:print("stuff")).pack()
+    tkinter.Button(t, text="stuff", command=lambda: print("stuff")).pack()
     iconImage = Image.open("icon.ico")
     # menu = pystray.Menu(item("Quit", self.quit), item(
     #     "Capture!", self.capture), item("show", self.show, default=True, visible=False))
@@ -127,5 +130,25 @@ def newTop():
     icon.run()
     main.withdraw()
 
+
 tkinter.Button(main, text="new window", command=newTop).pack()
+
+
+def stop(tray):
+    tray.shutdown()
+    main.quit()
+
+
+def show(tray):
+    tray.shutdown()
+    main.deiconify()
+
+
+def withDraw():
+    tray = SysTrayIcon('icon.ico', "screenCap", (("show", None, show),), default_menu_index=0, on_quit=stop)
+    tray.start()
+    main.withdraw()
+
+
+tkinter.Button(main, text="hide", command=withDraw).pack()
 main.mainloop()

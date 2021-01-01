@@ -1,8 +1,6 @@
 import gc
 from snapshot import Snapshot
-from pystray import MenuItem as item
 from PIL import Image, ImageGrab, ImageTk
-import pystray
 from win32com.client import Dispatch
 from configparser import ConfigParser
 from values import conversionTable, modifiers
@@ -12,7 +10,7 @@ import sys
 import pythoncom
 import ctypes
 from os import path, getenv, mkdir, remove
-
+from infi.systray import SysTrayIcon
 
 '''
 TODO implement admin rights, program cannot read keyboard 
@@ -175,23 +173,21 @@ class MainWindow:
 
     # quit, show, and withdraw is meant for handling system tray
     def quit(self):
-        self.icon.stop()
+        print("shutting down")
         self.main.destroy()
 
     def show(self):
-        self.icon.stop()
         self.main.title("screenCap")
         self.main.deiconify()
+        self.tray.shutdown()
 
     def withdraw(self):
-        iconImage = Image.open(self.resource_path(iconName))
-        menu = pystray.Menu(item("Quit", self.quit), item(
-            "Capture!", self.capture), item("show", self.show, default=True, visible=False))
-        menu = pystray.Menu()
-        self.icon = pystray.Icon(
-            "screenCap", iconImage, "screenCap", menu)
+        menu = (("Capture!", None, lambda tray: self.capture()),
+                ("show", None, lambda tray: self.show()))
+        self.tray = SysTrayIcon(self.resource_path(
+            iconName), "screenCap", menu, default_menu_index=1, on_quit=lambda tray: self.quit())
         self.detect = False
-        self.icon.run()
+        self.tray.start()
         self.main.withdraw()
 
     def reset(self):
