@@ -1,4 +1,5 @@
 import gc
+from tkinter.constants import END
 from snapshot import Snapshot
 from PIL import Image, ImageGrab, ImageTk
 from win32com.client import Dispatch
@@ -41,7 +42,6 @@ class MainWindow:
         self.main = Tk()
         self.main.title("screenCap")
         self.initialize()
-
         self.main.mainloop()
 
     def initialize(self):
@@ -74,6 +74,17 @@ class MainWindow:
             self.startup.set(self.config.getint("screenCap", "startup"))
             self.minimize.set(self.config.getint("screenCap", "minimize"))
             self.startMin.set(self.config.getint("screenCap", "startMin"))
+            self.admin.set(self.config.getint("screenCap", "admin"))
+            # load recycle size into variable and entry field
+
+            try:
+                self.recycleSize.set(self.config.getint(
+                    "screenCap", "recycleSize"))
+            except ValueError:
+                self.recycleSize.set(0)
+            self.recycleEntry.delete(0, END)
+            self.recycleEntry.insert(0, str(self.recycleSize.get()))
+
             self.combo = (self.config.get(
                 "screenCap", "combo").split(seperator))
             self.hotkeyButton["text"] = self.config.get(
@@ -97,6 +108,9 @@ class MainWindow:
         self.config.set("screenCap", "combo",
                         "(*)".join([key for key in self.combo]))
         self.config.set("screenCap", "key_string", self.hotkeyButton['text'])
+        self.config.set("screenCap", "admin", str(self.admin.get()))
+        self.config.set("screenCap", "recycleSize",
+                        str(self.recycleSize.get()))
 
         # write config to ini file
         if not path.isdir(configDir):
@@ -124,6 +138,29 @@ class MainWindow:
         else:
             self.main.protocol("WM_DELETE_WINDOW", self.main.quit)
 
+        # admin handle
+        if self.admin.get() == 1:
+            if not is_admin():
+                selfPath = "" if hasattr(
+                    sys, '_MEIPASS') else '"' + os.getcwd() + '\\screenCap.py' + '"'
+                ctypes.windll.shell32.ShellExecuteW(
+                    None, 'runas',
+                    # execute with console since, in editor, console would not be captured otherwise
+                    '"' + sys.executable + '"',
+                    selfPath,  # leave empty for deployment
+                    None, 1)
+                self.main.destroy()
+
+        # recycleSize handling
+        badEntry = False
+        try:
+            self.recycleSize.set(int(self.recycleEntry.get()))
+        except Exception:
+            badEntry = True
+        # ignore input/no update if input is not number/has issues
+        if not badEntry and int(self.recycleEntry.get()) >= 0:
+            pass
+
     def on_press(self, key):
         self.currentKeys.add(key)
         if self.detect:
@@ -133,7 +170,8 @@ class MainWindow:
 
     def on_release(self, key):
         if key in self.currentKeys:
-            if self.detect and self.getVk(key) not in modifiers:
+            # and self.getVk(key) not in modifiers , so that modifier keys cant be used alone
+            if self.detect:
                 self.combo = [str(key) for key in self.getSortedKeys()]
                 self.main.title(f"hotkey set to '{self.getKeyString()}'")
                 self.detect = False
@@ -264,6 +302,4 @@ def is_admin():
         return False
 
 
-if __name__ == "__main__":
-
-    main = MainWindow()
+MainWindow()
