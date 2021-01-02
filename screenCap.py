@@ -69,26 +69,32 @@ class MainWindow:
         if not self.config.has_section("screenCap"):
             self.config.add_section("screenCap")
 
+        def getIntConfig(section, default=0):
+            try:
+                return self.config.getint("screenCap", section)
+            except Exception:
+                return default
+
+        def getStrConfig(section, default=""):
+            try:
+                return self.config.get("screenCap", section)
+            except Exception:
+                return default
+
         # init vals only if config exist
         if path.isfile(configFile):
-            self.startup.set(self.config.getint("screenCap", "startup"))
-            self.minimize.set(self.config.getint("screenCap", "minimize"))
-            self.startMin.set(self.config.getint("screenCap", "startMin"))
-            self.admin.set(self.config.getint("screenCap", "admin"))
+            self.startup.set(getIntConfig("startup"))
+            self.minimize.set(getIntConfig("minimize"))
+            self.startMin.set(getIntConfig("startMin"))
+            self.admin.set(getIntConfig("admin"))
             # load recycle size into variable and entry field
 
-            try:
-                self.recycleSize.set(self.config.getint(
-                    "screenCap", "recycleSize"))
-            except ValueError:
-                self.recycleSize.set(0)
+            self.recycleSize.set(getIntConfig("recycleSize"))
             self.recycleEntry.delete(0, END)
             self.recycleEntry.insert(0, str(self.recycleSize.get()))
 
-            self.combo = (self.config.get(
-                "screenCap", "combo").split(seperator))
-            self.hotkeyButton["text"] = self.config.get(
-                "screenCap", "key_string")
+            self.combo = (getStrConfig("combo").split(seperator))
+            self.hotkeyButton["text"] = getStrConfig("key_string")
 
         # updating things to reflect settings
         self.update()
