@@ -1,7 +1,7 @@
 import os
 import pathlib
 import tkinter
-from tkinter import Frame, PhotoImage, Toplevel, Label
+from tkinter import Canvas, Frame, PhotoImage, Toplevel, Label
 from tkinter.constants import BOTH, LEFT, TOP
 from PIL import Image, ImageTk
 from datetime import datetime
@@ -67,6 +67,7 @@ class Recylcer:
     def show(cls):
         window = Toplevel(cls.main)
         
+        canvas = Canvas(window)
         pass
 
     def max(a, b):

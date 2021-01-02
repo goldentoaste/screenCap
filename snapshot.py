@@ -27,7 +27,6 @@ class Snapshot(Toplevel):
 
     def __initialize(self, size=(400, 400), *args, **kwargs):
 
-        self.bread = ImageTk.PhotoImage(Image.open("bread.png"))
         bound = self.__getBoundBox()
         self.geometry(f"+{bound[0]}+{bound[1]}")
         # canvas stuff
