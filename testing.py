@@ -35,17 +35,17 @@
 # stuff = [1,3,"b","x",2,"x","a","f",3]
 # print(sorted(stuff, key=numLetterKey))
 
-import pystray
+from tkinter import messagebox
 from PIL import Image
-import infi.systray
-from infi.systray.traybar import SysTrayIcon
-from pynput import keyboard
+
 import tkinter
 from elevate import elevate
 import os
 import sys
 import ctypes
 import tkinter as tk
+
+import psutil
 
 
 class testing:
@@ -125,10 +125,7 @@ def newTop():
     iconImage = Image.open("icon.ico")
     # menu = pystray.Menu(item("Quit", self.quit), item(
     #     "Capture!", self.capture), item("show", self.show, default=True, visible=False))
-    menu = pystray.Menu()
-    icon = pystray.Icon(
-        "screenCap", iconImage, "screenCap", menu)
-    icon.run()
+
     main.withdraw()
 
 
@@ -145,11 +142,11 @@ def show(tray):
     main.deiconify()
 
 
-def withDraw():
-    tray = SysTrayIcon('icon.ico', "screenCap", (("show", None, show),), default_menu_index=0, on_quit=stop)
-    tray.start()
-    main.withdraw()
+programs = [program.name() for program in psutil.process_iter()]
 
 
-tkinter.Button(main, text="hide", command=withDraw).pack()
+messagebox.showerror(title="program already running!",
+                     message=str(programs.count("testing.exe")))
+
+tkinter.Button(main, text="hide").pack()
 main.mainloop()

@@ -6,7 +6,7 @@ from win32com.client import Dispatch
 from configparser import ConfigParser
 from values import conversionTable, modifiers
 from pynput import keyboard
-from tkinter import Entry, IntVar, StringVar, Tk, Frame, Checkbutton, Button, TOP, LEFT, Label, BOTH, RIGHT, Toplevel, X
+from tkinter import Entry, IntVar, StringVar, Tk, Frame, Checkbutton, Button, TOP, LEFT, Label, BOTH, RIGHT, messagebox, X
 import sys
 import pythoncom
 import ctypes
@@ -14,13 +14,7 @@ import os
 from os import path, getenv, mkdir, remove
 from infi.systray import SysTrayIcon
 import infi.systray.win32_adapter as win32
-
-'''
-TODO implement admin rights, program cannot read keyboard 
-    inputs of higher priviledge.
-
-'''
-
+import psutil
 
 seperator = "(*)"
 # replace with screenCap.exe if compiling to exe!
@@ -45,6 +39,12 @@ class MainWindow:
         self.main.mainloop()
 
     def initialize(self):
+        programs = [program.name() for program in psutil.process_iter()]
+
+        if programs.count('screenCap.exe') > 2:
+            messagebox.showerror(title="program already running!",
+                                 message="An instance of screenCap is already running, the program will not exit.")
+            self.quit()
 
         # initialize variables
         self.config = ConfigParser()
@@ -211,7 +211,7 @@ class MainWindow:
 
     # quit, show, and withdraw is meant for handling system tray
     def quit(self):
-        self.main.quit()
+        self.main.destroy()
         os._exit(0)
 
     def show(self):

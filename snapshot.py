@@ -9,6 +9,7 @@ from PIL.ImageFilter import GaussianBlur
 import gc
 import io
 import win32clipboard as clipboard
+from desktopmagic.screengrab_win32 import getDisplayRects, getRectAsImage
 
 #ImageGrab.grab().save("stuff.jpg", format="JPEG", quality = 100, subsampling=0)
 # use this when saving jpg!!!
@@ -26,7 +27,9 @@ class Snapshot(Toplevel):
 
     def __initialize(self, size=(400, 400), *args, **kwargs):
 
-        self.geometry("+0+0")
+        self.bread = ImageTk.PhotoImage(Image.open("bread.png"))
+        bound = self.__getBoundBox()
+        self.geometry(f"+{bound[0]}+{bound[1]}")
         # canvas stuff
         self.canvas = Canvas(
             self, width=size[0], height=size[1], highlightthickness=1)  # highlightthickness=0 for no border
@@ -73,6 +76,9 @@ class Snapshot(Toplevel):
         self.bind("<Control-x>", lambda event: self.__cut())
         self.bind("<Control-s>", lambda event: self.__save())
 
+        # size Control
+        self.bind("<=>", lambda event: self.__enlarge())
+        self.bind("-", lambda event: self.__shrink())
         # setup right click menuItem
         self.rightMenu = Menu(self, tearoff=0)
         self.rightMenu.add_command(
@@ -161,8 +167,19 @@ class Snapshot(Toplevel):
         self.__initialize((self.pilImage.width,
                            self.pilImage.height), *args, **kwargs)
 
+    def __getBoundBox(self):
+        bounds = getDisplayRects()
+        x = self.winfo_pointerx()
+        y = self.winfo_pointery()
+
+        for bound in bounds:
+            if x >= bound[0] and y >= bound[1] and x <= bound[2] and y <= bound[3]:
+                return bound
+        return bounds[0]
+
     def fromFullScreen(self, *args, **kwargs):
-        self.pilImage = ImageGrab.grab(())
+
+        self.pilImage = getRectAsImage(self.__getBoundBox())
         self.image = ImageTk.PhotoImage(self.pilImage)
         self.firstCrop = True
         self.__initialize(
@@ -184,7 +201,6 @@ class Snapshot(Toplevel):
             cursor='\"@'+self.resource_path('bread.cur').replace("\\", '/')+"\"")
 
     def __stopCrop(self):
-
         self.cropping = False
         self.firstCrop = False
         self['cursor'] = ""
@@ -238,10 +254,9 @@ class Snapshot(Toplevel):
 
     def __mouseDouble(self, event):
         self.moveLock = True
-
         if not self.mini:
-            cropSize = min(min(120, self.pilImage.width),
-                           min(120, self.pilImage.height))
+            cropSize = min(min(self.winfo_screenheight()/10, self.pilImage.width),
+                           min(self.winfo_screenheight()/10, self.pilImage.height))
             halfCrop = cropSize / 2
 
             x = int(min(max(0, event.x - halfCrop),
@@ -264,6 +279,7 @@ class Snapshot(Toplevel):
             self.__updateImage(self.pilImage)
             self.geometry(f"+{self.prevPos[0]}+{self.prevPos[1]}")
             self.mini = False
+            # self.__resize()
 
     def __updateImage(self, image):
         self.canvas.delete('all')
