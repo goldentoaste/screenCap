@@ -1,39 +1,47 @@
-
-
-import infi.systray.win32_adapter as win32
 import gc
-from tkinter.constants import END
+from tkinter.constants import END, TOP, LEFT, BOTH, X, RIGHT
 from snapshot import Snapshot
 from win32com.client import Dispatch
 from configparser import ConfigParser
 from values import conversionTable, modifiers
 from pynput import keyboard
-from tkinter import Entry, IntVar, StringVar, Tk, Frame, Checkbutton, Button, TOP, LEFT, Label, BOTH, RIGHT, messagebox, X
+from tkinter import (
+    Entry,
+    IntVar,
+    StringVar,
+    Tk,
+    Frame,
+    Checkbutton,
+    Button,
+    Label,
+)
 import sys
 import pythoncom
 import ctypes
 import os
 from os import path, getenv, mkdir, remove
 from infi.systray import SysTrayIcon
+import infi.systray.win32_adapter as win32
 
-os.environ["PBR_VERSION"] = "4.0.2"#fmt : off
-from tendo import singleton#fmt : off
+# fmt : off
+os.environ["PBR_VERSION"] = "4.0.2"
+from tendo import singleton
 
+# fmt : on
 seperator = "(*)"
 # replace with screenCap.exe if compiling to exe!
 executable = "screenCap.exe"
 iconName = "icon.ico"
-configDir = path.join(getenv("appdata"),
-                      "screenCap")
+configDir = path.join(getenv("appdata"), "screenCap")
 configFile = path.join(configDir, "config.ini")
 
 shortCutDest = path.join(
-    getenv("appdata"), "Microsoft\Windows\Start Menu\Programs\Startup")
+    getenv("appdata"), "Microsoft\Windows\Start Menu\Programs\Startup"
+)
 shortCutFile = path.join(shortCutDest, "screenCap.lnk")
 
 
 class MainWindow:
-
     def __init__(self):
 
         self.main = Tk()
@@ -89,17 +97,23 @@ class MainWindow:
             self.recycleEntry.delete(0, END)
             self.recycleEntry.insert(0, str(self.recycleSize.get()))
 
-            self.combo = (getStrConfig("combo").split(seperator))
+            self.combo = getStrConfig("combo").split(seperator)
             self.hotkeyButton["text"] = getStrConfig("key_string")
 
         # updating things to reflect settings
         self.update()
+
+        # singleton should be established after update, in  initialize, so that if the code aborts in update(restart as admin), it will not
+        # be labeled as singleton. Works for both IDE and compiled exe.
+        self.me = singleton.SingleInstance()
+
         # withdraw if the program is to minimalize on startup
         if self.startMin.get() == 1:
             self.withdraw()
         # starting keyboard event listener
         listrener = keyboard.Listener(
-            on_press=self.on_press, on_release=self.on_release)
+            on_press=self.on_press, on_release=self.on_release
+        )
         listrener.start()
 
     def update(self):
@@ -107,24 +121,23 @@ class MainWindow:
         self.config.set("screenCap", "startup", str(self.startup.get()))
         self.config.set("screenCap", "minimize", str(self.minimize.get()))
         self.config.set("screenCap", "startMin", str(self.startMin.get()))
-        self.config.set("screenCap", "combo",
-                        "(*)".join([key for key in self.combo]))
-        self.config.set("screenCap", "key_string", self.hotkeyButton['text'])
+        self.config.set("screenCap", "combo", "(*)".join([key for key in self.combo]))
+        self.config.set("screenCap", "key_string", self.hotkeyButton["text"])
         self.config.set("screenCap", "admin", str(self.admin.get()))
-        self.config.set("screenCap", "recycleSize",
-                        str(self.recycleSize.get()))
+        self.config.set("screenCap", "recycleSize", str(self.recycleSize.get()))
 
         # write config to ini file
         if not path.isdir(configDir):
             mkdir(configDir)
-        with open(configFile, 'w') as file:
+        with open(configFile, "w") as file:
             self.config.write(file)
 
         # setup startup shortcut
         if self.startup.get() == 1:
             pythoncom.CoInitialize()
-            target = path.join(self.resource_path(
-                path.dirname(path.abspath(__file__))), executable)
+            target = path.join(
+                self.resource_path(path.dirname(path.abspath(__file__))), executable
+            )
             shell = Dispatch("WScript.Shell")
             shortcut = shell.CreateShortCut(shortCutFile)
             shortcut.Targetpath = target
@@ -138,25 +151,27 @@ class MainWindow:
         if self.minimize.get() == 1:
             self.main.protocol("WM_DELETE_WINDOW", self.withdraw)
         else:
-            self.main.protocol("WM_DELETE_WINDOW", self.main.quit)
+            self.main.protocol("WM_DELETE_WINDOW", self.main.destroy)
 
         # admin handle
         if self.admin.get() == 1:
             if not is_admin():
-                selfPath = "" if hasattr(
-                    sys, '_MEIPASS') else '"' + os.getcwd() + '\\screenCap.py' + '"'
+                selfPath = (
+                    ""
+                    if hasattr(sys, "_MEIPASS")
+                    else '"' + os.getcwd() + "\\screenCap.py" + '"'
+                )
                 print(selfPath)
                 ctypes.windll.shell32.ShellExecuteW(
-                    None, 'runas',
+                    None,
+                    "runas",
                     # execute with console since, in editor, console would not be captured otherwise
                     '"' + sys.executable + '"',
                     selfPath,  # leave empty for deployment
-                    None, 1)
+                    None,
+                    1,
+                )
                 self.quit()
-
-        # singleton should be established after admin restart, so that if the code aborts here, it will not
-        # be labeled as singleton. Works for both IDE and compiled exe.
-        self.me = singleton.SingleInstance()
 
         # recycleSize handling
         badEntry = False
@@ -164,6 +179,7 @@ class MainWindow:
             self.recycleSize.set(int(self.recycleEntry.get()))
         except Exception:
             badEntry = True
+
         # ignore input/no update if input is not number/has issues
         if not badEntry and int(self.recycleEntry.get()) >= 0:
             pass
@@ -172,7 +188,10 @@ class MainWindow:
         self.currentKeys.add(key)
         if self.detect:
             self.hotkeyButton.configure(text=self.getKeyString())
-        elif all(c in [str(key) for key in self.currentKeys] for c in self.combo) and len(self.combo) > 0:
+        elif (
+            all(c in [str(key) for key in self.currentKeys] for c in self.combo)
+            and len(self.combo) > 0
+        ):
             self.capture()
 
     def on_release(self, key):
@@ -214,6 +233,7 @@ class MainWindow:
             if self.getVk(key) in modifiers:
                 return 0
             return 1
+
         return sorted(list(self.currentKeys), key=modKey)
 
     # quit, show, and withdraw is meant for handling system tray
@@ -227,10 +247,14 @@ class MainWindow:
         win32.DestroyWindow(self.tray._hwnd)
 
     def withdraw(self):
-        menu = (("Capture!", None, lambda tray: self.capture()),
-                ("show", None, lambda tray: self.show()), ("Quit", None, lambda tray: self.quit()))
-        self.tray = SysTrayIcon(self.resource_path(
-            iconName), "screenCap", menu, default_menu_index=1)
+        menu = (
+            ("Capture!", None, lambda tray: self.capture()),
+            ("show", None, lambda tray: self.show()),
+            ("Quit", None, lambda tray: self.quit()),
+        )
+        self.tray = SysTrayIcon(
+            self.resource_path(iconName), "screenCap", menu, default_menu_index=1
+        )
         self.detect = False
         self.tray.start()
         self.main.withdraw()
@@ -256,50 +280,76 @@ class MainWindow:
 
     def makeUI(self):
         self.frame0 = Frame(self.main)
-        self.startUpCheck = Checkbutton(self.frame0, variable=self.startup, command=self.update,  text="run when computer starts?").pack(
-            side=TOP, anchor="w", padx=10)
+        self.startUpCheck = Checkbutton(
+            self.frame0,
+            variable=self.startup,
+            command=self.update,
+            text="run when computer starts?",
+        ).pack(side=TOP, anchor="w", padx=10)
 
         self.minToTrayCheck = Checkbutton(
-            self.frame0, variable=self.minimize,  command=self.update, text="minimize to tray when 'X' is pressed?").pack(side=TOP, anchor="w", padx=10)
+            self.frame0,
+            variable=self.minimize,
+            command=self.update,
+            text="minimize to tray when 'X' is pressed?",
+        ).pack(side=TOP, anchor="w", padx=10)
 
-        self.startMinCheck = Checkbutton(self.frame0, command=self.update, variable=self.startMin,
-                                         text="start minimalized?").pack(side=TOP, anchor="w", padx=10)
+        self.startMinCheck = Checkbutton(
+            self.frame0,
+            command=self.update,
+            variable=self.startMin,
+            text="start minimalized?",
+        ).pack(side=TOP, anchor="w", padx=10)
 
-        Checkbutton(self.frame0, text="Start as Admin?", variable=self.admin,
-                    command=self.update).pack(side=TOP, anchor="w", padx=10)
+        Checkbutton(
+            self.frame0,
+            text="Start as Admin?",
+            variable=self.admin,
+            command=self.update,
+        ).pack(side=TOP, anchor="w", padx=10)
 
         self.frame0.pack(side=TOP, anchor="w", expand=True, fill=BOTH)
 
         recycleFrame = Frame(self.main)
         Label(recycleFrame, text="Recycler capcity :").pack(side=LEFT)
-        self.recycleEntry = Entry(recycleFrame, width=10, justify='center')
+        self.recycleEntry = Entry(recycleFrame, width=10, justify="center")
         self.recycleEntry.pack(side=LEFT)
-        self.recycleEntry.bind('<Return>', lambda event: (
-            self.recycleEntry.configure(state='disabled'), self.update()))
         self.recycleEntry.bind(
-            "<Button-1>", lambda event: self.recycleEntry.configure(state='normal'))
-        #Button(recycleFrame, text="Set", command=self.update).pack(side=LEFT)
+            "<Return>",
+            lambda event: (
+                self.recycleEntry.configure(state="disabled"),
+                self.update(),
+            ),
+        )
+        self.recycleEntry.bind(
+            "<Button-1>", lambda event: self.recycleEntry.configure(state="normal")
+        )
+        # Button(recycleFrame, text="Set", command=self.update).pack(side=LEFT)
         recycleFrame.pack(side=TOP, padx=10, pady=(0, 5), fill=X)
 
         self.frame1 = Frame(self.main)
-        self.hotKeyLabel = Label(
-            self.frame1, text="Hotkey for screen capture:").pack(side=LEFT)
+        self.hotKeyLabel = Label(self.frame1, text="Hotkey for screen capture:").pack(
+            side=LEFT
+        )
         self.hotkeyButton = Button(self.frame1, command=self.record, width=20)
         self.hotkeyButton.pack(side=LEFT, fill=BOTH, expand=True)
         self.hotkeyResetButton = Button(
-            self.frame1, text="Reset", command=self.reset, width=5).pack(side=LEFT)
+            self.frame1, text="Reset", command=self.reset, width=5
+        ).pack(side=LEFT)
         self.frame1.pack(side=TOP, fill=X, padx=10)
 
         self.frame3 = Frame(self.main)
-        self.captureButton = Button(self.frame3, command=self.capture, text="Capture!").pack(
-            side=LEFT, anchor="w")
+        self.captureButton = Button(
+            self.frame3, command=self.capture, text="Capture!"
+        ).pack(side=LEFT, anchor="w")
         self.exitButton = Button(self.frame3, text="Exit", command=self.quit).pack(
-            side=RIGHT, anchor="e")
+            side=RIGHT, anchor="e"
+        )
         self.aboutButton = Button(self.frame3, text="About").pack(
-            side=RIGHT, anchor="e")
+            side=RIGHT, anchor="e"
+        )
 
-        self.frame3.pack(side=TOP, padx=10, pady=(
-            10, 5), expand=True, fill=BOTH)
+        self.frame3.pack(side=TOP, padx=10, pady=(10, 5), expand=True, fill=BOTH)
 
 
 def is_admin():

@@ -1,5 +1,3 @@
-
-
 from tkinter import Canvas, Menu, Toplevel, PhotoImage, filedialog, messagebox
 from tkinter.constants import BOTH, NW, YES
 from PIL import Image, ImageGrab, ImageTk
@@ -11,19 +9,18 @@ import io
 import win32clipboard as clipboard
 from desktopmagic.screengrab_win32 import getDisplayRects, getRectAsImage
 
-#ImageGrab.grab().save("stuff.jpg", format="JPEG", quality = 100, subsampling=0)
+# ImageGrab.grab().save("stuff.jpg", format="JPEG", quality = 100, subsampling=0)
 # use this when saving jpg!!!
 
 
 class Snapshot(Toplevel):
-
     def __init__(self, master, *args, **kwargs):
         self.master = master
         super(Snapshot, self).__init__(*args, **kwargs)
 
-    ''' 
+    """ 
     __initialize is to be called after self.image has been set(keeping the reference is neccessary)
-    '''
+    """
 
     def __initialize(self, size=(400, 400), *args, **kwargs):
 
@@ -31,7 +28,8 @@ class Snapshot(Toplevel):
         self.geometry(f"+{bound[0]}+{bound[1]}")
         # canvas stuff
         self.canvas = Canvas(
-            self, width=size[0], height=size[1], highlightthickness=1)  # highlightthickness=0 for no border
+            self, width=size[0], height=size[1], highlightthickness=1
+        )  # highlightthickness=0 for no border
         self.canvas.pack(expand=YES, fill=BOTH)
         self.canvas.create_image(0, 0, anchor=NW, image=self.image)
         # init to None for now since canvas.delete(None) is okay.
@@ -80,27 +78,22 @@ class Snapshot(Toplevel):
         self.bind("-", lambda event: self.__shrink())
         # setup right click menuItem
         self.rightMenu = Menu(self, tearoff=0)
-        self.rightMenu.add_command(
-            label="Close", font=("", 11), command=self.__exit)
+        self.rightMenu.add_command(label="Close", font=("", 11), command=self.__exit)
+        self.rightMenu.add_separator()
+        self.rightMenu.add_command(label="Save", font=("", 11), command=self.__save)
+        self.rightMenu.add_command(label="Copy", font=("", 11), command=self.__copy)
+        self.rightMenu.add_command(label="Cut", font=("", 11), command=self.__cut)
+        self.rightMenu.add_command(label="Paste", font=("", 11), command=self.__paste)
         self.rightMenu.add_separator()
         self.rightMenu.add_command(
-            label="Save", font=("", 11), command=self.__save)
+            label="Enlarge", font=("", 11), command=self.__enlarge
+        )
+        self.rightMenu.add_command(label="Shrink", font=("", 11), command=self.__shrink)
         self.rightMenu.add_command(
-            label="Copy", font=("", 11), command=self.__copy)
-        self.rightMenu.add_command(
-            label="Cut", font=("", 11), command=self.__cut)
-        self.rightMenu.add_command(
-            label="Paste", font=("", 11), command=self.__paste)
+            label="Reset", font=("", 11), command=self.__resetSize
+        )
         self.rightMenu.add_separator()
-        self.rightMenu.add_command(
-            label="Enlarge", font=("", 11), command=self.__enlarge)
-        self.rightMenu.add_command(
-            label="Shrink", font=("", 11), command=self.__shrink)
-        self.rightMenu.add_command(
-            label="Reset", font=("", 11), command=self.__resetSize)
-        self.rightMenu.add_separator()
-        self.rightMenu.add_command(
-            label="Crop", font=("", 11), command=self.__crop)
+        self.rightMenu.add_command(label="Crop", font=("", 11), command=self.__crop)
 
     def __paste(self):
         image = ImageGrab.grabclipboard()
@@ -121,7 +114,12 @@ class Snapshot(Toplevel):
 
     def __resize(self):
         image = self.pilImage.copy().resize(
-            (int(self.pilImage.width * self.scale), int(self.pilImage.height * self.scale)), Image.ANTIALIAS)
+            (
+                int(self.pilImage.width * self.scale),
+                int(self.pilImage.height * self.scale),
+            ),
+            Image.ANTIALIAS,
+        )
         self.__updateImage(image)
 
     def __cut(self):
@@ -131,8 +129,12 @@ class Snapshot(Toplevel):
     def __save(self):
         # do double click action to get image out of the way
         self.withdraw()
-        file = filedialog.asksaveasfilename(initialdir="/", title="Save image", defaultextension="*.*", filetypes=(
-            ("jpeg image", "*.jpg"), ("png image", "*.png")))
+        file = filedialog.asksaveasfilename(
+            initialdir="/",
+            title="Save image",
+            defaultextension="*.*",
+            filetypes=(("jpeg image", "*.jpg"), ("png image", "*.png")),
+        )
 
         if file is not None:
             path = str(file)
@@ -140,13 +142,14 @@ class Snapshot(Toplevel):
             fType = path[-4:]
 
             if fType == ".jpg":
-                self.pilImage.save(path, format="JPEG",
-                                   quality=100, subsampling=0)
+                self.pilImage.save(path, format="JPEG", quality=100, subsampling=0)
             elif fType == ".png":
                 self.pilImage.save(path, format="PNG")
             else:
-                messagebox.showerror(title="File type not supported!",
-                                     text="The requested file type is not supported, only jpg and png is supported")
+                messagebox.showerror(
+                    title="File type not supported!",
+                    text="The requested file type is not supported, only jpg and png is supported",
+                )
         self.deiconify()
 
     def __copy(self):
@@ -163,8 +166,7 @@ class Snapshot(Toplevel):
         self.firstCrop = False
         self.pilImage = image
         self.image = ImageTk.PhotoImage(self.pilImage)
-        self.__initialize((self.pilImage.width,
-                           self.pilImage.height), *args, **kwargs)
+        self.__initialize((self.pilImage.width, self.pilImage.height), *args, **kwargs)
 
     def __getBoundBox(self):
         bounds = getDisplayRects()
@@ -177,17 +179,18 @@ class Snapshot(Toplevel):
         return bounds[0]
 
     def fromFullScreen(self, *args, **kwargs):
-
         self.pilImage = getRectAsImage(self.__getBoundBox())
         self.image = ImageTk.PhotoImage(self.pilImage)
         self.firstCrop = True
         self.__initialize(
-            (self.winfo_screenwidth(), self.winfo_screenheight()), *args, **kwargs)
+            (self.winfo_screenwidth(), self.winfo_screenheight()), *args, **kwargs
+        )
         self.__crop()
 
     def __exit(self):
         if (self.firstCrop and self.cropping) or (
-                not self.firstCrop and not self.cropping):
+            not self.firstCrop and not self.cropping
+        ):
             self.destroy()
         else:
             self.__stopCrop()
@@ -197,12 +200,13 @@ class Snapshot(Toplevel):
         self.cropping = True
         self.__resetSize()
         self.configure(
-            cursor='\"@'+self.resource_path('bread.cur').replace("\\", '/')+"\"")
+            cursor='"@' + self.resource_path("bread.cur").replace("\\", "/") + '"'
+        )
 
     def __stopCrop(self):
         self.cropping = False
         self.firstCrop = False
-        self['cursor'] = ""
+        self["cursor"] = ""
         if self.pilImage.width < 5 or self.pilImage.height < 5:
             self.__exit()
 
@@ -218,33 +222,53 @@ class Snapshot(Toplevel):
             self.rectangle = self.canvas.create_rectangle(
                 self.startPos[0],
                 self.startPos[1],
-                event.x, event.y,
+                event.x,
+                event.y,
                 outline="white",
-                fill="black", stipple='gray50'
+                fill="black",
+                stipple="gray50",
             )
         elif not self.moveLock:
             dx = event.x - self.mousePos[0]
             dy = event.y - self.mousePos[1]
-            self.windowPos = (self.windowPos[0] + dx,
-                              self.windowPos[1] + dy)
-            self.prevPos = (self.prevPos[0] + dx,
-                            self.prevPos[1] + dy)
-            self.geometry(
-                f"+{self.windowPos[0]}+{self.windowPos[1]}")
+            self.windowPos = (self.windowPos[0] + dx, self.windowPos[1] + dy)
+            self.prevPos = (self.prevPos[0] + dx, self.prevPos[1] + dy)
+            self.geometry(f"+{self.windowPos[0]}+{self.windowPos[1]}")
 
     def __mouseUp(self, event):
+        def getCorrectCoord(x1, y1, x2, y2):
+            dx = x2 - x1
+            dy = y2 - y1
+            # true for pos
+            table = {
+                (True, True): (x1, y1, x2, y2),
+                (True, False): (x1, y2, x2, y1),
+                (False, True): (x2, y1, x1, y2),
+                (False, False): (x2, y2, x1, y1),
+            }
+            return table[(dx > 0, dy > 0)]
+
         self.moveLock = False
         if self.cropping:
             self.canvas.delete(self.rectangle)
+
+            coord = getCorrectCoord(
+                self.startPos[0],
+                self.startPos[1],
+                min(max(event.x, 0), self.pilImage.width),
+                min(max(event.y, 0), self.pilImage.height),
+            )
             self.pilImage = self.pilImage.crop(
-                [self.startPos[0], self.startPos[1], event.x, event.y])
+                coord
+            )  # using min max to keep coord in bound
+
             self.image = ImageTk.PhotoImage(self.pilImage)
-            self.canvas.delete('all')
-            self.canvas.configure(width=self.pilImage.width,
-                                  height=self.pilImage.height)
+            self.canvas.delete("all")
+            self.canvas.configure(
+                width=self.pilImage.width, height=self.pilImage.height
+            )
             self.canvas.create_image(0, 0, anchor=NW, image=self.image)
-            self.geometry(
-                f"+{self.startPos[0] + self.winfo_x()}+{self.startPos[1] + self.winfo_y()}")
+            self.geometry(f"+{coord[0]+ self.winfo_x()}+{coord[1] + self.winfo_y()}")
             self.__stopCrop()
 
     def __mouseRight(self, event):
@@ -254,24 +278,26 @@ class Snapshot(Toplevel):
     def __mouseDouble(self, event):
         self.moveLock = True
         if not self.mini:
-            cropSize = min(min(self.winfo_screenheight()/10, self.pilImage.width),
-                           min(self.winfo_screenheight()/10, self.pilImage.height))
+            cropSize = min(
+                min(self.winfo_screenheight() / 10, self.pilImage.width),
+                min(self.winfo_screenheight() / 10, self.pilImage.height),
+            )
             halfCrop = cropSize / 2
 
-            x = int(min(max(0, event.x - halfCrop),
-                        self.pilImage.width - cropSize))
-            y = int(min(max(0, event.y - halfCrop),
-                        self.pilImage.height - cropSize))
+            x = int(min(max(0, event.x - halfCrop), self.pilImage.width - cropSize))
+            y = int(min(max(0, event.y - halfCrop), self.pilImage.height - cropSize))
 
             tempImage = self.pilImage.filter(GaussianBlur(3)).crop(
-                [x,
-                 y,
-                 min(self.pilImage.width, x + cropSize),
-                 min(self.pilImage.height, y + cropSize)])
+                [
+                    x,
+                    y,
+                    min(self.pilImage.width, x + cropSize),
+                    min(self.pilImage.height, y + cropSize),
+                ]
+            )
             self.prevPos = (self.winfo_x(), self.winfo_y())
             self.__updateImage(tempImage)
-            self.geometry(
-                f"+{self.prevPos[0] + x }+{self.prevPos[1] + y}")
+            self.geometry(f"+{self.prevPos[0] + x }+{self.prevPos[1] + y}")
             self.mini = True
 
         else:
@@ -281,7 +307,7 @@ class Snapshot(Toplevel):
             # self.__resize()
 
     def __updateImage(self, image):
-        self.canvas.delete('all')
+        self.canvas.delete("all")
         self.canvas.configure(width=image.width, height=image.height)
         self.image = ImageTk.PhotoImage(image)
         self.canvas.create_image(0, 0, anchor=NW, image=self.image)
@@ -293,9 +319,3 @@ class Snapshot(Toplevel):
         except Exception:
             base_path = path.abspath(".")
         return path.join(base_path, relative_path)
-
-    def min(a, b):
-        return a if a < b else b
-
-    def max(a, b):
-        return a if a > b else b

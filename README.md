@@ -11,3 +11,4 @@ https://stackoverflow.com/questions/34322132/copy-image-to-clipboard
 # danger zone
 https://github.com/mhammond/pywin32/issues/1593
 https://github.com/Infinidat/infi.systray/issues/32
+https://blog.csdn.net/wzh200x/article/details/111185209
