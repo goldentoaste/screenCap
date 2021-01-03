@@ -1,7 +1,9 @@
+
+
+import infi.systray.win32_adapter as win32
 import gc
 from tkinter.constants import END
 from snapshot import Snapshot
-from PIL import Image, ImageGrab, ImageTk
 from win32com.client import Dispatch
 from configparser import ConfigParser
 from values import conversionTable, modifiers
@@ -13,8 +15,9 @@ import ctypes
 import os
 from os import path, getenv, mkdir, remove
 from infi.systray import SysTrayIcon
-import infi.systray.win32_adapter as win32
-import psutil
+
+os.environ["PBR_VERSION"] = "4.0.2"#fmt : off
+from tendo import singleton#fmt : off
 
 seperator = "(*)"
 # replace with screenCap.exe if compiling to exe!
@@ -39,13 +42,6 @@ class MainWindow:
         self.main.mainloop()
 
     def initialize(self):
-        programs = [program.name() for program in psutil.process_iter()]
-
-        if programs.count('screenCap.exe') > 2:
-            messagebox.showerror(title="program already running!",
-                                 message="An instance of screenCap is already running, the program will not exit.")
-            self.quit()
-
         # initialize variables
         self.config = ConfigParser()
 
@@ -149,13 +145,18 @@ class MainWindow:
             if not is_admin():
                 selfPath = "" if hasattr(
                     sys, '_MEIPASS') else '"' + os.getcwd() + '\\screenCap.py' + '"'
+                print(selfPath)
                 ctypes.windll.shell32.ShellExecuteW(
                     None, 'runas',
                     # execute with console since, in editor, console would not be captured otherwise
                     '"' + sys.executable + '"',
                     selfPath,  # leave empty for deployment
                     None, 1)
-                self.main.destroy()
+                self.quit()
+
+        # singleton should be established after admin restart, so that if the code aborts here, it will not
+        # be labeled as singleton. Works for both IDE and compiled exe.
+        self.me = singleton.SingleInstance()
 
         # recycleSize handling
         badEntry = False

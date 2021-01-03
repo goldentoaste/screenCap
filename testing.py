@@ -39,7 +39,6 @@ from tkinter import messagebox
 from PIL import Image
 
 import tkinter
-from elevate import elevate
 import os
 import sys
 import ctypes
@@ -150,3 +149,4 @@ messagebox.showerror(title="program already running!",
 
 tkinter.Button(main, text="hide").pack()
 main.mainloop()
+input("hold up")

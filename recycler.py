@@ -66,7 +66,6 @@ class Recylcer:
 
     def show(cls):
         window = Toplevel(cls.main)
-        
         canvas = Canvas(window)
         pass
 

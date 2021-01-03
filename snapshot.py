@@ -76,7 +76,7 @@ class Snapshot(Toplevel):
         self.bind("<Control-s>", lambda event: self.__save())
 
         # size Control
-        self.bind("<=>", lambda event: self.__enlarge())
+        self.bind("=", lambda event: self.__enlarge())
         self.bind("-", lambda event: self.__shrink())
         # setup right click menuItem
         self.rightMenu = Menu(self, tearoff=0)
@@ -112,11 +112,11 @@ class Snapshot(Toplevel):
         self.__resize()
 
     def __shrink(self):
-        self.scale = max(0, self.scale - 0.20)
+        self.scale = max(0, self.scale - 0.25)
         self.__resize()
 
     def __enlarge(self):
-        self.scale = min(2, self.scale + 0.20)
+        self.scale = min(2, self.scale + 0.25)
         self.__resize()
 
     def __resize(self):
