@@ -25,6 +25,7 @@ import infi.systray.win32_adapter as win32
 from recycle import RecycleBin
 
 # fmt : off
+#this is important for tendo to load
 os.environ["PBR_VERSION"] = "4.0.2"
 from tendo import singleton
 

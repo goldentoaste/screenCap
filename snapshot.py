@@ -142,8 +142,11 @@ class Snapshot(Toplevel):
             initialdir=self.mainWindow.lastPath.get(),
             initialfile=time.strftime("%d%m%y_%H-%M-%S", time.localtime()),
             title="Save image",
-            defaultextension="*.*",
-            filetypes=(("jpeg image", "*.jpg"), ("png image", "*.png")),
+            defaultextension="*.png",
+            filetypes=(
+                ("png image", "*.png"),
+                ("jpeg image", "*.jpg"),
+            ),
         )
 
         if file != "":
@@ -202,7 +205,8 @@ class Snapshot(Toplevel):
         if (self.firstCrop and self.cropping) or (
             not self.firstCrop and not self.cropping
         ):
-            self.mainWindow.snaps.remove(self)
+            if self.firstCrop and self.cropping:
+                self.mainWindow.snaps.remove(self)
             self.destroy()
         else:
             self.__stopCrop()
