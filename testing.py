@@ -115,38 +115,68 @@ class testing:
 # input("press enter to exit")
 
 
-main = tkinter.Tk()
+# main = tkinter.Tk()
 
 
-def newTop():
-    t = tkinter.Toplevel(main)
-    tkinter.Button(t, text="stuff", command=lambda: print("stuff")).pack()
-    iconImage = Image.open("icon.ico")
-    # menu = pystray.Menu(item("Quit", self.quit), item(
-    #     "Capture!", self.capture), item("show", self.show, default=True, visible=False))
+# def newTop():
+#     t = tkinter.Toplevel(main)
+#     tkinter.Button(t, text="stuff", command=lambda: print("stuff")).pack()
+#     iconImage = Image.open("icon.ico")
+#     # menu = pystray.Menu(item("Quit", self.quit), item(
+#     #     "Capture!", self.capture), item("show", self.show, default=True, visible=False))
 
-    main.withdraw()
-
-
-tkinter.Button(main, text="new window", command=newTop).pack()
+#     main.withdraw()
 
 
-def stop(tray):
-    tray.shutdown()
-    main.quit()
+# tkinter.Button(main, text="new window", command=newTop).pack()
 
 
-def show(tray):
-    tray.shutdown()
-    main.deiconify()
+# def stop(tray):
+#     tray.shutdown()
+#     main.quit()
 
 
-programs = [program.name() for program in psutil.process_iter()]
+# def show(tray):
+#     tray.shutdown()
+#     main.deiconify()
 
 
-messagebox.showerror(title="program already running!",
-                     message=str(programs.count("testing.exe")))
+# programs = [program.name() for program in psutil.process_iter()]
 
-tkinter.Button(main, text="hide").pack()
-main.mainloop()
-input("hold up")
+
+# messagebox.showerror(title="program already running!",
+#                      message=str(programs.count("testing.exe")))
+
+# tkinter.Button(main, text="hide").pack()
+# main.mainloop()
+# input("hold up")
+
+import tkinter as tk
+
+def populate(frame):
+    '''Put in some fake data'''
+    for row in range(100):
+        tk.Label(frame, text="%s" % row, width=3, borderwidth="1", 
+                 relief="solid").grid(row=row, column=0)
+        t="this is the second column for row %s" %row
+        tk.Label(frame, text=t).grid(row=row, column=1)
+
+def onFrameConfigure(canvas):
+    '''Reset the scroll region to encompass the inner frame'''
+    canvas.configure(scrollregion=canvas.bbox("all"))
+
+root = tk.Tk()
+canvas = tk.Canvas(root, borderwidth=0, background="#ffffff")
+frame = tk.Frame(canvas, background="#ffffff")
+vsb = tk.Scrollbar(root, orient="vertical", command=canvas.yview)
+canvas.configure(yscrollcommand=vsb.set)
+
+vsb.pack(side="right", fill="y")
+canvas.pack(side="left", fill="both", expand=True)
+canvas.create_window((4,4), window=frame, anchor="nw")
+
+frame.bind("<Configure>", lambda event, canvas=canvas: onFrameConfigure(canvas))
+
+populate(frame)
+
+root.mainloop()

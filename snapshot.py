@@ -14,8 +14,9 @@ from desktopmagic.screengrab_win32 import getDisplayRects, getRectAsImage
 
 
 class Snapshot(Toplevel):
-    def __init__(self, master, *args, **kwargs):
-        self.master = master
+    def __init__(self, mainWindow, *args, **kwargs):
+        self.mainWindow = mainWindow
+        print(type(self.mainWindow))
         super(Snapshot, self).__init__(*args, **kwargs)
 
     """ 
@@ -94,18 +95,24 @@ class Snapshot(Toplevel):
         )
         self.rightMenu.add_separator()
         self.rightMenu.add_command(label="Crop", font=("", 11), command=self.__crop)
+        self.rightMenu.add_separator()
+        self.rightMenu.add_command(
+            label="Recycle Bin",
+            font=("", 11),
+            command=lambda: self.mainWindow.bin.show(),
+        )
 
     def __paste(self):
         image = ImageGrab.grabclipboard()
         if image:
-            Snapshot(master=self.master).fromImage(image=image)
+            Snapshot(mainWindow=self.mainWindow).fromImage(image=image)
 
     def __resetSize(self):
         self.scale = 1
         self.__resize()
 
     def __shrink(self):
-        self.scale = max(0, self.scale - 0.25)
+        self.scale = max(0.2, self.scale - 0.25)
         self.__resize()
 
     def __enlarge(self):
@@ -167,6 +174,7 @@ class Snapshot(Toplevel):
         self.pilImage = image
         self.image = ImageTk.PhotoImage(self.pilImage)
         self.__initialize((self.pilImage.width, self.pilImage.height), *args, **kwargs)
+        return self
 
     def __getBoundBox(self):
         bounds = getDisplayRects()
@@ -186,8 +194,10 @@ class Snapshot(Toplevel):
             (self.winfo_screenwidth(), self.winfo_screenheight()), *args, **kwargs
         )
         self.__crop()
+        return self
 
     def __exit(self):
+        self.mainWindow.removeSnap(self)
         if (self.firstCrop and self.cropping) or (
             not self.firstCrop and not self.cropping
         ):

@@ -22,6 +22,7 @@ import os
 from os import path, getenv, mkdir, remove
 from infi.systray import SysTrayIcon
 import infi.systray.win32_adapter as win32
+from recycle import RecycleBin
 
 # fmt : off
 os.environ["PBR_VERSION"] = "4.0.2"
@@ -63,6 +64,9 @@ class MainWindow:
         self.admin = IntVar()
         self.recycleSize = StringVar()
 
+        # list of opended snapshot
+        self.snaps = []
+
         # initialize icon
         self.main.iconbitmap(path.join(self.resource_path(iconName)))
 
@@ -96,7 +100,7 @@ class MainWindow:
             self.recycleSize.set(getIntConfig("recycleSize"))
             self.recycleEntry.delete(0, END)
             self.recycleEntry.insert(0, str(self.recycleSize.get()))
-
+            self.recycleEntry.configure(state="disabled")
             self.combo = getStrConfig("combo").split(seperator)
             self.hotkeyButton["text"] = getStrConfig("key_string")
 
@@ -124,7 +128,20 @@ class MainWindow:
         self.config.set("screenCap", "combo", "(*)".join([key for key in self.combo]))
         self.config.set("screenCap", "key_string", self.hotkeyButton["text"])
         self.config.set("screenCap", "admin", str(self.admin.get()))
-        self.config.set("screenCap", "recycleSize", str(self.recycleSize.get()))
+
+        # recycleSize handling
+        badEntry = False
+        try:
+            self.recycleSize.set(int(self.recycleEntry.get()))
+            self.config.set("screenCap", "recyclesize", self.recycleEntry.get())
+        except Exception:
+
+            badEntry = True
+
+        # ignore input/no update if input is not number/has issues
+        if not badEntry and int(self.recycleEntry.get()) >= 0:
+            self.bin = RecycleBin(int(self.recycleSize.get()), self)
+            self.recycleButton.configure(command=self.bin.show)
 
         # write config to ini file
         if not path.isdir(configDir):
@@ -161,7 +178,6 @@ class MainWindow:
                     if hasattr(sys, "_MEIPASS")
                     else '"' + os.getcwd() + "\\screenCap.py" + '"'
                 )
-                print(selfPath)
                 ctypes.windll.shell32.ShellExecuteW(
                     None,
                     "runas",
@@ -173,16 +189,12 @@ class MainWindow:
                 )
                 self.quit()
 
-        # recycleSize handling
-        badEntry = False
-        try:
-            self.recycleSize.set(int(self.recycleEntry.get()))
-        except Exception:
-            badEntry = True
+    def addSnap(self, snap: Snapshot):
+        self.snaps.append(snap)
 
-        # ignore input/no update if input is not number/has issues
-        if not badEntry and int(self.recycleEntry.get()) >= 0:
-            pass
+    def removeSnap(self, snap: Snapshot):
+        self.bin.addImage(snap.pilImage)
+        self.snaps.remove(snap)
 
     def on_press(self, key):
         self.currentKeys.add(key)
@@ -217,7 +229,7 @@ class MainWindow:
 
     def capture(self):
         gc.collect()
-        Snapshot(master=self).fromFullScreen()
+        self.snaps.append(Snapshot(mainWindow=self).fromFullScreen())
         # self.test = Toplevel(self.main)
         # Button(self.test, text="stuff", command=lambda: print(
         #     "stuff happended")).pack()
@@ -238,8 +250,12 @@ class MainWindow:
 
     # quit, show, and withdraw is meant for handling system tray
     def quit(self):
+        for snap in self.snaps:
+            self.removeSnap(snap)
+
         self.main.destroy()
-        os._exit(0)
+        #allow 2 second for sys to save images to recycling
+        self.main.after(2000, lambda: os._exit(0))
 
     def show(self):
         self.main.title("screenCap")
@@ -314,11 +330,13 @@ class MainWindow:
         Label(recycleFrame, text="Recycler capcity :").pack(side=LEFT)
         self.recycleEntry = Entry(recycleFrame, width=10, justify="center")
         self.recycleEntry.pack(side=LEFT)
+
         self.recycleEntry.bind(
             "<Return>",
             lambda event: (
-                self.recycleEntry.configure(state="disabled"),
+                print(event.widget.get()),
                 self.update(),
+                self.recycleEntry.configure(state="disabled"),
             ),
         )
         self.recycleEntry.bind(
@@ -339,9 +357,13 @@ class MainWindow:
         self.frame1.pack(side=TOP, fill=X, padx=10)
 
         self.frame3 = Frame(self.main)
+
         self.captureButton = Button(
             self.frame3, command=self.capture, text="Capture!"
         ).pack(side=LEFT, anchor="w")
+        self.recycleButton = Button(self.frame3, text="Recycle bin")
+        self.recycleButton.pack(side=LEFT, anchor="w", padx=5)
+
         self.exitButton = Button(self.frame3, text="Exit", command=self.quit).pack(
             side=RIGHT, anchor="e"
         )
