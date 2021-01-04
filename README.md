@@ -65,7 +65,7 @@ Here is a [modernized](https://github.com/tylearymf/SETUNA2) version of SETUNA, 
 
 * Hotkeys are not recongnized if the selected program has a higher level of privilage, for exmaple task manager, or program started as admin. Check 'start as admin' in the program or in windows properties to work around this.
 
-* The Ui is built with tkinter, so the interface looks pretty utilitarian(ugly), but thankfully the user won't interact much with it. Some ui features wouldn't be implemented due to tkinter limitations.
+* The Ui is built with tkinter, so the interface looks pretty utilitarian(ugly), but thankfully the user won't interact much with it. Some ui features couldn't be implemented due to tkinter limitations.
 
 * Memory usage is slightly higher, and also high cpu usage when dragging snapshots(tkinter does not support draggable window, so a costly work around is used). So this program might choke on very low end systems, maybe.
 
