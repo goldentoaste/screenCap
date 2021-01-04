@@ -1,5 +1,21 @@
 # screenCap
- 
+
+A Windows(only) program made in python with the intention to replicate a old Japanese program named 'SETUNA', which lacks an English translation and has minor graphics compatibilities issues with modern systems. This program allows you to take screenshots, crop a section of it, and pin it to be always on top, along with many other features for productivity gains.
+
+Here is a [modernized](https://github.com/tylearymf/SETUNA2) version of SETUNA, but it is not in English.(And I rather write my own program instead of translating this one :P)
+
+#
+![example](https://imgur.com/a/BQPH0Gz)
+#
+# Feature List
+* Set custom keyboard shortcut to create
+
+
+
+
+
+
+
 remove quit in infi.systray, traybar
 issiue: os._exit is used
 https://stevepython.wordpress.com/2020/04/26/infi-systray-separator-bar/

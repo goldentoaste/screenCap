@@ -89,9 +89,6 @@ class MainWindow:
             except Exception:
                 return default
 
-        
-
-
         # init vals only if config exist
         if path.isfile(configFile):
             self.startup.set(getIntConfig("startup"))
@@ -194,11 +191,13 @@ class MainWindow:
                 self.quit()
 
     def addSnap(self, snap: Snapshot):
-        self.snaps.append(snap)
+        if snap is not None:
+            self.snaps.append(snap)
 
     def removeSnap(self, snap: Snapshot):
-        self.bin.addImage(snap.pilImage)
-        self.snaps.remove(snap)
+        if snap in self.snaps:
+            self.snaps.remove(snap)
+            self.bin.addImage(snap.pilImage)
 
     def on_press(self, key):
         self.currentKeys.add(key)
@@ -233,7 +232,7 @@ class MainWindow:
 
     def capture(self):
         gc.collect()
-        self.snaps.append(Snapshot(mainWindow=self).fromFullScreen())
+        self.addSnap(Snapshot(mainWindow=self).fromFullScreen())
 
     def getVk(self, key):
         if "vk" in dir(key):
@@ -254,7 +253,7 @@ class MainWindow:
             self.removeSnap(snap)
 
         self.main.destroy()
-        #allow 2 second for sys to save images to recycling
+        # allow 2 second for sys to save images to recycling
         self.main.after(2000, lambda: os._exit(0))
 
     def show(self):

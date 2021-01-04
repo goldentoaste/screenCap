@@ -193,6 +193,8 @@ class Snapshot(Toplevel):
             (self.winfo_screenwidth(), self.winfo_screenheight()), *args, **kwargs
         )
         self.__crop()
+        print(self.pilImage.width, self.pilImage.height)
+
         return self
 
     def __exit(self):
@@ -200,6 +202,7 @@ class Snapshot(Toplevel):
         if (self.firstCrop and self.cropping) or (
             not self.firstCrop and not self.cropping
         ):
+            self.mainWindow.snaps.remove(self)
             self.destroy()
         else:
             self.__stopCrop()
@@ -216,8 +219,9 @@ class Snapshot(Toplevel):
         self.cropping = False
         self.firstCrop = False
         self["cursor"] = ""
-        if self.pilImage.width < 5 or self.pilImage.height < 5:
-            self.__exit()
+        if self.pilImage.width < 20 or self.pilImage.height < 20:
+            self.mainWindow.snaps.remove(self)
+            self.destroy()
 
     def __mouseDown(self, event):
         self.mousePos = (event.x, event.y)
@@ -267,10 +271,11 @@ class Snapshot(Toplevel):
                 min(max(event.x, 0), self.pilImage.width),
                 min(max(event.y, 0), self.pilImage.height),
             )
+            if coord[3] - coord[1] < 10 or coord[2] - coord[0]:
+                pass
             self.pilImage = self.pilImage.crop(
                 coord
             )  # using min max to keep coord in bound
-
             self.image = ImageTk.PhotoImage(self.pilImage)
             self.canvas.delete("all")
             self.canvas.configure(
