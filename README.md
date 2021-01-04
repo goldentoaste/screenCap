@@ -19,7 +19,7 @@ Here is a [modernized](https://github.com/tylearymf/SETUNA2) version of SETUNA, 
   * Right click to bring up context menu
   * Select 'Crop' to further crop snapshot
   * Select 'Recycle Bin' to open the Recycle Bin menu :v
-  * Crtl+C: copy image to clip
+  * Ctrl+C: copy image to clip
   * Ctrl+X: copy and close the selected snapshot
   * Ctrl+V: create a snapshot from image in clipboard
   * Ctrl+S: save image(brings up a save file window)
@@ -41,7 +41,7 @@ Here is a [modernized](https://github.com/tylearymf/SETUNA2) version of SETUNA, 
   * Note: tendo might not import correctly in recent python versions. ```os.environ["PBR_VERSION"] = "4.0.2"``` is needed before the [import](https://blog.csdn.net/wzh200x/article/details/111185209). 
 
 * pynput, for keyboard handling
-  * pynput is a pretty feature rich module, supports both mouse and keyboard handlings. However it is not very intuitive to work with(need some work arounds for non trivial usages)
+  * pynput is a pretty feature rich module, supports both mouse and keyboard handlings. However it is not very intuitive to work with(need some workarounds for non trivial usages)
 * infi.systray, for system tray icon
   * Note: infi.systray is not well supported for python3, using the fix mentioned [here](https://github.com/Infinidat/infi.systray/issues/32) is recommended. Also, pystray have better features and is better supported than infi.systray. However pystray can only run the main thread, so everything freezes when the icon starts. Thus infi.systray is used for this project.
 
@@ -50,7 +50,7 @@ Here is a [modernized](https://github.com/tylearymf/SETUNA2) version of SETUNA, 
 * pythoncom, ctypes, for handling admin permissions
 
 * pyinstaller, to pack the project to exe(the .spec file is included in the project).
-  * Note: pynput, tendo, desktopmagic and infi.systray have hiddenimports that needs to be included in the .spec files. The error message should tell you which ones are missing in your own prject.
+  * Note: pynput, tendo, desktopmagic and infi.systray have hiddenimports that needs to be included in the .spec files. The error message should tell you which ones are missing in your own project.
 
   * See this [page](https://stackoverflow.com/questions/51264169/pyinstaller-add-folder-with-images-in-exe-file
 ) on including files in pyinstaller --onefile

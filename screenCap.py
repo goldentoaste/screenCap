@@ -14,6 +14,7 @@ from tkinter import (
     Checkbutton,
     Button,
     Label,
+    messagebox,
 )
 import sys
 import pythoncom
@@ -25,7 +26,7 @@ import infi.systray.win32_adapter as win32
 from recycle import RecycleBin
 
 # fmt : off
-#this is important for tendo to load
+# this is important for tendo to load
 os.environ["PBR_VERSION"] = "4.0.2"
 from tendo import singleton
 
@@ -189,7 +190,8 @@ class MainWindow:
                     None,
                     1,
                 )
-                self.quit()
+                self.main.destroy()
+                os._exit(0)
 
     def addSnap(self, snap: Snapshot):
         if snap is not None:
@@ -265,11 +267,12 @@ class MainWindow:
     def withdraw(self):
         menu = (
             ("Capture!", None, lambda tray: self.capture()),
-            ("show", None, lambda tray: self.show()),
+            ("Recycle Bin", None, lambda tray: self.bin.show()),
+            ("Show Window", None, lambda tray: self.show()),
             ("Quit", None, lambda tray: self.quit()),
         )
         self.tray = SysTrayIcon(
-            self.resource_path(iconName), "screenCap", menu, default_menu_index=1
+            self.resource_path(iconName), "screenCap", menu, default_menu_index=2
         )
         self.detect = False
         self.tray.start()
@@ -366,9 +369,15 @@ class MainWindow:
         self.exitButton = Button(self.frame3, text="Exit", command=self.quit).pack(
             side=RIGHT, anchor="e"
         )
-        self.aboutButton = Button(self.frame3, text="About").pack(
-            side=RIGHT, anchor="e"
-        )
+
+        self.aboutButton = Button(
+            self.frame3,
+            text="About",
+            command=lambda: messagebox.showinfo(
+                title="About/Help",
+                message="Program by Ray Gong, 2021\nFor info and usage see:\ngithub.com/goldentoaste/screenCap",
+            ),
+        ).pack(side=RIGHT, anchor="e")
 
         self.frame3.pack(side=TOP, padx=10, pady=(10, 5), expand=True, fill=BOTH)
 

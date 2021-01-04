@@ -196,7 +196,6 @@ class Snapshot(Toplevel):
             (self.winfo_screenwidth(), self.winfo_screenheight()), *args, **kwargs
         )
         self.__crop()
-        print(self.pilImage.width, self.pilImage.height)
 
         return self
 
