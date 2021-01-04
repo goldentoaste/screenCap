@@ -5,7 +5,7 @@ A Windows(only) program made in python with the intention to replicate a old Jap
 Here is a [modernized](https://github.com/tylearymf/SETUNA2) version of SETUNA, but it is not in English.(And I rather write my own program instead of translating this one :P)
 
 #
-![example](https://imgur.com/a/BQPH0Gz)
+![example](https://imgur.com/a/XQqAB29)
 #
 # Feature List
 * Set custom keyboard shortcut to create
