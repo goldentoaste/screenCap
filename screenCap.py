@@ -63,7 +63,7 @@ class MainWindow:
         self.startMin = IntVar()
         self.admin = IntVar()
         self.recycleSize = StringVar()
-
+        self.lastPath = StringVar()
         # list of opended snapshot
         self.snaps = []
 
@@ -89,12 +89,16 @@ class MainWindow:
             except Exception:
                 return default
 
+        
+
+
         # init vals only if config exist
         if path.isfile(configFile):
             self.startup.set(getIntConfig("startup"))
             self.minimize.set(getIntConfig("minimize"))
             self.startMin.set(getIntConfig("startMin"))
             self.admin.set(getIntConfig("admin"))
+            self.lastPath.set(getStrConfig("lastPath", default=configDir))
             # load recycle size into variable and entry field
 
             self.recycleSize.set(getIntConfig("recycleSize"))
@@ -128,7 +132,7 @@ class MainWindow:
         self.config.set("screenCap", "combo", "(*)".join([key for key in self.combo]))
         self.config.set("screenCap", "key_string", self.hotkeyButton["text"])
         self.config.set("screenCap", "admin", str(self.admin.get()))
-
+        self.config.set("screenCap", "lastPath", self.lastPath.get())
         # recycleSize handling
         badEntry = False
         try:
@@ -230,10 +234,6 @@ class MainWindow:
     def capture(self):
         gc.collect()
         self.snaps.append(Snapshot(mainWindow=self).fromFullScreen())
-        # self.test = Toplevel(self.main)
-        # Button(self.test, text="stuff", command=lambda: print(
-        #     "stuff happended")).pack()
-        # self.test.attributes("-topmost", True)
 
     def getVk(self, key):
         if "vk" in dir(key):
@@ -334,7 +334,6 @@ class MainWindow:
         self.recycleEntry.bind(
             "<Return>",
             lambda event: (
-                print(event.widget.get()),
                 self.update(),
                 self.recycleEntry.configure(state="disabled"),
             ),

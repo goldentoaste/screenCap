@@ -8,6 +8,7 @@ import gc
 import io
 import win32clipboard as clipboard
 from desktopmagic.screengrab_win32 import getDisplayRects, getRectAsImage
+import time
 
 # ImageGrab.grab().save("stuff.jpg", format="JPEG", quality = 100, subsampling=0)
 # use this when saving jpg!!!
@@ -16,7 +17,6 @@ from desktopmagic.screengrab_win32 import getDisplayRects, getRectAsImage
 class Snapshot(Toplevel):
     def __init__(self, mainWindow, *args, **kwargs):
         self.mainWindow = mainWindow
-        print(type(self.mainWindow))
         super(Snapshot, self).__init__(*args, **kwargs)
 
     """ 
@@ -105,7 +105,9 @@ class Snapshot(Toplevel):
     def __paste(self):
         image = ImageGrab.grabclipboard()
         if image:
-            Snapshot(mainWindow=self.mainWindow).fromImage(image=image)
+            self.mainWindow.addSnap(
+                Snapshot(mainWindow=self.mainWindow).fromImage(image=image)
+            )
 
     def __resetSize(self):
         self.scale = 1
@@ -137,26 +139,23 @@ class Snapshot(Toplevel):
         # do double click action to get image out of the way
         self.withdraw()
         file = filedialog.asksaveasfilename(
-            initialdir="/",
+            initialdir=self.mainWindow.lastPath.get(),
+            initialfile=time.strftime("%d%m%y_%H-%M-%S", time.localtime()),
             title="Save image",
             defaultextension="*.*",
             filetypes=(("jpeg image", "*.jpg"), ("png image", "*.png")),
         )
 
-        if file is not None:
+        if file != "":
             path = str(file)
             # file type check
             fType = path[-4:]
-
             if fType == ".jpg":
                 self.pilImage.save(path, format="JPEG", quality=100, subsampling=0)
             elif fType == ".png":
                 self.pilImage.save(path, format="PNG")
-            else:
-                messagebox.showerror(
-                    title="File type not supported!",
-                    text="The requested file type is not supported, only jpg and png is supported",
-                )
+            self.mainWindow.lastPath.set(path)
+            self.mainWindow.update()
         self.deiconify()
 
     def __copy(self):
