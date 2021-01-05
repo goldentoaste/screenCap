@@ -71,6 +71,7 @@ Here is a [modernized](https://github.com/tylearymf/SETUNA2) version of SETUNA, 
 
 * gradual decrease in code coherency...
 
-#
-please let me know if there are any issues with is program :vv
-
+#Currently working on:
+* modify the update() so that only the elements that needs to be updated are updated
+* add support for windows Ui scalings
+* more bug testings
