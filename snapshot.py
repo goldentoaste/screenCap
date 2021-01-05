@@ -17,7 +17,6 @@ import time
 class Snapshot(Toplevel):
     def __init__(self, mainWindow, *args, **kwargs):
         self.mainWindow = mainWindow
-        super(Snapshot, self).__init__(*args, **kwargs)
 
     """ 
     __initialize is to be called after self.image has been set(keeping the reference is neccessary)
@@ -172,6 +171,7 @@ class Snapshot(Toplevel):
 
     # this 'image' should be a pillow image
     def fromImage(self, image, *args, **kwargs):
+        super(Snapshot, self).__init__(*args, **kwargs)
         self.firstCrop = False
         self.pilImage = image
         self.image = ImageTk.PhotoImage(self.pilImage)
@@ -180,8 +180,8 @@ class Snapshot(Toplevel):
 
     def __getBoundBox(self):
         bounds = getDisplayRects()
-        x = self.winfo_pointerx()
-        y = self.winfo_pointery()
+        x = self.mainWindow.main.winfo_pointerx()
+        y = self.mainWindow.main.winfo_pointery()
 
         for bound in bounds:
             if x >= bound[0] and y >= bound[1] and x <= bound[2] and y <= bound[3]:
@@ -192,6 +192,7 @@ class Snapshot(Toplevel):
         self.pilImage = getRectAsImage(self.__getBoundBox())
         self.image = ImageTk.PhotoImage(self.pilImage)
         self.firstCrop = True
+        super(Snapshot, self).__init__(*args, **kwargs)
         self.__initialize(
             (self.winfo_screenwidth(), self.winfo_screenheight()), *args, **kwargs
         )
@@ -200,15 +201,17 @@ class Snapshot(Toplevel):
         return self
 
     def __exit(self):
-        self.mainWindow.removeSnap(self)
+
         if (self.firstCrop and self.cropping) or (
             not self.firstCrop and not self.cropping
         ):
             if self.firstCrop and self.cropping:
-                self.mainWindow.snaps.remove(self)
+                if self in self.mainWindow.snaps:
+                    self.mainWindow.snaps.remove(self)
             self.destroy()
         else:
             self.__stopCrop()
+        self.mainWindow.removeSnap(self)
         gc.collect()
 
     def __crop(self):

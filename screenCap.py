@@ -1,4 +1,5 @@
 import gc
+from time import sleep
 from tkinter.constants import END, TOP, LEFT, BOTH, X, RIGHT
 from snapshot import Snapshot
 from win32com.client import Dispatch
@@ -24,6 +25,8 @@ from os import path, getenv, mkdir, remove
 from infi.systray import SysTrayIcon
 import infi.systray.win32_adapter as win32
 from recycle import RecycleBin
+
+from threading import Thread
 
 # fmt : off
 # this is important for tendo to load
@@ -123,6 +126,7 @@ class MainWindow:
         )
         listrener.start()
 
+    # TODO optimize update by only updating what is needed
     def update(self):
         # updating ini file
         self.config.set("screenCap", "startup", str(self.startup.get()))
@@ -252,12 +256,11 @@ class MainWindow:
 
     # quit, show, and withdraw is meant for handling system tray
     def quit(self):
+
         for snap in self.snaps:
             self.removeSnap(snap)
-
-        self.main.destroy()
-        # allow 2 second for sys to save images to recycling
-        self.main.after(2000, lambda: os._exit(0))
+        ## allow 2 second for sys to save images to recycling
+        self.main.after(2000, os._exit(0))
 
     def show(self):
         self.main.title("screenCap")
