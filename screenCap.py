@@ -126,6 +126,25 @@ class MainWindow:
         )
         listrener.start()
 
+    # def otherUpdate(self, item):
+        
+        # def startUp():
+        #     self.config.set("screenCap", "startup", str(self.startup.get()))
+        #     if self.startup.get() == 1:
+        #         pythoncom.CoInitialize()
+        #         target = path.join(
+        #             self.resource_path(path.dirname(path.abspath(__file__))), executable
+        #         )
+        #         shell = Dispatch("WScript.Shell")
+        #         shortcut = shell.CreateShortCut(shortCutFile)
+        #         shortcut.Targetpath = target
+        #         shortcut.save()
+        #     else:
+        #         if path.isfile(shortCutFile):
+        #             remove(shortCutFile)
+            
+        # def 
+
     # TODO optimize update by only updating what is needed
     def update(self):
         # updating ini file
