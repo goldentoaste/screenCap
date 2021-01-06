@@ -127,23 +127,23 @@ class MainWindow:
         listrener.start()
 
     # def otherUpdate(self, item):
-        
-        # def startUp():
-        #     self.config.set("screenCap", "startup", str(self.startup.get()))
-        #     if self.startup.get() == 1:
-        #         pythoncom.CoInitialize()
-        #         target = path.join(
-        #             self.resource_path(path.dirname(path.abspath(__file__))), executable
-        #         )
-        #         shell = Dispatch("WScript.Shell")
-        #         shortcut = shell.CreateShortCut(shortCutFile)
-        #         shortcut.Targetpath = target
-        #         shortcut.save()
-        #     else:
-        #         if path.isfile(shortCutFile):
-        #             remove(shortCutFile)
-            
-        # def 
+
+    # def startUp():
+    #     self.config.set("screenCap", "startup", str(self.startup.get()))
+    #     if self.startup.get() == 1:
+    #         pythoncom.CoInitialize()
+    #         target = path.join(
+    #             self.resource_path(path.dirname(path.abspath(__file__))), executable
+    #         )
+    #         shell = Dispatch("WScript.Shell")
+    #         shortcut = shell.CreateShortCut(shortCutFile)
+    #         shortcut.Targetpath = target
+    #         shortcut.save()
+    #     else:
+    #         if path.isfile(shortCutFile):
+    #             remove(shortCutFile)
+
+    # def
 
     # TODO optimize update by only updating what is needed
     def update(self):
@@ -236,19 +236,18 @@ class MainWindow:
             self.capture()
 
     def on_release(self, key):
-        if key in self.currentKeys:
-            # and self.getVk(key) not in modifiers , so that modifier keys cant be used alone
-            if self.detect:
-                self.combo = [str(key) for key in self.getSortedKeys()]
-                self.main.title(f"hotkey set to '{self.getKeyString()}'")
-                self.detect = False
+        # and self.getVk(key) not in modifiers , so that modifier keys cant be used alone
+        if self.detect:
+            self.combo = [str(key) for key in self.getSortedKeys()]
+            self.main.title(f"hotkey set to '{self.getKeyString()}'")
+            self.detect = False
 
-                #!!! update must be called before currentKeys is cleared
-                self.update()
-                self.currentKeys.clear()
-                return True
-
-            self.currentKeys.remove(key)
+            #!!! update must be called before currentKeys is cleared
+            self.update()
+            self.currentKeys.clear()
+            return True
+        self.currentKeys.clear()
+        
 
     def getKeyString(self):
         s = ""
@@ -352,7 +351,7 @@ class MainWindow:
         self.frame0.pack(side=TOP, anchor="w", expand=True, fill=BOTH)
 
         recycleFrame = Frame(self.main)
-        Label(recycleFrame, text="Recycler capcity :").pack(side=LEFT)
+        Label(recycleFrame, text="Recycle bin capacity :").pack(side=LEFT)
         self.recycleEntry = Entry(recycleFrame, width=10, justify="center")
         self.recycleEntry.pack(side=LEFT)
 
