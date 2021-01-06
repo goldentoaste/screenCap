@@ -115,7 +115,14 @@ class MainWindow:
 
         # singleton should be established after update, in  initialize, so that if the code aborts in update(restart as admin), it will not
         # be labeled as singleton. Works for both IDE and compiled exe.
-        self.me = singleton.SingleInstance()
+
+        try:
+            self.me = singleton.SingleInstance()
+        except singleton.SingleInstanceException:
+            messagebox.showerror(
+                title="error", message="An instance of screenCap is already running!"
+            )
+            os._exit(0)
 
         # withdraw if the program is to minimalize on startup
         if self.startMin.get() == 1:
@@ -247,7 +254,6 @@ class MainWindow:
             self.currentKeys.clear()
             return True
         self.currentKeys.clear()
-        
 
     def getKeyString(self):
         s = ""
