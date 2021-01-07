@@ -1,4 +1,5 @@
 from tkinter import Canvas, Menu, Toplevel, PhotoImage, filedialog, messagebox
+
 from tkinter.constants import BOTH, NW, YES
 from PIL import Image, ImageGrab, ImageTk
 import sys
@@ -9,9 +10,14 @@ import io
 import win32clipboard as clipboard
 from desktopmagic.screengrab_win32 import getDisplayRects, getRectAsImage
 import time
+import ctypes
+
 
 # ImageGrab.grab().save("stuff.jpg", format="JPEG", quality = 100, subsampling=0)
 # use this when saving jpg!!!
+shcore = ctypes.windll.shcore
+# now the code is dpi aware??? not sure how this work at all
+shcore.SetProcessDpiAwareness(2)
 
 
 class Snapshot(Toplevel):
@@ -24,8 +30,6 @@ class Snapshot(Toplevel):
 
     def __initialize(self, size=(400, 400), *args, **kwargs):
 
-        bound = self.__getBoundBox()
-        self.geometry(f"+{bound[0]}+{bound[1]}")
         # canvas stuff
         self.canvas = Canvas(
             self, width=size[0], height=size[1], highlightthickness=1
@@ -54,11 +58,9 @@ class Snapshot(Toplevel):
         # move lock is used to fix a behaviour when double clicking and drag is happening at the same time
         self.moveLock = False
 
-        # for resizing
         self.scale = 1
 
         # press esc to close the snap or to quit cropping
-
         self.bind("<Escape>", lambda event: self.__exit())
 
         # settings up mouse event listener
@@ -120,7 +122,7 @@ class Snapshot(Toplevel):
         self.scale = min(2, self.scale + 0.25)
         self.__resize()
 
-    def __resize(self):
+    def __resize(self, override=False):
         image = self.pilImage.copy().resize(
             (
                 int(self.pilImage.width * self.scale),
@@ -128,6 +130,8 @@ class Snapshot(Toplevel):
             ),
             Image.ANTIALIAS,
         )
+        if override:
+            self.pilImage = image
         self.__updateImage(image)
 
     def __cut(self):
@@ -157,7 +161,7 @@ class Snapshot(Toplevel):
             elif fType == ".png":
                 self.pilImage.save(path, format="PNG")
             self.mainWindow.lastPath.set(path)
-            self.mainWindow.update('lastpath')
+            self.mainWindow.update("lastpath")
         self.deiconify()
 
     def __copy(self):
@@ -196,6 +200,8 @@ class Snapshot(Toplevel):
         self.__initialize(
             (self.winfo_screenwidth(), self.winfo_screenheight()), *args, **kwargs
         )
+        bound = self.__getBoundBox()
+        self.geometry(f"+{bound[0]}+{bound[1]}")
         self.__crop()
 
         return self

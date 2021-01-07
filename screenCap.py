@@ -1,5 +1,4 @@
 import gc
-from time import sleep
 from tkinter.constants import END, TOP, LEFT, BOTH, X, RIGHT
 from snapshot import Snapshot
 from win32com.client import Dispatch
@@ -15,7 +14,7 @@ from tkinter import (
     Checkbutton,
     Button,
     Label,
-    messagebox,
+    messagebox
 )
 import sys
 import pythoncom
@@ -25,8 +24,6 @@ from os import path, getenv, mkdir, remove
 from infi.systray import SysTrayIcon
 import infi.systray.win32_adapter as win32
 from recycle import RecycleBin
-
-from threading import Thread
 
 # fmt : off
 # this is important for tendo to load
@@ -61,6 +58,7 @@ class MainWindow:
 
         self.currentKeys = set()
         self.detect = False
+        self.capturing = False
         self.combo = []
 
         self.startup = IntVar()
@@ -71,7 +69,6 @@ class MainWindow:
         self.lastPath = StringVar()
         # list of opended snapshot
         self.snaps = []
-
         # initialize icon
         self.main.iconbitmap(path.join(self.resource_path(iconName)))
 
@@ -135,7 +132,6 @@ class MainWindow:
 
     def update(self, item):
         def startUp():
-            print("check")
             self.config.set("screenCap", "startup", str(self.startup.get()))
             if self.startup.get() == 1:
                 pythoncom.CoInitialize()
@@ -247,8 +243,10 @@ class MainWindow:
         elif (
             all(c in [str(key) for key in self.currentKeys] for c in self.combo)
             and len(self.combo) > 0
+            and not self.capturing
         ):
             self.capture()
+            self.capturing = True
 
     def on_release(self, key):
         # and self.getVk(key) not in modifiers , so that modifier keys cant be used alone
@@ -261,6 +259,8 @@ class MainWindow:
             self.update("combo")
             self.currentKeys.clear()
             return True
+        if str(key) in self.combo:
+            self.capturing = False
         self.currentKeys.clear()
 
     def getKeyString(self):
@@ -416,12 +416,10 @@ class MainWindow:
 
         self.frame3.pack(side=TOP, padx=10, pady=(10, 5), expand=True, fill=BOTH)
 
-
 def is_admin():
     try:
         return ctypes.windll.shell32.IsUserAnAdmin()
     except:
         return False
-
 
 MainWindow()
