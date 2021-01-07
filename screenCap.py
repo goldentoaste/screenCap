@@ -111,7 +111,7 @@ class MainWindow:
             self.hotkeyButton["text"] = getStrConfig("key_string")
 
         # updating things to reflect settings
-        self.update()
+        self.update("all")
 
         # singleton should be established after update, in  initialize, so that if the code aborts in update(restart as admin), it will not
         # be labeled as singleton. Works for both IDE and compiled exe.
@@ -133,95 +133,103 @@ class MainWindow:
         )
         listrener.start()
 
-    # def otherUpdate(self, item):
+    def update(self, item):
+        def startUp():
+            print("check")
+            self.config.set("screenCap", "startup", str(self.startup.get()))
+            if self.startup.get() == 1:
+                pythoncom.CoInitialize()
+                target = path.join(
+                    self.resource_path(path.dirname(path.abspath(__file__))), executable
+                )
+                shell = Dispatch("WScript.Shell")
+                shortcut = shell.CreateShortCut(shortCutFile)
+                shortcut.Targetpath = target
+                shortcut.save()
+            else:
+                if path.isfile(shortCutFile):
+                    remove(shortCutFile)
 
-    # def startUp():
-    #     self.config.set("screenCap", "startup", str(self.startup.get()))
-    #     if self.startup.get() == 1:
-    #         pythoncom.CoInitialize()
-    #         target = path.join(
-    #             self.resource_path(path.dirname(path.abspath(__file__))), executable
-    #         )
-    #         shell = Dispatch("WScript.Shell")
-    #         shortcut = shell.CreateShortCut(shortCutFile)
-    #         shortcut.Targetpath = target
-    #         shortcut.save()
-    #     else:
-    #         if path.isfile(shortCutFile):
-    #             remove(shortCutFile)
+        def minimize():
+            self.config.set("screenCap", "minimize", str(self.minimize.get()))
+            # setup on close action
+            if self.minimize.get() == 1:
+                self.main.protocol("WM_DELETE_WINDOW", self.withdraw)
+            else:
+                self.main.protocol("WM_DELETE_WINDOW", self.main.destroy)
 
-    # def
+        def startMin():
+            self.config.set("screenCap", "startMin", str(self.startMin.get()))
+            # write config to ini file
+            if not path.isdir(configDir):
+                mkdir(configDir)
+            with open(configFile, "w") as file:
+                self.config.write(file)
 
-    # TODO optimize update by only updating what is needed
-    def update(self):
-        # updating ini file
-        self.config.set("screenCap", "startup", str(self.startup.get()))
-        self.config.set("screenCap", "minimize", str(self.minimize.get()))
-        self.config.set("screenCap", "startMin", str(self.startMin.get()))
-        self.config.set("screenCap", "combo", "(*)".join([key for key in self.combo]))
-        self.config.set("screenCap", "key_string", self.hotkeyButton["text"])
-        self.config.set("screenCap", "admin", str(self.admin.get()))
-        self.config.set("screenCap", "lastPath", self.lastPath.get())
-        # recycleSize handling
-        badEntry = False
-        try:
-            self.recycleSize.set(int(self.recycleEntry.get()))
-            self.config.set("screenCap", "recyclesize", self.recycleEntry.get())
-        except Exception:
+        def combo():
+            self.config.set(
+                "screenCap", "combo", "(*)".join([key for key in self.combo])
+            )
+            self.config.set("screenCap", "key_string", self.hotkeyButton["text"])
 
-            badEntry = True
+        def admin():
+            self.config.set("screenCap", "admin", str(self.admin.get()))
+            # admin handle
+            if self.admin.get() == 1:
+                if not is_admin():
+                    selfPath = (
+                        ""
+                        if hasattr(sys, "_MEIPASS")
+                        else '"' + os.getcwd() + "\\screenCap.py" + '"'
+                    )
+                    ctypes.windll.shell32.ShellExecuteW(
+                        None,
+                        "runas",
+                        # execute with console since, in editor, console would not be captured otherwise
+                        '"' + sys.executable + '"',
+                        selfPath,  # leave empty for deployment
+                        None,
+                        1,
+                    )
+                    self.main.destroy()
+                    os._exit(0)
 
-        # ignore input/no update if input is not number/has issues
-        if not badEntry and int(self.recycleEntry.get()) >= 0:
-            self.bin = RecycleBin(int(self.recycleSize.get()), self)
-            self.recycleButton.configure(command=self.bin.show)
+        def lastPath():
+            self.config.set("screenCap", "lastPath", self.lastPath.get())
 
-        # write config to ini file
-        if not path.isdir(configDir):
-            mkdir(configDir)
+        def recycle():
+            badEntry = False
+            try:
+                self.recycleSize.set(int(self.recycleEntry.get()))
+                self.config.set("screenCap", "recyclesize", self.recycleEntry.get())
+            except Exception:
+                badEntry = True
+
+            # ignore input/no update if input is not number/has issues
+            if not badEntry and int(self.recycleEntry.get()) >= 0:
+                self.bin = RecycleBin(int(self.recycleSize.get()), self)
+                self.recycleButton.configure(command=self.bin.show)
+
+        mapping = {
+            "startup": startUp,
+            "minimize": minimize,
+            "startmin": startMin,
+            "combo": combo,
+            "admin": admin,
+            "lastpath": lastPath,
+            "recycle": recycle,
+        }
+        # execute all update methods
+        if item == "all":
+            for func in mapping.values():
+                func()
+            with open(configFile, "w") as file:
+                self.config.write(file)
+            return None
+
+        mapping.get(item, lambda: print())()
         with open(configFile, "w") as file:
             self.config.write(file)
-
-        # setup startup shortcut
-        if self.startup.get() == 1:
-            pythoncom.CoInitialize()
-            target = path.join(
-                self.resource_path(path.dirname(path.abspath(__file__))), executable
-            )
-            shell = Dispatch("WScript.Shell")
-            shortcut = shell.CreateShortCut(shortCutFile)
-            shortcut.Targetpath = target
-            shortcut.WindowStyle = 7
-            shortcut.save()
-        else:
-            if path.isfile(shortCutFile):
-                remove(shortCutFile)
-
-        # setup on close action
-        if self.minimize.get() == 1:
-            self.main.protocol("WM_DELETE_WINDOW", self.withdraw)
-        else:
-            self.main.protocol("WM_DELETE_WINDOW", self.main.destroy)
-
-        # admin handle
-        if self.admin.get() == 1:
-            if not is_admin():
-                selfPath = (
-                    ""
-                    if hasattr(sys, "_MEIPASS")
-                    else '"' + os.getcwd() + "\\screenCap.py" + '"'
-                )
-                ctypes.windll.shell32.ShellExecuteW(
-                    None,
-                    "runas",
-                    # execute with console since, in editor, console would not be captured otherwise
-                    '"' + sys.executable + '"',
-                    selfPath,  # leave empty for deployment
-                    None,
-                    1,
-                )
-                self.main.destroy()
-                os._exit(0)
 
     def addSnap(self, snap: Snapshot):
         if snap is not None:
@@ -250,7 +258,7 @@ class MainWindow:
             self.detect = False
 
             #!!! update must be called before currentKeys is cleared
-            self.update()
+            self.update("combo")
             self.currentKeys.clear()
             return True
         self.currentKeys.clear()
@@ -308,7 +316,7 @@ class MainWindow:
     def reset(self):
         self.combo.clear()
         self.hotkeyButton["text"] = ""
-        self.update()
+        self.update("combo")
         self.main.title("hotkey cleared")
 
     def record(self):
@@ -329,20 +337,20 @@ class MainWindow:
         self.startUpCheck = Checkbutton(
             self.frame0,
             variable=self.startup,
-            command=self.update,
+            command=lambda: self.update("startup"),
             text="run when computer starts?",
         ).pack(side=TOP, anchor="w", padx=10)
 
         self.minToTrayCheck = Checkbutton(
             self.frame0,
             variable=self.minimize,
-            command=self.update,
+            command=lambda: self.update("minimize"),
             text="minimize to tray when 'X' is pressed?",
         ).pack(side=TOP, anchor="w", padx=10)
 
         self.startMinCheck = Checkbutton(
             self.frame0,
-            command=self.update,
+            command=lambda: self.update("starmin"),
             variable=self.startMin,
             text="start minimalized?",
         ).pack(side=TOP, anchor="w", padx=10)
@@ -351,7 +359,7 @@ class MainWindow:
             self.frame0,
             text="Start as Admin?",
             variable=self.admin,
-            command=self.update,
+            command=lambda: self.update("admin"),
         ).pack(side=TOP, anchor="w", padx=10)
 
         self.frame0.pack(side=TOP, anchor="w", expand=True, fill=BOTH)
@@ -364,7 +372,7 @@ class MainWindow:
         self.recycleEntry.bind(
             "<Return>",
             lambda event: (
-                self.update(),
+                self.update("recycle"),
                 self.recycleEntry.configure(state="disabled"),
             ),
         )

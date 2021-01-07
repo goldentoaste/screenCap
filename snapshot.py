@@ -157,7 +157,7 @@ class Snapshot(Toplevel):
             elif fType == ".png":
                 self.pilImage.save(path, format="PNG")
             self.mainWindow.lastPath.set(path)
-            self.mainWindow.update()
+            self.mainWindow.update('lastpath')
         self.deiconify()
 
     def __copy(self):
