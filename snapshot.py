@@ -207,7 +207,6 @@ class Snapshot(Toplevel):
         return self
 
     def __exit(self):
-
         if (self.firstCrop and self.cropping) or (
             not self.firstCrop and not self.cropping
         ):
@@ -215,10 +214,12 @@ class Snapshot(Toplevel):
                 if self in self.mainWindow.snaps:
                     self.mainWindow.snaps.remove(self)
             self.destroy()
+            self.mainWindow.removeSnap(self)
+            self.pilImage.close()
+            del self
+            gc.collect()
         else:
             self.__stopCrop()
-        self.mainWindow.removeSnap(self)
-        gc.collect()
 
     def __crop(self):
         self.cropping = True

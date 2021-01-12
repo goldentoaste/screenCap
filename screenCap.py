@@ -14,7 +14,7 @@ from tkinter import (
     Checkbutton,
     Button,
     Label,
-    messagebox
+    messagebox,
 )
 import sys
 import pythoncom
@@ -170,6 +170,7 @@ class MainWindow:
 
         def admin():
             self.config.set("screenCap", "admin", str(self.admin.get()))
+            saveConfig()
             # admin handle
             if self.admin.get() == 1:
                 if not is_admin():
@@ -206,6 +207,10 @@ class MainWindow:
                 self.bin = RecycleBin(int(self.recycleSize.get()), self)
                 self.recycleButton.configure(command=self.bin.show)
 
+        def saveConfig():
+            with open(configFile, "w") as file:
+                self.config.write(file)
+
         mapping = {
             "startup": startUp,
             "minimize": minimize,
@@ -219,13 +224,11 @@ class MainWindow:
         if item == "all":
             for func in mapping.values():
                 func()
-            with open(configFile, "w") as file:
-                self.config.write(file)
+            saveConfig()
             return None
 
         mapping.get(item, lambda: print())()
-        with open(configFile, "w") as file:
-            self.config.write(file)
+        saveConfig()
 
     def addSnap(self, snap: Snapshot):
         if snap is not None:
@@ -317,12 +320,10 @@ class MainWindow:
         self.combo.clear()
         self.hotkeyButton["text"] = ""
         self.update("combo")
-        self.main.title("hotkey cleared")
 
     def record(self):
         self.detect = True
         self.combo.clear()
-        self.main.title("input new hotkey (do not exit!)")
 
     def resource_path(self, relative_path):
         """ Get absolute path to resource, works for dev and for PyInstaller """
@@ -338,26 +339,26 @@ class MainWindow:
             self.frame0,
             variable=self.startup,
             command=lambda: self.update("startup"),
-            text="run when computer starts?",
+            text="Run on startup",
         ).pack(side=TOP, anchor="w", padx=10)
 
         self.minToTrayCheck = Checkbutton(
             self.frame0,
             variable=self.minimize,
             command=lambda: self.update("minimize"),
-            text="minimize to tray when 'X' is pressed?",
+            text="Minimize to tray when 'X' is pressed?",
         ).pack(side=TOP, anchor="w", padx=10)
 
         self.startMinCheck = Checkbutton(
             self.frame0,
             command=lambda: self.update("starmin"),
             variable=self.startMin,
-            text="start minimalized?",
+            text="Start minimalized",
         ).pack(side=TOP, anchor="w", padx=10)
 
         Checkbutton(
             self.frame0,
-            text="Start as Admin?",
+            text="Start as Admin",
             variable=self.admin,
             command=lambda: self.update("admin"),
         ).pack(side=TOP, anchor="w", padx=10)
@@ -365,7 +366,7 @@ class MainWindow:
         self.frame0.pack(side=TOP, anchor="w", expand=True, fill=BOTH)
 
         recycleFrame = Frame(self.main)
-        Label(recycleFrame, text="Recycle bin capacity :").pack(side=LEFT)
+        Label(recycleFrame, text="Recycling bin capacity :").pack(side=LEFT)
         self.recycleEntry = Entry(recycleFrame, width=10, justify="center")
         self.recycleEntry.pack(side=LEFT)
 
@@ -389,14 +390,14 @@ class MainWindow:
         self.hotkeyButton = Button(self.frame1, command=self.record, width=20)
         self.hotkeyButton.pack(side=LEFT, fill=BOTH, expand=True)
         self.hotkeyResetButton = Button(
-            self.frame1, text="Reset", command=self.reset, width=5
+            self.frame1, text="Clear", command=self.reset, width=5
         ).pack(side=LEFT)
         self.frame1.pack(side=TOP, fill=X, padx=10)
 
         self.frame3 = Frame(self.main)
 
         self.captureButton = Button(
-            self.frame3, command=self.capture, text="Capture!"
+            self.frame3, command=self.capture, text="Capture"
         ).pack(side=LEFT, anchor="w")
         self.recycleButton = Button(self.frame3, text="Recycle bin")
         self.recycleButton.pack(side=LEFT, anchor="w", padx=5)
@@ -416,10 +417,12 @@ class MainWindow:
 
         self.frame3.pack(side=TOP, padx=10, pady=(10, 5), expand=True, fill=BOTH)
 
+
 def is_admin():
     try:
         return ctypes.windll.shell32.IsUserAnAdmin()
     except:
         return False
+
 
 MainWindow()
