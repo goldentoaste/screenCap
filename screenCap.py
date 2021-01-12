@@ -75,8 +75,10 @@ class MainWindow:
         # reading config file
         self.main.resizable(0, 0)
         self.makeUI()
-        self.config.read(configFile)
+        self.config.read(configFile, encoding="utf-8-sig")
+    
         if not self.config.has_section("screenCap"):
+
             self.config.add_section("screenCap")
 
         def getIntConfig(section, default=0):
