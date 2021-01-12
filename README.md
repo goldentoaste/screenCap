@@ -72,6 +72,7 @@ Here is a [modernized](https://github.com/tylearymf/SETUNA2) version of SETUNA, 
 * gradual decrease in code coherency...
 
 # Currently working on:
-* modify the update() so that only the elements that needs to be updated are updated
-* add support for windows Ui scalings
-* more bug testings
+* ~~modify the update() so that only the elements that needs to be updated are updated~~
+* ~~add support for windows Ui scalings~~
+* reduce lauch time if possible
+* Supress keyboard input for last key of hotkey combo, if [possible](https://github.com/moses-palmer/pynput/issues/170).
