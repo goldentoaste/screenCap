@@ -87,6 +87,6 @@ Here is a [modernized](https://github.com/tylearymf/SETUNA2) version of SETUNA, 
 
 - ~~modify the update() so that only the elements that needs to be updated are updated~~
 - ~~add support for windows Ui scaling~~
-- test on virtual machine to see if the program needs any windows dependencies/prerequisites
+- test in virtual machine to test for bugs/crashes in different environments 
 - reduce launch time if possible
 - Suppress keyboard input for last key of hotkey combo, if [possible](https://github.com/moses-palmer/pynput/issues/170).
