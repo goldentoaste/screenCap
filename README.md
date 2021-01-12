@@ -10,7 +10,7 @@ Here is a [modernized](https://github.com/tylearymf/SETUNA2) version of SETUNA, 
 
 ![example](https://i.imgur.com/3e8YwWm.png)
 
-![menu](https://imgur.com/a/aDDlf21)
+![menu](https://i.imgur.com/k2UF41x.png)
 
 # Usage
 
