@@ -1,37 +1,47 @@
 # screenCap
 
-A Windows(only) program made in python with the intention to replicate a old Japanese program named 'SETUNA', which lacks an English translation and has minor graphics compatibilities issues with modern systems. This program allows you to take screenshots, crop a section of it, and pin it to be always on top, along with many other features for productivity gains.
+A Windows(only) program made in python with the intention to replicate a old Japanese program named 'SETUNA', which lacks an English translation and has minor graphics compatibilities issues with modern systems.
+
+This program allows you to take screenshots, crop a section of it, and pin it to be always on top, along with many other features for productivity gains.
 
 Here is a [modernized](https://github.com/tylearymf/SETUNA2) version of SETUNA, but it is not in English.(And I rather write my own program instead of translating this one :P)
 
 #
 
 ![example](https://i.imgur.com/3e8YwWm.png)
-![example](https://imgur.com/a/aDDlf21)
+
+![menu](https://imgur.com/a/aDDlf21)
 
 # Usage
 
-- Set custom global keyboard shortcut to create a snapshot , snapshots are always on top, borderless, and is not displayed as a proper window(so your task bar wouldn't be cluttered).
+## Main menu:
 
-- Multiple monitor support. Screen capturing occurs at the monitor the mouse pointer is currently at.
+- ✔ Run on startup: to run screenCap on system startup. (done by placing a shortcut in ~Users\{user name}\AppData\Roaming\Microsoft\Windows )
 
-- A 'Recycle Bin' feature to bring back recently closed snapshots
+- ✔ Minimize to tray: to put program in system instead of exiting when the X button at the upper right corner is pressed.
 
-- For each snapshot:
+- ✔ Start minimized: to minimize to sys tray when the program starts.
 
-  - Right click to bring up context menu
-  - Select 'Crop' to further crop snapshot
-  - Select 'Recycle Bin' to open the Recycle Bin menu :v
-  - Ctrl+C: copy image to clip
-  - Ctrl+X: copy and close the selected snapshot
-  - Ctrl+V: create a snapshot from image in clipboard
-  - Ctrl+S: save image(brings up a save file window)
-  - plus or minus key to enlarge or shrink image
-  - Double click to minimize the snapshot to save screen space
+- ✔ Start as Admin: to restart screenCap with admin privileges, and to automatically get admin privileges in subsequent launches.
 
-- Option to start program on system startup.
+- Recycle bin capacity: set the number of recently closed images to keep in a 'recycling bin'. Click the 'Recycling bin' Button to open that menu, and click on any image to summon them back.
 
-- Option to minimize program to system tray
+- Hotkey for screen capture: click the blank button and press a combination of keys of your choice to set a hotkey to do a screen capture. Click the 'Clear' button to rebind hotkey.
+
+## For each snapshot:
+
+- Right click to bring up context menu (as shown in the image above)
+
+- Select 'Crop' to further crop snapshot
+
+- Select 'Recycle Bin' to open the Recycle Bin menu :v
+
+- Ctrl+C: copy image to clip
+- Ctrl+X: copy and close the selected snapshot
+- Ctrl+V: create a snapshot from image in clipboard
+- Ctrl+S: save image(brings up a save file window)
+- plus or minus key to enlarge or shrink image
+- Double click to minimize the snapshot to save screen space
 
 # Dependencies
 
@@ -63,20 +73,20 @@ Here is a [modernized](https://github.com/tylearymf/SETUNA2) version of SETUNA, 
 
 # Limitations and issues
 
-- Hotkey recongnized is not intercepted, as in, if the capture hotkey is binded to 'x' for example, screen capturing will start but 'x' is still pressed. This might lead to undesired effects, please choose the hotkey that doesn't have conflicts in your system, I have mine on right ctrl key.
+- Hotkey recognized is not intercepted, as in, if the capture hotkey is bind to 'x' for example, screen capturing will start but 'x' is still pressed. This might lead to undesired effects, please choose the hotkey that doesn't have conflicts in your system, I have mine on right ctrl key.
 
-- Hotkeys will not be recongnized if a program that does intercept the specific combinations is currently selected.
+- Hotkeys will not be recognized if a program that does intercept the specific combinations is currently selected.
 
-- Hotkeys are not recongnized if the selected program has a higher level of privilage, for exmaple task manager, or program started as admin. Check 'start as admin' in the program or in windows properties to work around this.
+- Hotkeys are not recognized if the selected program has a higher level of privilege, for example task manager, or program started as admin. Check 'start as admin' in the program or in windows properties to work around this.
 
 - The Ui is built with tkinter, so the interface looks pretty utilitarian(ugly), but thankfully the user won't interact much with it. Some ui features couldn't be implemented due to tkinter limitations.
 
-- Memory usage is slightly higher, and also high cpu usage when dragging snapshots(tkinter does not support draggable window, so a costly work around is used). So this program might choke on very low end systems, maybe.
-
-- gradual decrease in code coherency...
+- Memory usage is slightly high, and also high cpu usage when dragging snapshots(tkinter does not support draggable window, so a costly work around is used). So this program might choke on very low end systems, maybe.
 
 # Currently working on:
-* ~~modify the update() so that only the elements that needs to be updated are updated~~
-* ~~add support for windows Ui scalings~~
-* reduce lauch time if possible
-* Supress keyboard input for last key of hotkey combo, if [possible](https://github.com/moses-palmer/pynput/issues/170).
+
+- ~~modify the update() so that only the elements that needs to be updated are updated~~
+- ~~add support for windows Ui scaling~~
+- test on virtual machine to see if the program needs any windows dependencies/prerequisites
+- reduce launch time if possible
+- Suppress keyboard input for last key of hotkey combo, if [possible](https://github.com/moses-palmer/pynput/issues/170).

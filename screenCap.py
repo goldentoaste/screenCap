@@ -353,7 +353,7 @@ class MainWindow:
             self.frame0,
             command=lambda: self.update("starmin"),
             variable=self.startMin,
-            text="Start minimalized",
+            text="Start minimized",
         ).pack(side=TOP, anchor="w", padx=10)
 
         Checkbutton(
@@ -399,7 +399,7 @@ class MainWindow:
         self.captureButton = Button(
             self.frame3, command=self.capture, text="Capture"
         ).pack(side=LEFT, anchor="w")
-        self.recycleButton = Button(self.frame3, text="Recycle bin")
+        self.recycleButton = Button(self.frame3, text="Recycling bin")
         self.recycleButton.pack(side=LEFT, anchor="w", padx=5)
 
         self.exitButton = Button(self.frame3, text="Exit", command=self.quit).pack(

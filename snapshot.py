@@ -98,7 +98,7 @@ class Snapshot(Toplevel):
         self.rightMenu.add_command(label="Crop", font=("", 11), command=self.__crop)
         self.rightMenu.add_separator()
         self.rightMenu.add_command(
-            label="Recycle Bin",
+            label="Recycling Bin",
             font=("", 11),
             command=lambda: self.mainWindow.bin.show(),
         )
