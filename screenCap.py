@@ -60,6 +60,7 @@ class MainWindow:
         self.detect = False
         self.capturing = False
         self.combo = []
+        self.vkCombo = set()
 
         self.startup = IntVar()
         self.minimize = IntVar()
@@ -76,7 +77,7 @@ class MainWindow:
         self.main.resizable(0, 0)
         self.makeUI()
         self.config.read(configFile, encoding="utf-8-sig")
-    
+
         if not self.config.has_section("screenCap"):
 
             self.config.add_section("screenCap")
@@ -107,6 +108,9 @@ class MainWindow:
             self.recycleEntry.insert(0, str(self.recycleSize.get()))
             self.recycleEntry.configure(state="disabled")
             self.combo = getStrConfig("combo").split(seperator)
+            vkList = getStrConfig("vkCombo", default="0").split(seperator)
+            self.vkCombo = {int(key) for key in (vkList if vkList[0] != "" else [])}
+
             self.hotkeyButton["text"] = getStrConfig("key_string")
 
         # updating things to reflect settings
@@ -127,10 +131,26 @@ class MainWindow:
         if self.startMin.get() == 1:
             self.withdraw()
         # starting keyboard event listener
-        listrener = keyboard.Listener(
-            on_press=self.on_press, on_release=self.on_release
+        self.listrener = keyboard.Listener(
+            on_press=self.on_press,
+            on_release=self.on_release,
+            win32_event_filter=self.event_filter,
+            suppress=False,
         )
-        listrener.start()
+        self.listrener.start()
+
+    def event_filter(self, msg, data):
+
+        # not key up event
+        if msg != 257 and data.vkCode in self.vkCombo:
+            if {self.getVk(key) for key in self.currentKeys}.union(
+                {data.vkCode}
+            ) == self.vkCombo:
+                print("supressing last key!!")
+                self.listrener._suppress = True
+        else:
+            self.listrener._suppress = False
+        return True
 
     def update(self, item):
         def startUp():
@@ -167,6 +187,9 @@ class MainWindow:
         def combo():
             self.config.set(
                 "screenCap", "combo", "(*)".join([key for key in self.combo])
+            )
+            self.config.set(
+                "screenCap", "vkCombo", "(*)".join([str(key) for key in self.vkCombo])
             )
             self.config.set("screenCap", "key_string", self.hotkeyButton["text"])
 
@@ -243,6 +266,7 @@ class MainWindow:
 
     def on_press(self, key):
         self.currentKeys.add(key)
+        # print(self.getVk(key), "on_press")
         if self.detect:
             self.hotkeyButton.configure(text=self.getKeyString())
         elif (
@@ -257,6 +281,7 @@ class MainWindow:
         # and self.getVk(key) not in modifiers , so that modifier keys cant be used alone
         if self.detect:
             self.combo = [str(key) for key in self.getSortedKeys()]
+            self.vkCombo = {self.getVk(key) for key in self.currentKeys}
             self.main.title(f"hotkey set to '{self.getKeyString()}'")
             self.detect = False
 
