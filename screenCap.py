@@ -178,11 +178,6 @@ class MainWindow:
 
         def startMin():
             self.config.set("screenCap", "startMin", str(self.startMin.get()))
-            # write config to ini file
-            if not path.isdir(configDir):
-                mkdir(configDir)
-            with open(configFile, "w") as file:
-                self.config.write(file)
 
         def combo():
             self.config.set(
@@ -233,6 +228,8 @@ class MainWindow:
                 self.recycleButton.configure(command=self.bin.show)
 
         def saveConfig():
+            if not path.isdir(configDir):
+                mkdir(configDir)
             with open(configFile, "w") as file:
                 self.config.write(file)
 
@@ -378,7 +375,7 @@ class MainWindow:
 
         self.startMinCheck = Checkbutton(
             self.frame0,
-            command=lambda: self.update("starmin"),
+            command=lambda: self.update("startmin"),
             variable=self.startMin,
             text="Start minimized",
         ).pack(side=TOP, anchor="w", padx=10)
