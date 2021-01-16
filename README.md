@@ -91,4 +91,5 @@ Here is a [modernized](https://github.com/tylearymf/SETUNA2) version of SETUNA, 
 - ~~add support for windows Ui scaling~~
 - test in virtual machine to test for bugs/crashes in different environments
 - reduce launch time if possible
+- add right click to upload to imgur and copy link, to share images when only text is allowed
 - ~~Suppress keyboard input for last key of hotkey combo, if [possible](https://github.com/moses-palmer/pynput/issues/170).~~
