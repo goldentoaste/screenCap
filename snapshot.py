@@ -13,10 +13,8 @@ import time
 import ctypes
 
 
-# ImageGrab.grab().save("stuff.jpg", format="JPEG", quality = 100, subsampling=0)
-# use this when saving jpg!!!
 shcore = ctypes.windll.shcore
-# now the code is dpi aware??? not sure how this work at all
+# auto dpi aware scalings
 shcore.SetProcessDpiAwareness(2)
 
 
@@ -72,8 +70,11 @@ class Snapshot(Toplevel):
 
         # keyboard short bindings
         self.bind("<Control-c>", lambda event: self.__copy())
+        self.bind("<Control-C>", lambda event: self.__copy())
         self.bind("<Control-x>", lambda event: self.__cut())
+        self.bind("<Control-X>", lambda event: self.__cut())
         self.bind("<Control-s>", lambda event: self.__save())
+        self.bind("<Control-S>", lambda event: self.__save())
 
         # size Control
         self.bind("=", lambda event: self.__enlarge())

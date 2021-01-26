@@ -30,6 +30,11 @@ from recycle import RecycleBin
 os.environ["PBR_VERSION"] = "4.0.2"
 from tendo import singleton
 
+'''
+datas=[('icon.ico', '.'), ('bread.cur', '.')],
+             hiddenimports=['pkg_resources.markers','pkg_resources.py2_warn','pynput.keyboard._win32', 'pynput.mouse._win32', 'pkg_resources', 'setuptools.py33compat','setuptools.py27compat'],
+'''
+
 # fmt : on
 seperator = "(*)"
 # replace with screenCap.exe if compiling to exe!
