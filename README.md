@@ -83,7 +83,7 @@ Here is a [modernized](https://github.com/tylearymf/SETUNA2) version of SETUNA, 
 
 - Memory usage is slightly high, and also high cpu usage when dragging snapshots(tkinter does not support draggable window, so a costly work around is used). So this program might choke on very low end systems, maybe.
 
-- Order of key strokes matters, so for example ctrl + x is not the same as x + ctrl, but this shouldn't cause issues for most users.
+- Order of key strokes matters, so for example ctrl + x is not the same as x + ctrl, but this shouldn't cause issues for most users. Also, capital upper and lowercase letters are different, so ctrl + x is not the same as ctrl + X, this occurs when caps lock is enabled too.
 
 # Currently working on:
 
@@ -92,4 +92,5 @@ Here is a [modernized](https://github.com/tylearymf/SETUNA2) version of SETUNA, 
 - test in virtual machine to test for bugs/crashes in different environments
 - reduce launch time if possible
 - add right click to upload to imgur and copy link, to share images when only text is allowed
+- fix any bugs encountered from my own usages
 - ~~Suppress keyboard input for last key of hotkey combo, if [possible](https://github.com/moses-palmer/pynput/issues/170).~~
