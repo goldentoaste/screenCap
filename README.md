@@ -86,7 +86,11 @@ Here is a [modernized](https://github.com/tylearymf/SETUNA2) version of SETUNA, 
 - Order of key strokes matters, so for example ctrl + x is not the same as x + ctrl, but this shouldn't cause issues for most users. Also, capital upper and lowercase letters are different, so ctrl + x is not the same as ctrl + X, this occurs when caps lock is enabled too.
 
 # Currently working on:
-
+- rework resizing snapshots. (drag on corners to scale)
+- improve cropping. Entering cropping mode should enlarge snapshot window so that reserving edges is trivial.
+- quick sketch on snapshot
+- (optional/feature creep) easy way to upload images to some image hosting service, returning the link
+- ctrl - z to undo closing a snapshot?
 - ~~modify the update() so that only the elements that needs to be updated are updated~~
 - ~~add support for windows Ui scaling~~
 - ~~test in virtual machine to test for bugs/crashes in different environments
