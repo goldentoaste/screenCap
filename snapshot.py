@@ -39,8 +39,8 @@ class Snapshot(Toplevel):
 
         # window stuff
         self.attributes("-topmost", True)
+        self.update_idletasks()
         self.overrideredirect(True)
-        self.focus_force()
 
         # indicate if its the first crop from fullscreen, then esc should close the snapshot instead
         # of just stopping crop

@@ -25,23 +25,20 @@ from infi.systray import SysTrayIcon
 import infi.systray.win32_adapter as win32
 from recycle import RecycleBin
 
-# fmt : off
-# this is important for tendo to load
-os.environ["PBR_VERSION"] = "4.0.2"
-from tendo import singleton
 
 '''
 datas=[('icon.ico', '.'), ('bread.cur', '.')],
              hiddenimports=['pkg_resources.markers','pkg_resources.py2_warn','pynput.keyboard._win32', 'pynput.mouse._win32', 'pkg_resources', 'setuptools.py33compat','setuptools.py27compat'],
 '''
 
-# fmt : on
+
 seperator = "(*)"
 # replace with screenCap.exe if compiling to exe!
 executable = "screenCap.exe"
 iconName = "icon.ico"
 configDir = path.join(getenv("appdata"), "screenCap")
 configFile = path.join(configDir, "config.ini")
+singletonFile = path.join(configDir, "singleton.lock")
 
 shortCutDest = path.join(
     getenv("appdata"), "Microsoft\Windows\Start Menu\Programs\Startup"
@@ -84,7 +81,6 @@ class MainWindow:
         self.config.read(configFile, encoding="utf-8-sig")
 
         if not self.config.has_section("screenCap"):
-
             self.config.add_section("screenCap")
 
         def getIntConfig(section, default=0):
@@ -123,18 +119,21 @@ class MainWindow:
 
         # singleton should be established after update, in  initialize, so that if the code aborts in update(restart as admin), it will not
         # be labeled as singleton. Works for both IDE and compiled exe.
-
-        try:
-            self.me = singleton.SingleInstance()
-        except singleton.SingleInstanceException:
+        
+        if os.path.isfile(singletonFile):
             messagebox.showerror(
                 title="error", message="An instance of screenCap is already running!"
             )
             os._exit(0)
+        else:
+            os.open(singletonFile, os.O_CREAT | os.O_EXCL | os.O_TEMPORARY)
+    
+            
 
         # withdraw if the program is to minimalize on startup
         if self.startMin.get() == 1:
             self.withdraw()
+            
         # starting keyboard event listener
         self.listrener = keyboard.Listener(
             on_press=self.on_press,
@@ -144,8 +143,7 @@ class MainWindow:
         )
         self.listrener.start()
 
-    def event_filter(self, msg, data):
-
+    def event_filter(self, msg, data):  
         # not key up event
         if msg != 257 and data.vkCode in self.vkCombo:
             if {self.getVk(key) for key in self.currentKeys}.union(
