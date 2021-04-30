@@ -1,6 +1,16 @@
-from tkinter import Canvas, Menu, Toplevel, PhotoImage, filedialog, messagebox
+from tkinter import (
+    Canvas,
+    Menu,
+    Toplevel,
+    PhotoImage,
+    filedialog,
+    messagebox,
+    colorchooser,
+)
+import tkinter
 
-from tkinter.constants import BOTH, NW, YES
+from tkinter.constants import BOTH, NO, NW, YES
+from typing import List
 from PIL import Image, ImageGrab, ImageTk
 import sys
 from os import path
@@ -40,7 +50,8 @@ class Snapshot(Toplevel):
         # window stuff
         self.attributes("-topmost", True)
         self.update_idletasks()
-        self.overrideredirect(True)
+        # self.overrideredirect(True)
+        self.resizable(True, True)
 
         # indicate if its the first crop from fullscreen, then esc should close the snapshot instead
         # of just stopping crop
@@ -56,12 +67,17 @@ class Snapshot(Toplevel):
         # move lock is used to fix a behaviour when double clicking and drag is happening at the same time
         self.moveLock = False
 
+        self.drawing = False
+        self.colorPoint = None
+        self.lines: List[List] = []
+
         self.scale = 1
 
         # press esc to close the snap or to quit cropping
         self.bind("<Escape>", lambda event: self.__exit())
 
         # settings up mouse event listener
+        self.bind("<Motion>", self.__mouseMove)
         self.bind("<B1-Motion>", self.__mouseDrag)
         self.bind("<Button-1>", self.__mouseDown)
         self.bind("<ButtonRelease-1>", self.__mouseUp)
@@ -103,6 +119,8 @@ class Snapshot(Toplevel):
             font=("", 11),
             command=lambda: self.mainWindow.bin.show(),
         )
+        self.rightMenu.add_separator()
+        self.rightMenu.add_command(label="Draw", font=("", 11), command=self.__draw)
 
     def __paste(self):
         image = ImageGrab.grabclipboard()
@@ -123,6 +141,12 @@ class Snapshot(Toplevel):
         self.scale = min(2, self.scale + 0.25)
         self.__resize()
 
+    def __updateImage(self, image):
+        # self.canvas.delete("all")
+        self.canvas.configure(width=image.width, height=image.height)
+        self.image = ImageTk.PhotoImage(image)
+        self.canvas.create_image(0, 0, anchor=NW, image=self.image)
+
     def __resize(self, override=False):
         image = self.pilImage.copy().resize(
             (
@@ -142,6 +166,8 @@ class Snapshot(Toplevel):
     def __save(self):
         # do double click action to get image out of the way
         self.withdraw()
+        # rgb_color = colorchooser.askcolor(
+        #                                      initialcolor=(255, 0, 0))
         file = filedialog.asksaveasfilename(
             initialdir=self.mainWindow.lastPath.get(),
             initialfile=time.strftime("%d%m%y_%H-%M-%S", time.localtime()),
@@ -222,6 +248,35 @@ class Snapshot(Toplevel):
         else:
             self.__stopCrop()
 
+    def __draw(self):
+        self.drawing = True
+        self["cursor"] = "tcross"
+        self.rightMenu.delete("Draw")
+        self.rightMenu.add_command(
+            label="Stop drawing", font=("", 11), command=self.__stopDraw
+        )
+        self.rightMenu.add_command(
+            label="Pick color", font=("", 11), command=self.__pickColor
+        )
+        self.rightMenu.add_command(
+            label="Clear drawing", font=("", 11), command=self.__clearDrawing
+        )
+        pass
+
+    def __stopDraw(self):
+        self.drawing = False
+        self.rightMenu.add_command(label="Draw", font=("", 11), command=self.__draw)
+        self.rightMenu.delete("Stop drawing")
+        self.rightMenu.delete("Pick color")
+        self.rightMenu.delete("Clear drawing")
+        pass
+
+    def __clearDrawing(self):
+        pass
+
+    def __pickColor(self):
+        pass
+
     def __crop(self):
         self.cropping = True
         self.__resetSize()
@@ -237,11 +292,25 @@ class Snapshot(Toplevel):
             self.mainWindow.snaps.remove(self)
             self.destroy()
 
+    def __mouseMove(self, event):
+        if self.drawing:
+            if self.colorPoint != None:
+                self.canvas.delete(self.colorPoint)
+            self.colorPoint = self.canvas.create_oval(
+                event.x - 5, event.y - 5, event.x + 5, event.y + 5, fill="#ffffff"
+            )
+        else:
+            if self.colorPoint != None:
+                self.canvas.delete(self.colorPoint)
+                self.colorPoint = None
+
     def __mouseDown(self, event):
         self.mousePos = (event.x, event.y)
         self.windowPos = (self.winfo_x(), self.winfo_y())
         if self.cropping:
             self.startPos = (event.x, event.y)
+        elif self.drawing:
+            self.lines.append([])
 
     def __mouseDrag(self, event):
         if self.cropping:
@@ -255,6 +324,20 @@ class Snapshot(Toplevel):
                 fill="black",
                 stipple="gray50",
             )
+        elif self.drawing:
+            if self.colorPoint != None:
+                self.canvas.delete(self.colorPoint)
+            self.lines[-1].append(
+                self.canvas.create_line(
+                    event.x,
+                    event.y,
+                    self.mousePos[0],
+                    self.mousePos[1],
+                    width=2,
+                    fill="#ffffff",
+                )
+            )
+            self.mousePos = (event.x, event.y)
         elif not self.moveLock:
             dx = event.x - self.mousePos[0]
             dy = event.y - self.mousePos[1]
@@ -315,7 +398,10 @@ class Snapshot(Toplevel):
             x = int(min(max(0, event.x - halfCrop), self.pilImage.width - cropSize))
             y = int(min(max(0, event.y - halfCrop), self.pilImage.height - cropSize))
 
-            tempImage = self.pilImage.filter(GaussianBlur(3)).crop(
+            tempImage = (
+                self.pilImage if self.scale == 1 else ImageTk.getimage(self.image)
+            )
+            tempImage = tempImage.filter(GaussianBlur(3)).crop(
                 [
                     x,
                     y,
@@ -329,16 +415,13 @@ class Snapshot(Toplevel):
             self.mini = True
 
         else:
-            self.__updateImage(self.pilImage)
+            if self.scale == 1:
+                self.__updateImage(self.pilImage)
+            else:
+                self.__resize()
             self.geometry(f"+{self.prevPos[0]}+{self.prevPos[1]}")
             self.mini = False
             # self.__resize()
-
-    def __updateImage(self, image):
-        self.canvas.delete("all")
-        self.canvas.configure(width=image.width, height=image.height)
-        self.image = ImageTk.PhotoImage(image)
-        self.canvas.create_image(0, 0, anchor=NW, image=self.image)
 
     def resource_path(self, relative_path):
         """ Get absolute path to resource, works for dev and for PyInstaller """
