@@ -26,10 +26,11 @@ import infi.systray.win32_adapter as win32
 from recycle import RecycleBin
 
 
-'''
+
+"""
 datas=[('icon.ico', '.'), ('bread.cur', '.')],
              hiddenimports=['pkg_resources.markers','pkg_resources.py2_warn','pynput.keyboard._win32', 'pynput.mouse._win32', 'pkg_resources', 'setuptools.py33compat','setuptools.py27compat'],
-'''
+"""
 
 
 seperator = "(*)"
@@ -119,7 +120,7 @@ class MainWindow:
 
         # singleton should be established after update, in  initialize, so that if the code aborts in update(restart as admin), it will not
         # be labeled as singleton. Works for both IDE and compiled exe.
-        
+
         if os.path.isfile(singletonFile):
             messagebox.showerror(
                 title="error", message="An instance of screenCap is already running!"
@@ -127,13 +128,11 @@ class MainWindow:
             os._exit(0)
         else:
             os.open(singletonFile, os.O_CREAT | os.O_EXCL | os.O_TEMPORARY)
-    
-            
 
         # withdraw if the program is to minimalize on startup
         if self.startMin.get() == 1:
             self.withdraw()
-            
+
         # starting keyboard event listener
         self.listrener = keyboard.Listener(
             on_press=self.on_press,
@@ -143,7 +142,7 @@ class MainWindow:
         )
         self.listrener.start()
 
-    def event_filter(self, msg, data):  
+    def event_filter(self, msg, data):
         # not key up event
         if msg != 257 and data.vkCode in self.vkCombo:
             if {self.getVk(key) for key in self.currentKeys}.union(
@@ -197,6 +196,7 @@ class MainWindow:
             # admin handle
             if self.admin.get() == 1:
                 if not is_admin():
+                    print("entering admin restart stuff")
                     selfPath = (
                         ""
                         if hasattr(sys, "_MEIPASS")
@@ -318,11 +318,12 @@ class MainWindow:
 
     # quit, show, and withdraw is meant for handling system tray
     def quit(self):
-
+       
         for snap in self.snaps:
             self.removeSnap(snap)
         ## allow 2 second for sys to save images to recycling
-        self.main.after(2000, os._exit(0))
+        
+        self.main.after(2000,os._exit(0))
 
     def show(self):
         self.main.title("screenCap")
@@ -334,7 +335,7 @@ class MainWindow:
             ("Capture!", None, lambda tray: self.capture()),
             ("Recycle Bin", None, lambda tray: self.bin.show()),
             ("Show Window", None, lambda tray: self.show()),
-            ("Quit", None, lambda tray: self.quit()),
+            ("Exit", None, lambda tray: self.quit()),
         )
         self.tray = SysTrayIcon(
             self.resource_path(iconName), "screenCap", menu, default_menu_index=2
