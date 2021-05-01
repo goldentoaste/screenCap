@@ -5,12 +5,11 @@ from tkinter import (
     PhotoImage,
     filedialog,
     messagebox,
-    colorchooser,
 )
 import tkinter
-
+from colorPicker import ColorChooser
 from tkinter.constants import BOTH, NO, NW, YES
-from typing import List
+from typing import List, Tuple
 from PIL import Image, ImageGrab, ImageTk
 import sys
 from os import path
@@ -50,7 +49,8 @@ class Snapshot(Toplevel):
         # window stuff
         self.attributes("-topmost", True)
         self.update_idletasks()
-        # self.overrideredirect(True)
+        self.overrideredirect(True)
+
         self.resizable(True, True)
 
         # indicate if its the first crop from fullscreen, then esc should close the snapshot instead
@@ -70,6 +70,7 @@ class Snapshot(Toplevel):
         self.drawing = False
         self.colorPoint = None
         self.lines: List[List] = []
+        self.drawingColor = self.mainWindow.lastColor.get()
 
         self.scale = 1
 
@@ -261,21 +262,50 @@ class Snapshot(Toplevel):
         self.rightMenu.add_command(
             label="Clear drawing", font=("", 11), command=self.__clearDrawing
         )
-        pass
+
+        def undoLine():
+
+            if len(self.lines) > 0:
+                for line in self.lines[-1]:
+                    self.canvas.delete(line)
+                self.lines.pop(-1)
+
+        self.bind("<Control-Z>", lambda event: undoLine())
+        self.bind("<Control-z>", lambda event: undoLine())
 
     def __stopDraw(self):
         self.drawing = False
         self.rightMenu.add_command(label="Draw", font=("", 11), command=self.__draw)
+        self["cursor"] = ""
         self.rightMenu.delete("Stop drawing")
         self.rightMenu.delete("Pick color")
         self.rightMenu.delete("Clear drawing")
-        pass
+        self.unbind("<Control-Z>")
+        self.unbind("<Control-z>")
 
     def __clearDrawing(self):
-        pass
+
+        for line in self.lines:
+            for segment in line:
+                self.canvas.delete(segment)
 
     def __pickColor(self):
-        pass
+        colorchooser = ColorChooser()
+        colors = self.mainWindow.custColors.get().split(",")
+        colors = colors if colors != [""] else []
+        colorCode, custColors = colorchooser.askcolor(self.winfo_id(),
+            hexToRgb(self.mainWindow.lastColor.get()),
+            [hexToRgb(color) for color in colors],
+        )
+
+        self.mainWindow.custColors.set(",".join([rgbToHex(rgb) for rgb in custColors]))
+        self.mainWindow.update("custColors")
+
+        if not colorCode == None:
+            self.drawingColor = rgbToHex(colorCode)
+            self.mainWindow.lastColor.set(self.drawingColor)
+            self.mainWindow.update("lastColor")
+        print("debug pick color", colorCode, custColors)
 
     def __crop(self):
         self.cropping = True
@@ -297,7 +327,11 @@ class Snapshot(Toplevel):
             if self.colorPoint != None:
                 self.canvas.delete(self.colorPoint)
             self.colorPoint = self.canvas.create_oval(
-                event.x - 5, event.y - 5, event.x + 5, event.y + 5, fill="#ffffff"
+                event.x - 5,
+                event.y - 5,
+                event.x + 5,
+                event.y + 5,
+                fill=self.drawingColor,
             )
         else:
             if self.colorPoint != None:
@@ -334,7 +368,7 @@ class Snapshot(Toplevel):
                     self.mousePos[0],
                     self.mousePos[1],
                     width=2,
-                    fill="#ffffff",
+                    fill=self.drawingColor,
                 )
             )
             self.mousePos = (event.x, event.y)
@@ -430,3 +464,15 @@ class Snapshot(Toplevel):
         except Exception:
             base_path = path.abspath(".")
         return path.join(base_path, relative_path)
+
+
+def hexToRgb(h: str) -> Tuple:
+    return (
+        int("0x" + h[1:3], base=16),
+        int("0x" + h[3:5], base=16),
+        int("0x" + h[5:7], base=16),
+    )
+
+
+def rgbToHex(rgb: Tuple[int]) -> str:
+    return "#%02x%02x%02x" % rgb

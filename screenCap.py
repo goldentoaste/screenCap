@@ -26,7 +26,6 @@ import infi.systray.win32_adapter as win32
 from recycle import RecycleBin
 
 
-
 """
 datas=[('icon.ico', '.'), ('bread.cur', '.')],
              hiddenimports=['pkg_resources.markers','pkg_resources.py2_warn','pynput.keyboard._win32', 'pynput.mouse._win32', 'pkg_resources', 'setuptools.py33compat','setuptools.py27compat'],
@@ -71,6 +70,8 @@ class MainWindow:
         self.admin = IntVar()
         self.recycleSize = StringVar()
         self.lastPath = StringVar()
+        self.lastColor = StringVar()
+        self.custColors = StringVar()
         # list of opended snapshot
         self.snaps = []
         # initialize icon
@@ -97,23 +98,26 @@ class MainWindow:
                 return default
 
         # init vals only if config exist
-        if path.isfile(configFile):
-            self.startup.set(getIntConfig("startup"))
-            self.minimize.set(getIntConfig("minimize"))
-            self.startMin.set(getIntConfig("startMin"))
-            self.admin.set(getIntConfig("admin"))
-            self.lastPath.set(getStrConfig("lastPath", default=configDir))
-            # load recycle size into variable and entry field
+        # if path.isfile(configFile):
+        self.startup.set(getIntConfig("startup"))
+        self.minimize.set(getIntConfig("minimize"))
+        self.startMin.set(getIntConfig("startMin"))
+        self.admin.set(getIntConfig("admin"))
+        self.lastPath.set(getStrConfig("lastPath", default=configDir))
+        self.lastColor.set(getStrConfig("lastColor", default="#ffffff"))
+        self.custColors.set(getStrConfig("custColors", default="#ffffff"))
+        
+        # load recycle size into variable and entry field
 
-            self.recycleSize.set(getIntConfig("recycleSize"))
-            self.recycleEntry.delete(0, END)
-            self.recycleEntry.insert(0, str(self.recycleSize.get()))
-            self.recycleEntry.configure(state="disabled")
-            self.combo = getStrConfig("combo").split(seperator)
-            vkList = getStrConfig("vkCombo", default="0").split(seperator)
-            self.vkCombo = {int(key) for key in (vkList if vkList[0] != "" else [])}
+        self.recycleSize.set(getIntConfig("recycleSize"))
+        self.recycleEntry.delete(0, END)
+        self.recycleEntry.insert(0, str(self.recycleSize.get()))
+        self.recycleEntry.configure(state="disabled")
+        self.combo = getStrConfig("combo").split(seperator)
+        vkList = getStrConfig("vkCombo", default="0").split(seperator)
+        self.vkCombo = {int(key) for key in (vkList if vkList[0] != "" else [])}
 
-            self.hotkeyButton["text"] = getStrConfig("key_string")
+        self.hotkeyButton["text"] = getStrConfig("key_string")
 
         # updating things to reflect settings
         self.update("all")
@@ -155,6 +159,14 @@ class MainWindow:
         return True
 
     def update(self, item):
+        def lastColor():
+            print("last color",str(self.lastColor.get()) )
+            self.config.set("screenCap", "lastColor", str(self.lastColor.get()))
+            
+        def custColor():
+            print("cust color",str(self.custColors.get()) )
+            self.config.set("screenCap", "custColors", str(self.custColors.get()))
+        
         def startUp():
             self.config.set("screenCap", "startup", str(self.startup.get()))
             if self.startup.get() == 1:
@@ -244,6 +256,8 @@ class MainWindow:
             "admin": admin,
             "lastpath": lastPath,
             "recycle": recycle,
+            "lastColor":lastColor,
+            "custColors":custColor
         }
         # execute all update methods
         if item == "all":
@@ -252,7 +266,7 @@ class MainWindow:
             saveConfig()
             return None
 
-        mapping.get(item, lambda: print())()
+        mapping.get(item, lambda: print)()
         saveConfig()
 
     def addSnap(self, snap: Snapshot):
@@ -318,12 +332,12 @@ class MainWindow:
 
     # quit, show, and withdraw is meant for handling system tray
     def quit(self):
-       
+
         for snap in self.snaps:
             self.removeSnap(snap)
         ## allow 2 second for sys to save images to recycling
-        
-        self.main.after(2000,os._exit(0))
+
+        self.main.after(2000, os._exit(0))
 
     def show(self):
         self.main.title("screenCap")
