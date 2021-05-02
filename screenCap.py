@@ -106,7 +106,7 @@ class MainWindow:
         self.lastPath.set(getStrConfig("lastPath", default=configDir))
         self.lastColor.set(getStrConfig("lastColor", default="#ffffff"))
         self.custColors.set(getStrConfig("custColors", default="#ffffff"))
-        
+
         # load recycle size into variable and entry field
 
         self.recycleSize.set(getIntConfig("recycleSize"))
@@ -160,13 +160,13 @@ class MainWindow:
 
     def update(self, item):
         def lastColor():
-            print("last color",str(self.lastColor.get()) )
+            print("last color", str(self.lastColor.get()))
             self.config.set("screenCap", "lastColor", str(self.lastColor.get()))
-            
+
         def custColor():
-            print("cust color",str(self.custColors.get()) )
+            print("cust color", str(self.custColors.get()))
             self.config.set("screenCap", "custColors", str(self.custColors.get()))
-        
+
         def startUp():
             self.config.set("screenCap", "startup", str(self.startup.get()))
             if self.startup.get() == 1:
@@ -256,8 +256,8 @@ class MainWindow:
             "admin": admin,
             "lastpath": lastPath,
             "recycle": recycle,
-            "lastColor":lastColor,
-            "custColors":custColor
+            "lastColor": lastColor,
+            "custColors": custColor,
         }
         # execute all update methods
         if item == "all":

@@ -1,5 +1,8 @@
 from tkinter import (
+    BooleanVar,
     Canvas,
+    Checkbutton,
+    Frame,
     Menu,
     Toplevel,
     PhotoImage,
@@ -8,19 +11,22 @@ from tkinter import (
 )
 import tkinter
 from colorPicker import ColorChooser
-from tkinter.constants import BOTH, NO, NW, YES
-from typing import List, Tuple
+from tkinter.constants import BOTH, NO, NW, ROUND, TOP, YES
+from typing import List, Tuple, overload
 from PIL import Image, ImageGrab, ImageTk
 import sys
 from os import path
 from PIL.ImageFilter import GaussianBlur
 import gc
 import io
+import os
 import win32clipboard as clipboard
 from desktopmagic.screengrab_win32 import getDisplayRects, getRectAsImage
 import time
 import ctypes
-
+import tkinter.simpledialog
+import win32gui
+import cProfile
 
 shcore = ctypes.windll.shcore
 # auto dpi aware scalings
@@ -69,7 +75,9 @@ class Snapshot(Toplevel):
 
         self.drawing = False
         self.colorPoint = None
-        self.lines: List[List] = []
+        self.lineCords: List[List] = []
+        self.lineRefs = []
+        self.tempLineSegments = []
         self.drawingColor = self.mainWindow.lastColor.get()
 
         self.scale = 1
@@ -92,7 +100,18 @@ class Snapshot(Toplevel):
         self.bind("<Control-X>", lambda event: self.__cut())
         self.bind("<Control-s>", lambda event: self.__save())
         self.bind("<Control-S>", lambda event: self.__save())
-
+        self.bind(
+            "<Control-D>",
+            lambda event: self.__draw() if not self.drawing else self.__stopDraw(),
+        )
+        self.bind(
+            "<Control-d>",
+            lambda event: self.__draw() if not self.drawing else self.__stopDraw(),
+        )
+        self.bind("<Control-R>", lambda event: self.__resetSize())
+        self.bind("<Control-r>", lambda event: self.__resetSize())
+        self.bind("<Control-v>", lambda event: self.__paste())
+        self.bind("<Control-V>", lambda event: self.__paste())
         # size Control
         self.bind("=", lambda event: self.__enlarge())
         self.bind("-", lambda event: self.__shrink())
@@ -165,10 +184,19 @@ class Snapshot(Toplevel):
         self.__exit()
 
     def __save(self):
-        # do double click action to get image out of the way
-        self.withdraw()
-        # rgb_color = colorchooser.askcolor(
-        #                                      initialcolor=(255, 0, 0))
+        result = None
+        if self.scale == 1 and len(self.lines) == 0:
+            result = (False, False)
+        else:
+            dialog = SaveDialog(
+                self,
+                title="Save options",
+                scaled=self.scale != 1,
+                drawing=len(self.lines) != 0,
+            )
+            if not (result := dialog.result):
+                return None
+
         file = filedialog.asksaveasfilename(
             initialdir=self.mainWindow.lastPath.get(),
             initialfile=time.strftime("%d%m%y_%H-%M-%S", time.localtime()),
@@ -177,20 +205,47 @@ class Snapshot(Toplevel):
             filetypes=(
                 ("png image", "*.png"),
                 ("jpeg image", "*.jpg"),
+                ("bmp image", "*.bmp"),
             ),
+            parent=self,
         )
+        image = None
+
+        if result[1]:
+            image = getRectAsImage(win32gui.GetWindowRect(self.canvas.winfo_id()))
+            if not result[0]:
+                image = image.copy().resize(
+                    (
+                        int(self.pilImage.width / self.scale),
+                        int(self.pilImage.height / self.scale),
+                    ),
+                    Image.ANTIALIAS,
+                )
+
+        else:
+            if result[0]:
+                image = self.pilImage.copy().resize(
+                    (
+                        int(self.pilImage.width * self.scale),
+                        int(self.pilImage.height * self.scale),
+                    ),
+                    Image.ANTIALIAS,
+                )
+            else:
+                image = self.pilImage
 
         if file != "":
             path = str(file)
             # file type check
             fType = path[-4:]
             if fType == ".jpg":
-                self.pilImage.save(path, format="JPEG", quality=100, subsampling=0)
+                image.save(path, format="JPEG", quality=100, subsampling=0)
             elif fType == ".png":
-                self.pilImage.save(path, format="PNG")
+                image.save(path, format="PNG")
+            elif fType == ".bmp":
+                image.save(path, format="BMP")
             self.mainWindow.lastPath.set(path)
             self.mainWindow.update("lastpath")
-        self.deiconify()
 
     def __copy(self):
         output = io.BytesIO()
@@ -264,11 +319,8 @@ class Snapshot(Toplevel):
         )
 
         def undoLine():
-
-            if len(self.lines) > 0:
-                for line in self.lines[-1]:
-                    self.canvas.delete(line)
-                self.lines.pop(-1)
+            if len(self.lineRefs) > 0:
+                self.canvas.delete(self.lineRefs.pop(-1))
 
         self.bind("<Control-Z>", lambda event: undoLine())
         self.bind("<Control-z>", lambda event: undoLine())
@@ -293,7 +345,8 @@ class Snapshot(Toplevel):
         colorchooser = ColorChooser()
         colors = self.mainWindow.custColors.get().split(",")
         colors = colors if colors != [""] else []
-        colorCode, custColors = colorchooser.askcolor(self.winfo_id(),
+        colorCode, custColors = colorchooser.askcolor(
+            self.winfo_id(),
             hexToRgb(self.mainWindow.lastColor.get()),
             [hexToRgb(color) for color in colors],
         )
@@ -305,7 +358,6 @@ class Snapshot(Toplevel):
             self.drawingColor = rgbToHex(colorCode)
             self.mainWindow.lastColor.set(self.drawingColor)
             self.mainWindow.update("lastColor")
-        print("debug pick color", colorCode, custColors)
 
     def __crop(self):
         self.cropping = True
@@ -344,7 +396,7 @@ class Snapshot(Toplevel):
         if self.cropping:
             self.startPos = (event.x, event.y)
         elif self.drawing:
-            self.lines.append([])
+            self.lineCords.append([self.drawingColor])
 
     def __mouseDrag(self, event):
         if self.cropping:
@@ -361,7 +413,7 @@ class Snapshot(Toplevel):
         elif self.drawing:
             if self.colorPoint != None:
                 self.canvas.delete(self.colorPoint)
-            self.lines[-1].append(
+            self.tempLineSegments.append(
                 self.canvas.create_line(
                     event.x,
                     event.y,
@@ -370,6 +422,14 @@ class Snapshot(Toplevel):
                     width=2,
                     fill=self.drawingColor,
                 )
+            )
+            self.lineCords[-1].extend(
+                [
+                    event.x,
+                    event.y,
+                    self.mousePos[0],
+                    self.mousePos[1],
+                ]
             )
             self.mousePos = (event.x, event.y)
         elif not self.moveLock:
@@ -415,6 +475,21 @@ class Snapshot(Toplevel):
             self.canvas.create_image(0, 0, anchor=NW, image=self.image)
             self.geometry(f"+{coord[0]+ self.winfo_x()}+{coord[1] + self.winfo_y()}")
             self.__stopCrop()
+        elif self.drawing:
+            for item in self.tempLineSegments:
+                self.canvas.delete(item)
+            self.tempLineSegments.clear()
+
+            self.lineRefs.append(
+                self.canvas.create_line(
+                    *self.lineCords[-1][1:],
+                    fill=self.lineCords[-1][0],
+                    width=2,
+                    capstyle=ROUND,
+                    smooth=True,
+                    splinesteps=36,
+                )
+            )
 
     def __mouseRight(self, event):
         self.rightMenu.tk_popup(event.x_root, event.y_root, 0)
@@ -476,3 +551,63 @@ def hexToRgb(h: str) -> Tuple:
 
 def rgbToHex(rgb: Tuple[int]) -> str:
     return "#%02x%02x%02x" % rgb
+
+
+class SaveDialog(tkinter.simpledialog.Dialog):
+    def __init__(self, parent, title=None, scaled=False, drawing=False):
+        self.scaled = scaled
+        self.drawing = drawing
+        Toplevel.__init__(self, parent)
+
+        self.withdraw()  # remain invisible for now
+        # If the master is not viewable, don't
+        # make the child transient, or else it
+        # would be opened withdrawn
+        if parent.winfo_viewable():
+            self.transient(parent)
+
+        if title:
+            self.title(title)
+
+        self.parent = parent
+
+        self.result = None
+
+        body = Frame(self)
+        self.initial_focus = self.body(body)
+        body.pack(padx=5, pady=5)
+
+        self.buttonbox()
+
+        if not self.initial_focus:
+            self.initial_focus = self
+
+        self.protocol("WM_DELETE_WINDOW", self.cancel)
+
+        if self.parent is not None:
+            self.geometry(
+                "+%d+%d" % (parent.winfo_rootx() + 50, parent.winfo_rooty() + 50)
+            )
+
+        self.deiconify()  # become visible now
+
+        self.initial_focus.focus_set()
+        self.wm_resizable(False, False)
+        self.wait_window(self)
+
+    def body(self, master):
+        self.scaleBool = BooleanVar()
+        self.drawingBool = BooleanVar()
+
+        if self.scaled:
+            Checkbutton(
+                master, variable=self.scaleBool, text="Save scaled image?"
+            ).pack(side=TOP, anchor="w", padx=10)
+
+        if self.drawing:
+            Checkbutton(
+                master, variable=self.drawingBool, text="Save drawing to image?"
+            ).pack(side=TOP, anchor="w", padx=10)
+
+    def apply(self):
+        self.result = (self.scaleBool.get(), self.drawingBool.get())
