@@ -26,7 +26,8 @@ import time
 import ctypes
 import tkinter.simpledialog
 import win32gui
-import cProfile
+import cProfile, pstats
+
 
 shcore = ctypes.windll.shcore
 # auto dpi aware scalings
@@ -48,7 +49,9 @@ class Snapshot(Toplevel):
             self, width=size[0], height=size[1], highlightthickness=1
         )  # highlightthickness=0 for no border
         self.canvas.pack(expand=YES, fill=BOTH)
-        self.canvas.create_image(0, 0, anchor=NW, image=self.image)
+        self.canvasImageRef = self.canvas.create_image(
+            0, 0, anchor=NW, image=self.image, tags="image"
+        )
         # init to None for now since canvas.delete(None) is okay.
         self.rectangle = None
 
@@ -162,10 +165,10 @@ class Snapshot(Toplevel):
         self.__resize()
 
     def __updateImage(self, image):
-        # self.canvas.delete("all")
+
         self.canvas.configure(width=image.width, height=image.height)
         self.image = ImageTk.PhotoImage(image)
-        self.canvas.create_image(0, 0, anchor=NW, image=self.image)
+        self.canvas.itemconfig(self.canvasImageRef, image=self.image)
 
     def __resize(self, override=False):
         image = self.pilImage.copy().resize(
@@ -178,6 +181,20 @@ class Snapshot(Toplevel):
         if override:
             self.pilImage = image
         self.__updateImage(image)
+        for line, coordGroup in zip(self.lineRefs, self.lineCords):
+            for seg, coords in zip(
+                line,
+                [
+                    (
+                        int(coordGroup[i] * self.scale),
+                        int(coordGroup[i + 1] * self.scale),
+                        int(coordGroup[i + 2] * self.scale),
+                        int(coordGroup[i + 3] * self.scale),
+                    )
+                    for i in range(1, len(coordGroup) - 2, 2)
+                ],
+            ):
+                self.canvas.coords(seg, *coords)
 
     def __cut(self):
         self.__copy()
@@ -319,8 +336,12 @@ class Snapshot(Toplevel):
         )
 
         def undoLine():
+            if len(self.lineRefs) == 0:
+                return 0
+            self.lineCords.pop(-1)
             if len(self.lineRefs) > 0:
-                self.canvas.delete(self.lineRefs.pop(-1))
+                for line in self.lineRefs.pop(-1):
+                    self.canvas.delete(line)
 
         self.bind("<Control-Z>", lambda event: undoLine())
         self.bind("<Control-z>", lambda event: undoLine())
@@ -337,9 +358,12 @@ class Snapshot(Toplevel):
 
     def __clearDrawing(self):
 
-        for line in self.lines:
-            for segment in line:
-                self.canvas.delete(segment)
+        for line in self.lineRefs:
+            for seg in line:
+                self.canvas.delete(seg)
+
+        self.lineRefs.clear()
+        self.lineCords.clear()
 
     def __pickColor(self):
         colorchooser = ColorChooser()
@@ -396,7 +420,8 @@ class Snapshot(Toplevel):
         if self.cropping:
             self.startPos = (event.x, event.y)
         elif self.drawing:
-            self.lineCords.append([self.drawingColor])
+            self.lineCords.append([self.drawingColor, event.x, event.y])
+            self.lineRefs.append([])
 
     def __mouseDrag(self, event):
         if self.cropping:
@@ -413,7 +438,7 @@ class Snapshot(Toplevel):
         elif self.drawing:
             if self.colorPoint != None:
                 self.canvas.delete(self.colorPoint)
-            self.tempLineSegments.append(
+            self.lineRefs[-1].append(
                 self.canvas.create_line(
                     event.x,
                     event.y,
@@ -427,8 +452,6 @@ class Snapshot(Toplevel):
                 [
                     event.x,
                     event.y,
-                    self.mousePos[0],
-                    self.mousePos[1],
                 ]
             )
             self.mousePos = (event.x, event.y)
@@ -468,28 +491,12 @@ class Snapshot(Toplevel):
                 coord
             )  # using min max to keep coord in bound
             self.image = ImageTk.PhotoImage(self.pilImage)
-            self.canvas.delete("all")
             self.canvas.configure(
                 width=self.pilImage.width, height=self.pilImage.height
             )
-            self.canvas.create_image(0, 0, anchor=NW, image=self.image)
+            self.canvas.itemconfig(self.canvasImageRef, image=self.image)
             self.geometry(f"+{coord[0]+ self.winfo_x()}+{coord[1] + self.winfo_y()}")
             self.__stopCrop()
-        elif self.drawing:
-            for item in self.tempLineSegments:
-                self.canvas.delete(item)
-            self.tempLineSegments.clear()
-
-            self.lineRefs.append(
-                self.canvas.create_line(
-                    *self.lineCords[-1][1:],
-                    fill=self.lineCords[-1][0],
-                    width=2,
-                    capstyle=ROUND,
-                    smooth=True,
-                    splinesteps=36,
-                )
-            )
 
     def __mouseRight(self, event):
         self.rightMenu.tk_popup(event.x_root, event.y_root, 0)
