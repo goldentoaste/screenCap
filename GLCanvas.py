@@ -23,6 +23,7 @@ class GLCanvas(OpenGLFrame):
         self.bind("<B1-Motion>", self.drag)
         self.configure(width=self.image.width, height=self.image.height)
         self.scale = 1
+        self.rectPoints = []
 
     def initgl(self):
         """Initalize gl states when the frame is created"""
@@ -72,9 +73,26 @@ class GLCanvas(OpenGLFrame):
         )
         self.texture = texture
         self._display()
+    
+    
+    
+    def setOffset(self, x, y):
+        '''
+        sets offset for lines currently drawn in canvas
+        '''
+        for line in self.lines:
+            for point in line[1:]:
+                point = (point[0] + x, point[1] + y)
 
-    def drawBox(self, start, end, color:str):
-        pass
+    #start = upper left corner, end = lower right corner
+    def drawRect(self, start, end, color:str):
+        self.rectPoints.clear()
+        self.rectPoints.extend([start, (end[0], start[1]), end, (start[0], end[1])])
+        self._display()
+
+    def clearRect(self):
+        self.rectPoints.clear()
+        self._display()
 
     def newLine(self, firstPos, color: str):
         self.lines.append([color, (firstPos[0], self.height - firstPos[1])])
@@ -126,7 +144,14 @@ class GLCanvas(OpenGLFrame):
             for point in line[1:]:
                 glVertex2f(point[0] * self.scale, point[1] * self.scale)
             glEnd()
-
+            
+        
+        if self.rectPoints:
+            glColor3f(1, 1, 1)
+            glBegin(GL_LINE_STRIP)
+            for point in self.rectPoints:
+                glVertex2f(point[0], point[1])
+            glEnd()
 
 def hexToFloatRgb(hex: str):
     return (
