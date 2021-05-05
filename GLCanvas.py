@@ -21,6 +21,7 @@ class GLCanvas(OpenGLFrame):
         self.texture = None
         self.bind("<Button-1>", self.click)
         self.bind("<B1-Motion>", self.drag)
+        self.bind("<ButtonRelease-1>", self.release)
         self.configure(width=self.image.width, height=self.image.height)
         self.scale = 1
         self.rectPoints = []
@@ -37,13 +38,13 @@ class GLCanvas(OpenGLFrame):
         glLoadIdentity()
 
         glLineWidth(2.0)
-        
+
         self.setBackGround(self.image)
 
     def setScale(self, scale):
         self.scale = scale
         self._display()
-        
+
     def setBackGround(self, image: Image.Image):
         self.configure(width=self.image.width, height=self.image.height)
         self.image = image.convert("RGBA")
@@ -54,8 +55,6 @@ class GLCanvas(OpenGLFrame):
 
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
         glBindTexture(GL_TEXTURE_2D, texture)
-
-
 
         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
@@ -73,19 +72,17 @@ class GLCanvas(OpenGLFrame):
         )
         self.texture = texture
         self._display()
-    
-    
-    
+
     def setOffset(self, x, y):
-        '''
+        """
         sets offset for lines currently drawn in canvas
-        '''
+        """
         for line in self.lines:
             for point in line[1:]:
                 point = (point[0] + x, point[1] + y)
 
-    #start = upper left corner, end = lower right corner
-    def drawRect(self, start, end, color:str):
+    # start = upper left corner, end = lower right corner
+    def drawRect(self, start, end):
         self.rectPoints.clear()
         self.rectPoints.extend([start, (end[0], start[1]), end, (start[0], end[1])])
         self._display()
@@ -108,10 +105,14 @@ class GLCanvas(OpenGLFrame):
             self._display()
 
     def click(self, event):
-        self.newLine((event.x, event.y), "#FF0000")
+        # self.newLine((event.x, event.y), "#FF0000")
+        pass
 
     def drag(self, event):
-        self.addLineSeg((event.x, event.y))
+        self.drawRect((200, 200), (event.x, event.y))
+
+    def release(self, event):
+        self.clearRect()
 
     def redraw(self):
         """Render a single frame"""
@@ -144,14 +145,14 @@ class GLCanvas(OpenGLFrame):
             for point in line[1:]:
                 glVertex2f(point[0] * self.scale, point[1] * self.scale)
             glEnd()
-            
-        
+
         if self.rectPoints:
             glColor3f(1, 1, 1)
-            glBegin(GL_LINE_STRIP)
+            glBegin(GL_LINE_LOOP)
             for point in self.rectPoints:
-                glVertex2f(point[0], point[1])
+                glVertex2f(point[0], self.height - point[1])
             glEnd()
+
 
 def hexToFloatRgb(hex: str):
     return (
@@ -168,6 +169,3 @@ if __name__ == "__main__":
     app.pack(fill=tkinter.BOTH, expand=tkinter.YES)
     app.animate = 0
     app.mainloop()
-    
-
-
