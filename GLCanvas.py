@@ -54,6 +54,8 @@ class GLCanvas(OpenGLFrame):
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
         glBindTexture(GL_TEXTURE_2D, texture)
 
+
+
         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
 
@@ -70,6 +72,9 @@ class GLCanvas(OpenGLFrame):
         )
         self.texture = texture
         self._display()
+
+    def drawBox(self, start, end, color:str):
+        pass
 
     def newLine(self, firstPos, color: str):
         self.lines.append([color, (firstPos[0], self.height - firstPos[1])])

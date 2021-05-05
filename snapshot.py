@@ -142,6 +142,7 @@ class Snapshot(Toplevel):
         self.rightMenu.add_separator()
         self.rightMenu.add_command(label="Draw", font=("", 11), command=self.__draw)
 
+
     def __paste(self):
         image = ImageGrab.grabclipboard()
         if image:
@@ -179,16 +180,19 @@ class Snapshot(Toplevel):
             self.pilImage = image
         self.__updateImage(image)
         for line, coordGroup in zip(self.lineRefs, self.lineCords):
+            
+            iniScale = coordGroup[0]
+            
             for seg, coords in zip(
                 line,
                 [
                     (
-                        int(coordGroup[i] * self.scale),
-                        int(coordGroup[i + 1] * self.scale),
-                        int(coordGroup[i + 2] * self.scale),
-                        int(coordGroup[i + 3] * self.scale),
+                        int(coordGroup[i] * self.scale/iniScale),
+                        int(coordGroup[i + 1] * self.scale/iniScale),
+                        int(coordGroup[i + 2] * self.scale/iniScale),
+                        int(coordGroup[i + 3] * self.scale/iniScale)
                     )
-                    for i in range(1, len(coordGroup) - 2, 2)
+                    for i in range(2, len(coordGroup) - 2, 2)
                 ],
             ):
                 self.canvas.coords(seg, *coords)
@@ -417,7 +421,7 @@ class Snapshot(Toplevel):
         if self.cropping:
             self.startPos = (event.x, event.y)
         elif self.drawing:
-            self.lineCords.append([self.drawingColor, event.x, event.y])
+            self.lineCords.append([self.scale, self.drawingColor, event.x, event.y])
             self.lineRefs.append([])
 
     def __mouseDrag(self, event):
