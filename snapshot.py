@@ -24,7 +24,7 @@ import time
 import ctypes
 import tkinter.simpledialog
 import win32gui
-
+from GLCanvas import GLCanvas
 
 shcore = ctypes.windll.shcore
 # auto dpi aware scalings
@@ -41,23 +41,17 @@ class Snapshot(Toplevel):
 
     def __initialize(self, size=(400, 400), *args, **kwargs):
 
-        # canvas stuff
-        self.canvas = Canvas(
-            self, width=size[0], height=size[1], highlightthickness=1
-        )  # highlightthickness=0 for no border
+        
+        
+        self.canvas = GLCanvas(self.image, highlight = True)
         self.canvas.pack(expand=YES, fill=BOTH)
-        self.canvasImageRef = self.canvas.create_image(
-            0, 0, anchor=NW, image=self.image, tags="image"
-        )
-        # init to None for now since canvas.delete(None) is okay.
-        self.rectangle = None
+        self.canvas.setBackGround(self.image)
+        
 
         # window stuff
         self.attributes("-topmost", True)
         self.update_idletasks()
         self.overrideredirect(True)
-
-        self.resizable(True, True)
 
         # indicate if its the first crop from fullscreen, then esc should close the snapshot instead
         # of just stopping crop
@@ -74,10 +68,7 @@ class Snapshot(Toplevel):
         self.moveLock = False
 
         self.drawing = False
-        self.colorPoint = None
-        self.lineCords = []
-        self.lineRefs = []
-        self.tempLineSegments = []
+
         self.drawingColor = self.mainWindow.lastColor.get()
 
         self.scale = 1
@@ -143,6 +134,30 @@ class Snapshot(Toplevel):
         self.rightMenu.add_command(label="Draw", font=("", 11), command=self.__draw)
 
 
+    # this 'image' should be a pillow image
+    def fromImage(self, image, *args, **kwargs):
+        super(Snapshot, self).__init__(*args, **kwargs)
+        self.firstCrop = False
+        self.image = image
+        
+        self.__initialize((self.image.width, self.image.height), *args, **kwargs)
+        return self
+    
+    
+    def fromFullScreen(self, *args, **kwargs):
+        self.image = getRectAsImage(self.__getBoundBox())
+        
+        self.firstCrop = True
+        super(Snapshot, self).__init__(*args, **kwargs)
+        self.__initialize(
+            (self.winfo_screenwidth(), self.winfo_screenheight()), *args, **kwargs
+        )
+        bound = self.__getBoundBox()
+        self.geometry(f"+{bound[0]}+{bound[1]}")
+        self.__crop()
+
+        return self
+
     def __paste(self):
         image = ImageGrab.grabclipboard()
         if image:
@@ -163,39 +178,24 @@ class Snapshot(Toplevel):
         self.__resize()
 
     def __updateImage(self, image):
-
-        self.canvas.configure(width=image.width, height=image.height)
-        self.image = ImageTk.PhotoImage(image)
-        self.canvas.itemconfig(self.canvasImageRef, image=self.image)
+        self.canvas.setBackGround(image)
 
     def __resize(self, override=False):
-        image = self.pilImage.copy().resize(
+        self.scaledImage = self.image.copy().resize(
             (
-                int(self.pilImage.width * self.scale),
-                int(self.pilImage.height * self.scale),
+                int(self.image.width * self.scale),
+                int(self.image.height * self.scale),
             ),
             Image.ANTIALIAS,
         )
         if override:
-            self.pilImage = image
-        self.__updateImage(image)
-        for line, coordGroup in zip(self.lineRefs, self.lineCords):
+            pass
             
-            iniScale = coordGroup[0]
-            
-            for seg, coords in zip(
-                line,
-                [
-                    (
-                        int(coordGroup[i] * self.scale/iniScale),
-                        int(coordGroup[i + 1] * self.scale/iniScale),
-                        int(coordGroup[i + 2] * self.scale/iniScale),
-                        int(coordGroup[i + 3] * self.scale/iniScale)
-                    )
-                    for i in range(2, len(coordGroup) - 2, 2)
-                ],
-            ):
-                self.canvas.coords(seg, *coords)
+        self.__updateImage(self.scaledImage)
+        
+        self.canvas.setScale(self.scale)
+        
+        
 
     def __cut(self):
         self.__copy()
@@ -210,7 +210,7 @@ class Snapshot(Toplevel):
                 self,
                 title="Save options",
                 scaled=self.scale != 1,
-                drawing=len(self.lines) != 0,
+                drawing=self.canvas.hasLines(),
             )
             if not (result := dialog.result):
                 return None
@@ -234,23 +234,16 @@ class Snapshot(Toplevel):
             if not result[0]:
                 image = image.copy().resize(
                     (
-                        int(self.pilImage.width / self.scale),
-                        int(self.pilImage.height / self.scale),
+                        int(self.image.width / self.scale),
+                        int(self.image.height / self.scale),
                     ),
                     Image.ANTIALIAS,
                 )
-
         else:
             if result[0]:
-                image = self.pilImage.copy().resize(
-                    (
-                        int(self.pilImage.width * self.scale),
-                        int(self.pilImage.height * self.scale),
-                    ),
-                    Image.ANTIALIAS,
-                )
+                image = self.scaledImage
             else:
-                image = self.pilImage
+                image = self.image
 
         if file != "":
             path = str(file)
@@ -267,21 +260,14 @@ class Snapshot(Toplevel):
 
     def __copy(self):
         output = io.BytesIO()
-        self.pilImage.save(output, "BMP")
+        self.image.convert("RGB").save(output, "BMP")
         clipboard.OpenClipboard()
         clipboard.EmptyClipboard()
         clipboard.SetClipboardData(clipboard.CF_DIB, output.getvalue()[14:])
         clipboard.CloseClipboard()
         output.close()
 
-    # this 'image' should be a pillow image
-    def fromImage(self, image, *args, **kwargs):
-        super(Snapshot, self).__init__(*args, **kwargs)
-        self.firstCrop = False
-        self.pilImage = image
-        self.image = ImageTk.PhotoImage(self.pilImage)
-        self.__initialize((self.pilImage.width, self.pilImage.height), *args, **kwargs)
-        return self
+    
 
     def __getBoundBox(self):
         bounds = getDisplayRects()
@@ -293,19 +279,7 @@ class Snapshot(Toplevel):
                 return bound
         return bounds[0]
 
-    def fromFullScreen(self, *args, **kwargs):
-        self.pilImage = getRectAsImage(self.__getBoundBox())
-        self.image = ImageTk.PhotoImage(self.pilImage)
-        self.firstCrop = True
-        super(Snapshot, self).__init__(*args, **kwargs)
-        self.__initialize(
-            (self.winfo_screenwidth(), self.winfo_screenheight()), *args, **kwargs
-        )
-        bound = self.__getBoundBox()
-        self.geometry(f"+{bound[0]}+{bound[1]}")
-        self.__crop()
-
-        return self
+    
 
     def __exit(self):
         if (self.firstCrop and self.cropping) or (
@@ -316,7 +290,8 @@ class Snapshot(Toplevel):
                     self.mainWindow.snaps.remove(self)
             self.destroy()
             self.mainWindow.removeSnap(self)
-            self.pilImage.close()
+            self.image.close()
+            self.scaledImage.close()
             del self
             gc.collect()
         else:
@@ -337,12 +312,7 @@ class Snapshot(Toplevel):
         )
 
         def undoLine():
-            if len(self.lineRefs) == 0:
-                return 0
-            self.lineCords.pop(-1)
-            if len(self.lineRefs) > 0:
-                for line in self.lineRefs.pop(-1):
-                    self.canvas.delete(line)
+            self.canvas.undo()
 
         self.bind("<Control-Z>", lambda event: undoLine())
         self.bind("<Control-z>", lambda event: undoLine())
@@ -356,15 +326,10 @@ class Snapshot(Toplevel):
         self.rightMenu.delete("Clear drawing")
         self.unbind("<Control-Z>")
         self.unbind("<Control-z>")
+        self.canvas.clearDot()
 
     def __clearDrawing(self):
-
-        for line in self.lineRefs:
-            for seg in line:
-                self.canvas.delete(seg)
-
-        self.lineRefs.clear()
-        self.lineCords.clear()
+        self.canvas.clearLines()
 
     def __pickColor(self):
         colorchooser = ColorChooser()
@@ -395,25 +360,13 @@ class Snapshot(Toplevel):
         self.cropping = False
         self.firstCrop = False
         self["cursor"] = ""
-        if self.pilImage.width < 20 or self.pilImage.height < 20:
+        if self.image.width < 20 or self.image.height < 20:
             self.mainWindow.snaps.remove(self)
             self.destroy()
 
     def __mouseMove(self, event):
         if self.drawing:
-            if self.colorPoint != None:
-                self.canvas.delete(self.colorPoint)
-            self.colorPoint = self.canvas.create_oval(
-                event.x - 5,
-                event.y - 5,
-                event.x + 5,
-                event.y + 5,
-                fill=self.drawingColor,
-            )
-        else:
-            if self.colorPoint != None:
-                self.canvas.delete(self.colorPoint)
-                self.colorPoint = None
+            self.canvas.drawDot((event.x, event.y), self.drawingColor)
 
     def __mouseDown(self, event):
         self.mousePos = (event.x, event.y)
@@ -421,41 +374,13 @@ class Snapshot(Toplevel):
         if self.cropping:
             self.startPos = (event.x, event.y)
         elif self.drawing:
-            self.lineCords.append([self.scale, self.drawingColor, event.x, event.y])
-            self.lineRefs.append([])
+            self.canvas.newLine((event.x, event.y), self.drawingColor)
 
     def __mouseDrag(self, event):
         if self.cropping:
-            self.canvas.delete(self.rectangle)
-            self.rectangle = self.canvas.create_rectangle(
-                self.startPos[0],
-                self.startPos[1],
-                event.x,
-                event.y,
-                outline="white",
-                fill="black",
-                stipple="gray50",
-            )
+            self.canvas.drawRect(self.startPos, (event.x, event.y))
         elif self.drawing:
-            if self.colorPoint != None:
-                self.canvas.delete(self.colorPoint)
-            self.lineRefs[-1].append(
-                self.canvas.create_line(
-                    event.x,
-                    event.y,
-                    self.mousePos[0],
-                    self.mousePos[1],
-                    width=2,
-                    fill=self.drawingColor,
-                )
-            )
-            self.lineCords[-1].extend(
-                [
-                    event.x,
-                    event.y,
-                ]
-            )
-            self.mousePos = (event.x, event.y)
+            self.canvas.addLineSeg((event.x, event))
         elif not self.moveLock:
             dx = event.x - self.mousePos[0]
             dy = event.y - self.mousePos[1]
@@ -478,24 +403,24 @@ class Snapshot(Toplevel):
 
         self.moveLock = False
         if self.cropping:
-            self.canvas.delete(self.rectangle)
+            self.canvas.clearRect()
 
             coord = getCorrectCoord(
                 self.startPos[0],
                 self.startPos[1],
-                min(max(event.x, 0), self.pilImage.width),
-                min(max(event.y, 0), self.pilImage.height),
+                min(max(event.x, 0), self.image.width),
+                min(max(event.y, 0), self.image.height),
             )
-            if coord[3] - coord[1] < 10 or coord[2] - coord[0]:
-                pass
-            self.pilImage = self.pilImage.crop(
+            
+            self.image = self.image.crop(
                 coord
             )  # using min max to keep coord in bound
-            self.image = ImageTk.PhotoImage(self.pilImage)
+            
+            self.canvas.setBackGround(self.image)
             self.canvas.configure(
-                width=self.pilImage.width, height=self.pilImage.height
+                width=self.image.width, height=self.image.height
             )
-            self.canvas.itemconfig(self.canvasImageRef, image=self.image)
+            
             self.geometry(f"+{coord[0]+ self.winfo_x()}+{coord[1] + self.winfo_y()}")
             self.__stopCrop()
 
@@ -507,23 +432,23 @@ class Snapshot(Toplevel):
         self.moveLock = True
         if not self.mini:
             cropSize = min(
-                min(self.winfo_screenheight() / 10, self.pilImage.width),
-                min(self.winfo_screenheight() / 10, self.pilImage.height),
+                min(self.winfo_screenheight() / 10, self.scaledImage.width),
+                min(self.winfo_screenheight() / 10, self.scaledImage.height),
             )
             halfCrop = cropSize / 2
 
-            x = int(min(max(0, event.x - halfCrop), self.pilImage.width - cropSize))
-            y = int(min(max(0, event.y - halfCrop), self.pilImage.height - cropSize))
-
+            x = int(min(max(0, event.x - halfCrop), self.scaledImage.width - cropSize))
+            y = int(min(max(0, event.y - halfCrop), self.scaledImage.height - cropSize))
+            
             tempImage = (
-                self.pilImage if self.scale == 1 else ImageTk.getimage(self.image)
+                self.image if self.scale == 1 else self.scaledImage
             )
-            tempImage = tempImage.filter(GaussianBlur(3)).crop(
+            tempImage = tempImage.filter(GaussianBlur(2)).crop(
                 [
                     x,
                     y,
-                    min(self.pilImage.width, x + cropSize),
-                    min(self.pilImage.height, y + cropSize),
+                    min(self.image.width, x + cropSize),
+                    min(self.image.height, y + cropSize),
                 ]
             )
             self.prevPos = (self.winfo_x(), self.winfo_y())
@@ -533,7 +458,7 @@ class Snapshot(Toplevel):
 
         else:
             if self.scale == 1:
-                self.__updateImage(self.pilImage)
+                self.__updateImage(self.image)
             else:
                 self.__resize()
             self.geometry(f"+{self.prevPos[0]}+{self.prevPos[1]}")

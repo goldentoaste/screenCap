@@ -8,7 +8,7 @@ from PIL import Image
 
 
 class GLCanvas(OpenGLFrame):
-    def __init__(self, image, *args, **kwargs):
+    def __init__(self, image, highlight=False, *args, **kwargs):
         super(OpenGLFrame, self).__init__(*args, **kwargs)
 
         self.image: Image.Image = image
@@ -22,9 +22,15 @@ class GLCanvas(OpenGLFrame):
         self.bind("<Button-1>", self.click)
         self.bind("<B1-Motion>", self.drag)
         self.bind("<ButtonRelease-1>", self.release)
-        self.configure(width=self.image.width, height=self.image.height)
+        
+
+
+        self.animate = 0
+
         self.scale = 1
         self.rectPoints = []
+        self.cursorPoint = None
+        self.highlight = highlight
 
     def initgl(self):
         """Initalize gl states when the frame is created"""
@@ -37,12 +43,33 @@ class GLCanvas(OpenGLFrame):
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
 
-        glLineWidth(2.0)
-
         self.setBackGround(self.image)
+
+    def drawDot(self, pos, color):
+        self.cursorPoint = (pos.x, self.height - pos.y, color)
+        self._display()
+
+    def clearDot(self):
+        if self.cursorPoint is not None:
+            self.cursorPoint = None
+            self._display()
+
+    def hasLines(self):
+        return self.lines != []
+
+    def clearLines(self):
+        if self.lines:
+            self.lines.clear()
+            self._display()
 
     def setScale(self, scale):
         self.scale = scale
+
+        for line in self.lines:
+            iniScale = line[0]
+            for point in line[2:]:
+                point = (point[0] * scale / iniScale, point[1] * scale / iniScale)
+
         self._display()
 
     def setBackGround(self, image: Image.Image):
@@ -88,11 +115,13 @@ class GLCanvas(OpenGLFrame):
         self._display()
 
     def clearRect(self):
-        self.rectPoints.clear()
-        self._display()
+        if self.rectPoints:
+            self.rectPoints.clear()
+            self._display()
 
     def newLine(self, firstPos, color: str):
-        self.lines.append([color, (firstPos[0], self.height - firstPos[1])])
+        # iniScale, lineColor, then list of 2dVectors
+        self.lines.append([self.scale, color, (firstPos[0], self.height - firstPos[1])])
         self._display()
 
     def addLineSeg(self, pos):
@@ -140,18 +169,53 @@ class GLCanvas(OpenGLFrame):
             glDisable(GL_TEXTURE_2D)
 
         for line in self.lines:
+            glLineWidth(2.0)
             glColor3f(*hexToFloatRgb(line[0]))
             glBegin(GL_LINE_STRIP)
-            for point in line[1:]:
-                glVertex2f(point[0] * self.scale, point[1] * self.scale)
+            for point in line[2:]:
+                glVertex2f(point[0], point[1])
             glEnd()
 
         if self.rectPoints:
+            glLineWidth(2.0)
+
+            glColor4f(0, 0, 0, 0.5)
+            glEnable(GL_BLEND)
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+            glBegin(GL_QUADS)
+            for point in self.rectPoints:
+                glVertex2f(point[0], self.height - point[1])
+            glEnd()
+            glDisable(GL_BLEND)
             glColor3f(1, 1, 1)
             glBegin(GL_LINE_LOOP)
             for point in self.rectPoints:
                 glVertex2f(point[0], self.height - point[1])
             glEnd()
+
+        if self.highlight:
+            glLineWidth(1)
+            glColor3f(1, 1, 1)
+
+            glBegin(GL_LINE_LOOP)
+
+            glVertex2f(0, 0)
+            glVertex2f(self.width, 0)
+            glVertex2f(self.width, self.height)
+            glVertex2f(0, self.height)
+
+            glEnd()
+
+        if self.cursorPoint is not None:
+
+            glEnable(GL_POINT_SMOOTH)
+            glHint(GL_POINT_SMOOTH_HINT, GL_NICEST)
+            glColor3f(*hexToFloatRgb(self.cursorPoint[2]))
+            glBegin(GL_POINT)
+            glPointSize(2)
+            glVertex2f(self.cursorPoint[0], self.cursorPoint[1])
+            glEnd()
+            glDisable(GL_POINT_SMOOTH)
 
 
 def hexToFloatRgb(hex: str):
@@ -164,8 +228,12 @@ def hexToFloatRgb(hex: str):
 
 if __name__ == "__main__":
     root = tkinter.Tk()
-    root.bind("<Control-z>", lambda event: print("stuff"))
     app = GLCanvas(Image.open("devineInspiration.png"), root)
     app.pack(fill=tkinter.BOTH, expand=tkinter.YES)
     app.animate = 0
-    app.mainloop()
+    
+    other = GLCanvas(Image.open("devineInspiration.png"), root)
+    other.pack(fill=tkinter.BOTH, expand=tkinter.YES)
+    other.animate = 0
+    
+    root.mainloop()
