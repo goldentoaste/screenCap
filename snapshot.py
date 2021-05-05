@@ -40,9 +40,9 @@ class Snapshot(Toplevel):
 
     def __initialize(self, size=(400, 400), *args, **kwargs):
 
-        # self.canvas = GLCanvas(self.image, highlight = True, master = self)
-        # self.canvas.pack(expand=YES, fill=BOTH)
-        # self.canvas.setBackGround(self.image)
+        self.canvas = GLCanvas(self.image, highlight=True, master=self)
+        self.canvas.pack(expand=YES, fill=BOTH)
+        self.canvas.setBackGround(self.image)
 
         # window stuff
         self.attributes("-topmost", True)
