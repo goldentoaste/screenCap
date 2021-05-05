@@ -5,13 +5,11 @@ from tkinter import (
     Frame,
     Menu,
     Toplevel,
-
     filedialog,
-
 )
 import tkinter
 from colorPicker import ColorChooser
-from tkinter.constants import BOTH,  NW,  TOP, YES
+from tkinter.constants import BOTH, NW, TOP, YES
 from PIL import Image, ImageGrab, ImageTk
 import sys
 from os import path
@@ -24,6 +22,7 @@ import time
 import ctypes
 import tkinter.simpledialog
 import win32gui
+
 from GLCanvas import GLCanvas
 
 shcore = ctypes.windll.shcore
@@ -41,12 +40,9 @@ class Snapshot(Toplevel):
 
     def __initialize(self, size=(400, 400), *args, **kwargs):
 
-        
-        
-        self.canvas = GLCanvas(self.image, highlight = True)
-        self.canvas.pack(expand=YES, fill=BOTH)
-        self.canvas.setBackGround(self.image)
-        
+        # self.canvas = GLCanvas(self.image, highlight = True, master = self)
+        # self.canvas.pack(expand=YES, fill=BOTH)
+        # self.canvas.setBackGround(self.image)
 
         # window stuff
         self.attributes("-topmost", True)
@@ -133,20 +129,18 @@ class Snapshot(Toplevel):
         self.rightMenu.add_separator()
         self.rightMenu.add_command(label="Draw", font=("", 11), command=self.__draw)
 
-
     # this 'image' should be a pillow image
     def fromImage(self, image, *args, **kwargs):
         super(Snapshot, self).__init__(*args, **kwargs)
         self.firstCrop = False
         self.image = image
-        
+
         self.__initialize((self.image.width, self.image.height), *args, **kwargs)
         return self
-    
-    
+
     def fromFullScreen(self, *args, **kwargs):
         self.image = getRectAsImage(self.__getBoundBox())
-        
+
         self.firstCrop = True
         super(Snapshot, self).__init__(*args, **kwargs)
         self.__initialize(
@@ -167,7 +161,8 @@ class Snapshot(Toplevel):
 
     def __resetSize(self):
         self.scale = 1
-        self.__resize()
+        if not self.scale == 1:
+            self.__resize()
 
     def __shrink(self):
         self.scale = max(0.2, self.scale - 0.25)
@@ -190,12 +185,10 @@ class Snapshot(Toplevel):
         )
         if override:
             pass
-            
+
         self.__updateImage(self.scaledImage)
-        
+
         self.canvas.setScale(self.scale)
-        
-        
 
     def __cut(self):
         self.__copy()
@@ -267,8 +260,6 @@ class Snapshot(Toplevel):
         clipboard.CloseClipboard()
         output.close()
 
-    
-
     def __getBoundBox(self):
         bounds = getDisplayRects()
         x = self.mainWindow.main.winfo_pointerx()
@@ -278,8 +269,6 @@ class Snapshot(Toplevel):
             if x >= bound[0] and y >= bound[1] and x <= bound[2] and y <= bound[3]:
                 return bound
         return bounds[0]
-
-    
 
     def __exit(self):
         if (self.firstCrop and self.cropping) or (
@@ -411,16 +400,12 @@ class Snapshot(Toplevel):
                 min(max(event.x, 0), self.image.width),
                 min(max(event.y, 0), self.image.height),
             )
-            
-            self.image = self.image.crop(
-                coord
-            )  # using min max to keep coord in bound
-            
+
+            self.image = self.image.crop(coord)  # using min max to keep coord in bound
+
             self.canvas.setBackGround(self.image)
-            self.canvas.configure(
-                width=self.image.width, height=self.image.height
-            )
-            
+            self.canvas.configure(width=self.image.width, height=self.image.height)
+
             self.geometry(f"+{coord[0]+ self.winfo_x()}+{coord[1] + self.winfo_y()}")
             self.__stopCrop()
 
@@ -439,10 +424,8 @@ class Snapshot(Toplevel):
 
             x = int(min(max(0, event.x - halfCrop), self.scaledImage.width - cropSize))
             y = int(min(max(0, event.y - halfCrop), self.scaledImage.height - cropSize))
-            
-            tempImage = (
-                self.image if self.scale == 1 else self.scaledImage
-            )
+
+            tempImage = self.image if self.scale == 1 else self.scaledImage
             tempImage = tempImage.filter(GaussianBlur(2)).crop(
                 [
                     x,

@@ -22,8 +22,6 @@ class GLCanvas(OpenGLFrame):
         self.bind("<Button-1>", self.click)
         self.bind("<B1-Motion>", self.drag)
         self.bind("<ButtonRelease-1>", self.release)
-        
-
 
         self.animate = 0
 
@@ -43,7 +41,7 @@ class GLCanvas(OpenGLFrame):
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
 
-        self.setBackGround(self.image)
+    
 
     def drawDot(self, pos, color):
         self.cursorPoint = (pos.x, self.height - pos.y, color)
@@ -73,6 +71,8 @@ class GLCanvas(OpenGLFrame):
         self._display()
 
     def setBackGround(self, image: Image.Image):
+
+        print("setBackGround", image)
         self.configure(width=self.image.width, height=self.image.height)
         self.image = image.convert("RGBA")
 
@@ -231,9 +231,5 @@ if __name__ == "__main__":
     app = GLCanvas(Image.open("devineInspiration.png"), root)
     app.pack(fill=tkinter.BOTH, expand=tkinter.YES)
     app.animate = 0
-    
-    other = GLCanvas(Image.open("devineInspiration.png"), root)
-    other.pack(fill=tkinter.BOTH, expand=tkinter.YES)
-    other.animate = 0
-    
+
     root.mainloop()
