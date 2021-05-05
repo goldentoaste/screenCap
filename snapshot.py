@@ -5,28 +5,25 @@ from tkinter import (
     Frame,
     Menu,
     Toplevel,
-    PhotoImage,
+
     filedialog,
-    messagebox,
+
 )
 import tkinter
 from colorPicker import ColorChooser
-from tkinter.constants import BOTH, NO, NW, ROUND, TOP, YES
-from typing import List, Tuple, overload
+from tkinter.constants import BOTH,  NW,  TOP, YES
 from PIL import Image, ImageGrab, ImageTk
 import sys
 from os import path
 from PIL.ImageFilter import GaussianBlur
 import gc
 import io
-import os
 import win32clipboard as clipboard
 from desktopmagic.screengrab_win32 import getDisplayRects, getRectAsImage
 import time
 import ctypes
 import tkinter.simpledialog
 import win32gui
-import cProfile, pstats
 
 
 shcore = ctypes.windll.shcore
@@ -78,7 +75,7 @@ class Snapshot(Toplevel):
 
         self.drawing = False
         self.colorPoint = None
-        self.lineCords: List[List] = []
+        self.lineCords = []
         self.lineRefs = []
         self.tempLineSegments = []
         self.drawingColor = self.mainWindow.lastColor.get()
@@ -548,7 +545,7 @@ class Snapshot(Toplevel):
         return path.join(base_path, relative_path)
 
 
-def hexToRgb(h: str) -> Tuple:
+def hexToRgb(h: str):
     return (
         int("0x" + h[1:3], base=16),
         int("0x" + h[3:5], base=16),
@@ -556,7 +553,7 @@ def hexToRgb(h: str) -> Tuple:
     )
 
 
-def rgbToHex(rgb: Tuple[int]) -> str:
+def rgbToHex(rgb):
     return "#%02x%02x%02x" % rgb
 
 
