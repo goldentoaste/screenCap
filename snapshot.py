@@ -1,6 +1,5 @@
 from tkinter import (
     BooleanVar,
-    Canvas,
     Checkbutton,
     Frame,
     Menu,
@@ -23,7 +22,6 @@ import ctypes
 import tkinter.simpledialog
 import win32gui
 
-from GLCanvas import GLCanvas
 
 shcore = ctypes.windll.shcore
 # auto dpi aware scalings
