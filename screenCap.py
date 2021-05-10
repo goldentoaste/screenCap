@@ -276,7 +276,7 @@ class MainWindow:
     def removeSnap(self, snap: Snapshot):
         if snap in self.snaps:
             self.snaps.remove(snap)
-            self.bin.addImage(snap.pilImage)
+            self.bin.addImage(snap.canvas.getOriginalImage())
 
     def on_press(self, key):
         self.currentKeys.add(key)
@@ -368,7 +368,7 @@ class MainWindow:
         self.combo.clear()
 
     def resource_path(self, relative_path):
-        """ Get absolute path to resource, works for dev and for PyInstaller """
+        """Get absolute path to resource, works for dev and for PyInstaller"""
         try:
             base_path = sys._MEIPASS
         except Exception:
@@ -467,4 +467,5 @@ def is_admin():
         return False
 
 
-MainWindow()
+if __name__ == '__main__':
+    MainWindow()

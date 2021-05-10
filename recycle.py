@@ -3,7 +3,7 @@ import pathlib
 
 from tkinter import Canvas, Frame, PhotoImage, Toplevel, Label
 
-from tkinter.constants import BOTH, END, LEFT, TOP, X
+from tkinter.constants import LEFT
 from PIL import Image, ImageTk
 import time
 from snapshot import Snapshot
@@ -24,7 +24,6 @@ class RecycleBin:
         )
         self.filePaths = []
         self.thumbnails = []
-        self.loadThumbs()
 
     # returns PhotoImage
 
@@ -82,12 +81,15 @@ class RecycleBin:
 
     def show(self):
         self.windowOpen = True
+        self.loadThumbs()
         self.window = Toplevel(self.mainWindow.main)
         self.window.title("Recycling Bin")
 
         def exit():
             self.windowOpen = False
             self.window.destroy()
+            self.thumbnails.clear()
+            self.filePaths.clear()
 
         self.window.protocol("WM_DELETE_WINDOW", lambda: exit())
         self.canvas = Canvas(

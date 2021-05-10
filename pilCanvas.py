@@ -5,6 +5,8 @@ from PIL import ImageDraw, ImageTk, Image
 import sys
 from os import path
 
+from time import time
+
 
 class PilCanvas(tk.Frame):
     def __init__(self, borderThickness=0, *args, **kwargs):
@@ -23,6 +25,7 @@ class PilCanvas(tk.Frame):
         self.scale = 1
 
         self.imageContainer = tk.Label(self)
+        self.imageContainer.grab_release()
         self.imageContainer.pack(fill=BOTH, expand=YES)
 
         # self.imageContainer.bind(
@@ -30,28 +33,29 @@ class PilCanvas(tk.Frame):
         # )
         # self.imageContainer.bind("<ButtonRelease-1>", lambda event: self.redrawLine())
 
-        self.imageContainer.bind(
-            "<Button-1>", lambda event: self.newLine((event.x, event.y), "#ffffff")
-        )
-        self.imageContainer.bind(
-            "<B1-Motion>", lambda event: self.addLineSeg((event.x, event.y))
-        )
-        self.imageContainer.bind(
-            "<ButtonRelease-1>",
-            lambda event: ("self.smoothLine(-1, 1)", self.drawAntiAliasLine(-1)),
-        )
+        # self.imageContainer.bind(
+        #     "<Button-1>", lambda event: self.newLine((event.x, event.y), "#ffffff")
+        # )
+        # self.imageContainer.bind(
+        #     "<B1-Motion>", lambda event: self.addLineSeg((event.x, event.y))
+        # )
+        # self.imageContainer.bind(
+        #     "<ButtonRelease-1>",
+        #     lambda event: ("self.smoothLine(-1, 1)", self.drawAntiAliasLine(-1)),
+        # )
 
-        self.imageContainer.bind(
-            "<Button-3>", lambda event: self.setScale(self.scale + 0.2)
-        )
-        self.imageContainer.bind("<Button-3>", lambda event: self.undo())
-        self.imageContainer.bind(
-            "<Button-3>", lambda event: self.crop((100, 100), (200, 200))
-        )
+        # self.imageContainer.bind(
+        #     "<Button-3>", lambda event: self.setScale(self.scale + 0.2)
+        # )
+        # self.imageContainer.bind("<Button-3>", lambda event: self.undo())
+        # self.imageContainer.bind(
+        #     "<Button-3>", lambda event: self.crop((100, 100), (200, 200))
+        # )
 
     def setBackground(self, newImage):
-        self.backgroundImage = newImage
-        self.originalImage = newImage
+
+        self.originalImage = newImage.convert("RGBA")
+        self.backgroundImage = self.originalImage
         self.linesLayer = Image.new("RGBA", newImage.size)
         self.drawingRef = ImageDraw.Draw(self.linesLayer)
         self.photoImage = ImageTk.PhotoImage(self.backgroundImage)
@@ -59,24 +63,42 @@ class PilCanvas(tk.Frame):
 
     def drawRect(self, start, end):
 
-        rectLayer = Image.new("RGBA", self.linesLayer.size)
-        rectDraw = ImageDraw.Draw(rectLayer)
-
         x1 = end[0]
         y1 = end[1]
 
         x0 = start[0]
         y0 = start[1]
 
+        t0 = time()
+        t = time()
+
+        rectLayer = Image.new("RGBA", self.backgroundImage.size)
+        rectDraw = ImageDraw.Draw(rectLayer)
         rectDraw.rectangle([start, end], fill="#00000080")
-
         rectDraw.line((x0, y0, x1, y0, x1, y1, x0, y1, x0, y0), fill="#ffffff", width=1)
+        print("drawing: ", time() - t)
+        t = time()
 
-        displayImage = self.backgroundImage.copy()
-        displayImage = Image.alpha_composite(displayImage, self.linesLayer)
-        displayImage = Image.alpha_composite(displayImage, rectLayer)
-        self.photoImage = ImageTk.PhotoImage(displayImage)
-        self.imageContainer.configure(image=self.photoImage)
+        displayImage = Image.alpha_composite(self.backgroundImage, self.linesLayer)
+        displayImage.alpha_composite(rectLayer, (0, 0), (0, 0))
+        print("image blend: ", time() - t)
+        t = time()
+
+        self.photoImage.paste(
+            displayImage,
+        )
+        print("photoImage paste: ", time() - t)
+        t = time()
+
+        
+        print("total: ", time() - t0)
+
+    def clearRect(self):
+        self.drawLine()
+
+    def finishLine(self):
+        self.smoothLine(-1, 1)
+        self.drawAntiAliasLine(-1)
 
     def drawLine(self):
         displayImage = self.backgroundImage.copy()
@@ -104,6 +126,7 @@ class PilCanvas(tk.Frame):
         line = self.lines[index]
         if length == 4:
             return None
+
         for i in range(2, length, 2):
             start = max(i - amount * 2, 2)
             end = min(i + amount * 2, length - 2)
@@ -174,7 +197,6 @@ class PilCanvas(tk.Frame):
         if not self.lines:
             return None
         self.lines.pop()
-
         self.linesLayer = Image.new("RGBA", self.backgroundImage.size)
         self.drawAntiAliasLine("all")
         self.drawLine()
@@ -183,6 +205,7 @@ class PilCanvas(tk.Frame):
 
         self.linesLayer = Image.new("RGBA", self.linesLayer.size)
         self.drawingRef = ImageDraw.Draw(self.linesLayer)
+        self.lines.clear()
         self.drawLine()
 
     def crop(self, start, end):
@@ -257,6 +280,23 @@ class PilCanvas(tk.Frame):
             self.linesLayer.close()
 
         self.destroy()
+
+    def getDisplayImage(self):
+        return ImageTk.getimage(self.photoImage)
+
+    def getDisplayImageNoScale(self):
+        return ImageTk.getimage(self.photoImage).resize(
+            (self.photoImage.width(), self.photoImage.height())
+        )
+
+    def getScaledImage(self):
+        return self.backgroundImage
+
+    def getOriginalImage(self):
+        return self.originalImage
+
+    def getScale(self):
+        return self.scale
 
 
 def resource_path(relative_path):

@@ -48,7 +48,7 @@ class ColorChooser:
 
         return custom_int_colors
 
-    def askcolor(self,hostId, initialColor, custom_colors):
+    def askcolor(self, hostId, initialColor, custom_colors):
         struct = CHOOSECOLOR()
 
         ctypes.memset(ctypes.byref(struct), 0, ctypes.sizeof(struct))

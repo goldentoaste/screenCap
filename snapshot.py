@@ -8,8 +8,8 @@ from tkinter import (
 )
 import tkinter
 from colorPicker import ColorChooser
-from tkinter.constants import BOTH, NW, TOP, YES
-from PIL import Image, ImageGrab, ImageTk
+from tkinter.constants import BOTH, TOP, YES
+from PIL import Image, ImageGrab
 import sys
 from os import path
 from PIL.ImageFilter import GaussianBlur
@@ -22,6 +22,7 @@ import ctypes
 import tkinter.simpledialog
 import win32gui
 
+from pilCanvas import PilCanvas
 
 shcore = ctypes.windll.shcore
 # auto dpi aware scalings
@@ -38,9 +39,9 @@ class Snapshot(Toplevel):
 
     def __initialize(self, size=(400, 400), *args, **kwargs):
 
-        self.canvas = GLCanvas(self.image, highlight=True, master=self)
+        self.canvas = PilCanvas(self.image, master=self)
         self.canvas.pack(expand=YES, fill=BOTH)
-        self.canvas.setBackGround(self.image)
+        self.canvas.setBackground(self.image)
 
         # window stuff
         self.attributes("-topmost", True)
@@ -131,13 +132,13 @@ class Snapshot(Toplevel):
     def fromImage(self, image, *args, **kwargs):
         super(Snapshot, self).__init__(*args, **kwargs)
         self.firstCrop = False
-        self.image = image
+        self.image = image.convert("RGBA")
 
         self.__initialize((self.image.width, self.image.height), *args, **kwargs)
         return self
 
     def fromFullScreen(self, *args, **kwargs):
-        self.image = getRectAsImage(self.__getBoundBox())
+        self.image = getRectAsImage(self.__getBoundBox()).convert("RGBA")
 
         self.firstCrop = True
         super(Snapshot, self).__init__(*args, **kwargs)
@@ -174,18 +175,6 @@ class Snapshot(Toplevel):
         self.canvas.setBackGround(image)
 
     def __resize(self, override=False):
-        self.scaledImage = self.image.copy().resize(
-            (
-                int(self.image.width * self.scale),
-                int(self.image.height * self.scale),
-            ),
-            Image.ANTIALIAS,
-        )
-        if override:
-            pass
-
-        self.__updateImage(self.scaledImage)
-
         self.canvas.setScale(self.scale)
 
     def __cut(self):
@@ -221,20 +210,16 @@ class Snapshot(Toplevel):
         image = None
 
         if result[1]:
-            image = getRectAsImage(win32gui.GetWindowRect(self.canvas.winfo_id()))
+
             if not result[0]:
-                image = image.copy().resize(
-                    (
-                        int(self.image.width / self.scale),
-                        int(self.image.height / self.scale),
-                    ),
-                    Image.ANTIALIAS,
-                )
+                image = self.canvas.getDisplayImageNoScale()
+            else:
+                image = self.canvas.getDisplayImage()
         else:
             if result[0]:
-                image = self.scaledImage
+                image = self.canvas.getScaledImage()
             else:
-                image = self.image
+                image = self.canvas.getOriginalImage()
 
         if file != "":
             path = str(file)
@@ -251,7 +236,7 @@ class Snapshot(Toplevel):
 
     def __copy(self):
         output = io.BytesIO()
-        self.image.convert("RGB").save(output, "BMP")
+        self.canvas.getOriginalImage().convert("RGB").save(output, "BMP")
         clipboard.OpenClipboard()
         clipboard.EmptyClipboard()
         clipboard.SetClipboardData(clipboard.CF_DIB, output.getvalue()[14:])
@@ -278,7 +263,7 @@ class Snapshot(Toplevel):
             self.destroy()
             self.mainWindow.removeSnap(self)
             self.image.close()
-            self.scaledImage.close()
+            self.canvas.exit()
             del self
             gc.collect()
         else:
@@ -313,10 +298,9 @@ class Snapshot(Toplevel):
         self.rightMenu.delete("Clear drawing")
         self.unbind("<Control-Z>")
         self.unbind("<Control-z>")
-        self.canvas.clearDot()
 
     def __clearDrawing(self):
-        self.canvas.clearLines()
+        self.canvas.clear()
 
     def __pickColor(self):
         colorchooser = ColorChooser()
@@ -338,7 +322,6 @@ class Snapshot(Toplevel):
 
     def __crop(self):
         self.cropping = True
-        self.__resetSize()
         self.configure(
             cursor='"@' + self.resource_path("bread.cur").replace("\\", "/") + '"'
         )
@@ -347,13 +330,17 @@ class Snapshot(Toplevel):
         self.cropping = False
         self.firstCrop = False
         self["cursor"] = ""
-        if self.image.width < 20 or self.image.height < 20:
+        if (
+            self.canvas.getOriginalImage().width < 20
+            or self.canvas.getOriginalImage().height < 20
+        ):
             self.mainWindow.snaps.remove(self)
             self.destroy()
 
     def __mouseMove(self, event):
-        if self.drawing:
-            self.canvas.drawDot((event.x, event.y), self.drawingColor)
+        pass
+        # if self.drawing:
+        #     self.canvas.drawDot((event.x, event.y), self.drawingColor)
 
     def __mouseDown(self, event):
         self.mousePos = (event.x, event.y)
@@ -367,7 +354,7 @@ class Snapshot(Toplevel):
         if self.cropping:
             self.canvas.drawRect(self.startPos, (event.x, event.y))
         elif self.drawing:
-            self.canvas.addLineSeg((event.x, event))
+            self.canvas.addLineSeg((event.x, event.y))
         elif not self.moveLock:
             dx = event.x - self.mousePos[0]
             dy = event.y - self.mousePos[1]
@@ -381,37 +368,40 @@ class Snapshot(Toplevel):
             dy = y2 - y1
             # true for pos
             table = {
-                (True, True): (x1, y1, x2, y2),
-                (True, False): (x1, y2, x2, y1),
-                (False, True): (x2, y1, x1, y2),
-                (False, False): (x2, y2, x1, y1),
+                (True, True): ((x1, y1), (x2, y2)),
+                (True, False): ((x1, y2), (x2, y1)),
+                (False, True): ((x2, y1), (x1, y2)),
+                (False, False): ((x2, y2), (x1, y1)),
             }
             return table[(dx > 0, dy > 0)]
 
         self.moveLock = False
         if self.cropping:
             self.canvas.clearRect()
-
             coord = getCorrectCoord(
                 self.startPos[0],
                 self.startPos[1],
-                min(max(event.x, 0), self.image.width),
-                min(max(event.y, 0), self.image.height),
+                min(max(event.x, 0), self.canvas.winfo_width()),
+                min(max(event.y, 0), self.canvas.winfo_height()),
             )
 
-            self.image = self.image.crop(coord)  # using min max to keep coord in bound
-
-            self.canvas.setBackGround(self.image)
-            self.canvas.configure(width=self.image.width, height=self.image.height)
-
-            self.geometry(f"+{coord[0]+ self.winfo_x()}+{coord[1] + self.winfo_y()}")
+            self.canvas.crop(*coord)
+            self.geometry(
+                f"+{coord[0][0]+ self.winfo_x()}+{coord[0][1] + self.winfo_y()}"
+            )
             self.__stopCrop()
+
+        elif self.drawing:
+            self.canvas.finishLine()
 
     def __mouseRight(self, event):
         self.rightMenu.tk_popup(event.x_root, event.y_root, 0)
         self.rightMenu.grab_release()
 
     def __mouseDouble(self, event):
+
+        # TODO handle in pilCanvas instead
+
         self.moveLock = True
         if not self.mini:
             cropSize = min(
@@ -424,7 +414,7 @@ class Snapshot(Toplevel):
             y = int(min(max(0, event.y - halfCrop), self.scaledImage.height - cropSize))
 
             tempImage = self.image if self.scale == 1 else self.scaledImage
-            tempImage = tempImage.filter(GaussianBlur(2)).crop(
+            tempImage = tempImage.filter(GaussianBlur(1)).crop(
                 [
                     x,
                     y,
@@ -444,10 +434,9 @@ class Snapshot(Toplevel):
                 self.__resize()
             self.geometry(f"+{self.prevPos[0]}+{self.prevPos[1]}")
             self.mini = False
-            # self.__resize()
 
     def resource_path(self, relative_path):
-        """ Get absolute path to resource, works for dev and for PyInstaller """
+        """Get absolute path to resource, works for dev and for PyInstaller"""
         try:
             base_path = sys._MEIPASS
         except Exception:
