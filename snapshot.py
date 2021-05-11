@@ -5,13 +5,11 @@ from tkinter import (
     Frame,
     Menu,
     Toplevel,
-
     filedialog,
-
 )
 import tkinter
 from colorPicker import ColorChooser
-from tkinter.constants import BOTH,  NW,  TOP, YES
+from tkinter.constants import BOTH, NW, TOP, YES
 from PIL import Image, ImageGrab, ImageTk
 import sys
 from os import path
@@ -142,7 +140,6 @@ class Snapshot(Toplevel):
         self.rightMenu.add_separator()
         self.rightMenu.add_command(label="Draw", font=("", 11), command=self.__draw)
 
-
     def __paste(self):
         image = ImageGrab.grabclipboard()
         if image:
@@ -164,11 +161,21 @@ class Snapshot(Toplevel):
 
     def __updateImage(self, image):
 
+        t0 = time.time()
         self.canvas.configure(width=image.width, height=image.height)
+        print("canvas size config: ", time.time() - t0)
+        t0 = time.time()
         self.image = ImageTk.PhotoImage(image)
+        print("photoImage update: ", time.time() - t0)
+        t0 = time.time()
+
         self.canvas.itemconfig(self.canvasImageRef, image=self.image)
+        print("set new image: ", time.time() - t0)
 
     def __resize(self, override=False):
+        t = time.time()
+
+        t0 = time.time()
         image = self.pilImage.copy().resize(
             (
                 int(self.pilImage.width * self.scale),
@@ -176,26 +183,30 @@ class Snapshot(Toplevel):
             ),
             Image.ANTIALIAS,
         )
+        print("pilImage reize: ", time.time() - t0)
         if override:
             self.pilImage = image
         self.__updateImage(image)
+
+        t0 = time.time()
+
         for line, coordGroup in zip(self.lineRefs, self.lineCords):
-            
             iniScale = coordGroup[0]
-            
             for seg, coords in zip(
                 line,
                 [
                     (
-                        int(coordGroup[i] * self.scale/iniScale),
-                        int(coordGroup[i + 1] * self.scale/iniScale),
-                        int(coordGroup[i + 2] * self.scale/iniScale),
-                        int(coordGroup[i + 3] * self.scale/iniScale)
+                        int(coordGroup[i] * self.scale / iniScale),
+                        int(coordGroup[i + 1] * self.scale / iniScale),
+                        int(coordGroup[i + 2] * self.scale / iniScale),
+                        int(coordGroup[i + 3] * self.scale / iniScale),
                     )
                     for i in range(2, len(coordGroup) - 2, 2)
                 ],
             ):
                 self.canvas.coords(seg, *coords)
+        print("resize took: ", time.time() - t0)
+        print("total: ", time.time() - t, "\n=======================")
 
     def __cut(self):
         self.__copy()
@@ -541,7 +552,7 @@ class Snapshot(Toplevel):
             # self.__resize()
 
     def resource_path(self, relative_path):
-        """ Get absolute path to resource, works for dev and for PyInstaller """
+        """Get absolute path to resource, works for dev and for PyInstaller"""
         try:
             base_path = sys._MEIPASS
         except Exception:
