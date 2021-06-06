@@ -28,7 +28,7 @@ from recycle import RecycleBin
 
 """
 datas=[('icon.ico', '.'), ('bread.cur', '.')],
-             hiddenimports=['pkg_resources.markers','pkg_resources.py2_warn','pynput.keyboard._win32', 'pynput.mouse._win32', 'pkg_resources', 'setuptools.py33compat','setuptools.py27compat'],
+            hiddenimports=['pkg_resources.markers','pkg_resources.py2_warn','pynput.keyboard._win32', 'pynput.mouse._win32', 'pkg_resources', 'setuptools.py33compat','setuptools.py27compat'],
 """
 
 
