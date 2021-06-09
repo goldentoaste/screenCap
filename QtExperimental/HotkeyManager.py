@@ -44,7 +44,6 @@ class HotkeyManager:
             # releasing a key.
             self.listener._suppress = False
             if self.recording:
-                
                 if self.currentKeys in [hotkey[0] for hotkey in self.hotkeys.values()]:
                     self.keyStringCallback(DUPLICATE)
                     del self.hotkeys[self.recording]
