@@ -1,8 +1,8 @@
 from pynput import keyboard
-from values import conversionTable, modifiers
+from values import conversionTable, modifiers, keycodeTable
 from PyQt5.QtWidgets import *
 import sys
-
+import HotkeyManager
 SUCCESSFUL = "successful"
 FAILED = "failed"
 DUPLICATE = "duplicate"
@@ -68,6 +68,10 @@ class HotkeyManager:
         self.hotkeys[name] = (set(), hotkeyCallback)
 
     def setHotkey(self, name, keys, hotkeyCallback):
+        for i in range (len(keys)):
+            if type(keys[i]) is str:
+                keys[i] = keycodeTable[keys[i]]
+                
         self.hotkeys[name] = (keys, hotkeyCallback)
 
     def deleteHotkey(self, name):

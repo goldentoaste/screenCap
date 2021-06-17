@@ -1,6 +1,8 @@
 modifiers = {16, 17, 18, 160, 161, 162, 163, 164, 165}
 
 
+
+
 conversionTable = {
     8: "backspace",
     9: "tab",
@@ -138,3 +140,6 @@ conversionTable = {
     220: "\\",
     221: "]",
     222: "quote"}
+
+keycodeTable = {item[1]:item[0] for item in conversionTable.items()}
+
