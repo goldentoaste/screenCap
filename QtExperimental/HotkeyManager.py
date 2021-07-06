@@ -2,11 +2,11 @@ from pynput import keyboard
 from values import conversionTable, modifiers, keycodeTable
 from PyQt5.QtWidgets import *
 import sys
-import HotkeyManager
+
+
 SUCCESSFUL = "successful"
 FAILED = "failed"
 DUPLICATE = "duplicate"
-
 
 
 class HotkeyManager:
@@ -38,8 +38,8 @@ class HotkeyManager:
             else:
                 for keys, callback in self.hotkeys.values():
                     if keys == self.currentKeys:
-                        self.listener._suppress = True
-                        callback()
+                        self.listener._suppress = True if callback() else False
+                        break
         else:
             # releasing a key.
             self.listener._suppress = False
@@ -49,8 +49,8 @@ class HotkeyManager:
                     del self.hotkeys[self.recording]
                     self.recording = None
                     return
-                 
-                self.hotkeys[self.recording][0].update(self.currentKeys) 
+
+                self.hotkeys[self.recording][0].update(self.currentKeys)
                 self.keyStringCallback(SUCCESSFUL)
                 self.recording = None
             else:
@@ -68,11 +68,15 @@ class HotkeyManager:
         self.hotkeys[name] = (set(), hotkeyCallback)
 
     def setHotkey(self, name, keys, hotkeyCallback):
-        for i in range (len(keys)):
-            if type(keys[i]) is str:
-                keys[i] = keycodeTable[keys[i]]
-                
-        self.hotkeys[name] = (keys, hotkeyCallback)
+        """
+        hotkeyCallback can return true to supress key press if detected.
+        Note: callback will be called on a different thread.
+        """
+        temp = list(keys)
+        for i in range(len(temp)):
+            if type(temp[i]) is str:
+                temp[i] = keycodeTable[temp[i]]
+        self.hotkeys[name] = (set(temp), hotkeyCallback)
 
     def deleteHotkey(self, name):
         if self.hotkeys.pop(name, default="NotFound") == "NotFound":
@@ -105,8 +109,10 @@ class HotKeyTestWindow(QDialog):
         self.setGeometry(100, 100, 400, 400)
         manager = HotkeyManager(debug=False)
         manager.start()
-        manager.setHotkey("testing", {48}, lambda: print("detected!!!!!!"))
-        manager.setHotkey("the other one", {164, 165}, lambda: print("the other one detected!!"))
+        manager.setHotkey("testing", {17}, lambda: print("detected!!!!!!"))
+        manager.setHotkey(
+            "the other one", {164, 165}, lambda: print("the other one detected!!")
+        )
         # manager.recordNewHotkey(
         #     "testing 2",
         #     lambda: print("newly binded key detected."),
