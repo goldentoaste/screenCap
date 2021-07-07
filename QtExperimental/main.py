@@ -14,7 +14,18 @@ class Main(QWidget):
         
     def initGUI(self):
         self.setWindowTitle("screenCap owo")
-        self.setGeometry(100, 100, 1200, 800)
+        
+        self.tabs = QTabWidget(self)
+        self.generaltab = QWidget()
+        self.hotkeystab = QWidget()
+        self.generaltab.layout = QVBoxLayout()
+        self.generaltab.layout.addWidget(QLabel('stuff'))
+        self.generaltab.setLayout(self.generaltab.layout)
+        self.tabs.addTab(self.generaltab, "General")
+        self.tabs.addTab(self.hotkeystab, "Hotkeys")
+        
+        self.resize(self.tabs.sizeHint())
+        
         self.show()
     
     def loadConfig(self):
@@ -47,10 +58,14 @@ class Main(QWidget):
         self.minimize = getIntConfig("General", "minimize")
         self.admin = getIntConfig("General", "admin")
         self.recycleSize = getIntConfig("General", "recycleSize")
-        
+
+
+
+
 if __name__ == "__main__":
     
     app = QApplication(sys.argv)
     print(sys.argv)
     ex = Main()
+    
     sys.exit(app.exec_())
