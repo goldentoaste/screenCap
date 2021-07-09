@@ -65,7 +65,7 @@ conversionTable = {
     88: "x",
     89: "y",
     90: "z",
-    91: "left windows",
+    91: "windows",
     92: "right windows",
     93: "menu key",
     96: "num_0",

@@ -19,10 +19,25 @@ class Main(QWidget):
         self.generaltab = QWidget()
         self.hotkeystab = QWidget()
         self.generaltab.layout = QVBoxLayout()
-        self.generaltab.layout.addWidget(QLabel('stuff'))
+        
         self.generaltab.setLayout(self.generaltab.layout)
         self.tabs.addTab(self.generaltab, "General")
         self.tabs.addTab(self.hotkeystab, "Hotkeys")
+        
+        
+        #first row
+        temphbox = QHBoxLayout()
+        #start up options
+        startupGroup = QGroupBox('Start up options')
+        temphbox.addWidget(startupGroup)
+        
+        startUpCheck = QCheckBox('Run on Start up')
+        startminCheck = QCheckBox('Start minimalized')
+        
+        
+        
+        
+        self.generaltab.layout.addLayout()
         
         self.resize(self.tabs.sizeHint())
         
