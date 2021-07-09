@@ -1,5 +1,6 @@
 from configparser import ConfigParser
 from os import path, getenv
+from PyQt5.QtGui import QIntValidator
 from PyQt5.QtWidgets import *
 import sys
 configDir = path.join(getenv("appdata"), "screenCap")
@@ -31,14 +32,48 @@ class Main(QWidget):
         startupGroup = QGroupBox('Start up options')
         temphbox.addWidget(startupGroup)
         
+        startupLayout = QVBoxLayout()
         startUpCheck = QCheckBox('Run on Start up')
         startminCheck = QCheckBox('Start minimalized')
+        startupLayout.addWidget(startUpCheck)
+        startupLayout.addWidget(startminCheck)
+        startupGroup.setLayout(startupLayout)
         
+        #controls
+        miscGroup = QGroupBox('System Tray')
+        temphbox.addWidget(miscGroup)
+        misclayout = QVBoxLayout()
+        miscGroup.setLayout(misclayout)
+
+        minTrayCheck = QCheckBox('Minimize to system tray')
+        xTrayCheck = QCheckBox('Minimize to tray when \'X\' is pressed')
         
+        misclayout.addWidget(minTrayCheck)
+        misclayout.addWidget(xTrayCheck)
         
+        #second row (recycler stuff)
+        recycleGroup = QGroupBox('Recycle Bin')
+        recycleMainLayout = QVBoxLayout()
+        recycleGroup.setLayout(recycleMainLayout)
         
-        self.generaltab.layout.addLayout()
+        recyclelayout1 = QHBoxLayout()
+        recycleCheck = QCheckBox('Use recycle bin')
+        showRecycleButton = QPushButton('Show recycle bin')
+        clearRecycleButton = QPushButton('Clear recycle bin')
+        recyclelayout1.addWidget(recycleCheck)
+        recyclelayout1.addWidget(showRecycleButton)
+        recyclelayout1.addWidget(clearRecycleButton)
+        recycleMainLayout.addLayout(recyclelayout1)
         
+        reyclelayout2 = QHBoxLayout()
+        reyclelayout2.addWidget(QLabel('Recycle bin capacity'))
+        recycleCapacity = QLineEdit()
+        recycleCapacity.setValidator(QIntValidator(1, 200))
+        reyclelayout2.addWidget(recycleCapacity)
+        recycleMainLayout.addLayout(reyclelayout2)
+        
+        self.generaltab.layout.addLayout(temphbox)
+        self.generaltab.layout.addWidget(recycleGroup)
         self.resize(self.tabs.sizeHint())
         
         self.show()
