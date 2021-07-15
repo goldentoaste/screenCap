@@ -33,10 +33,10 @@ class Main(QWidget):
         temphbox.addWidget(startupGroup)
         
         startupLayout = QVBoxLayout()
-        startUpCheck = QCheckBox('Run on Start up')
-        startminCheck = QCheckBox('Start minimalized')
-        startupLayout.addWidget(startUpCheck)
-        startupLayout.addWidget(startminCheck)
+        self.startUpCheck = QCheckBox('Run on Start up')
+        self.startminCheck = QCheckBox('Start minimalized')
+        startupLayout.addWidget(self.startUpCheck)
+        startupLayout.addWidget(self.startminCheck)
         startupGroup.setLayout(startupLayout)
         
         #controls
@@ -45,11 +45,11 @@ class Main(QWidget):
         misclayout = QVBoxLayout()
         miscGroup.setLayout(misclayout)
 
-        minTrayCheck = QCheckBox('Minimize to system tray')
-        xTrayCheck = QCheckBox('Minimize to tray when \'X\' is pressed')
+        self.minTrayCheck = QCheckBox('Minimize to system tray')
+        self.xTrayCheck = QCheckBox('Minimize to tray when \'X\' is pressed')
         
-        misclayout.addWidget(minTrayCheck)
-        misclayout.addWidget(xTrayCheck)
+        misclayout.addWidget(self.minTrayCheck)
+        misclayout.addWidget(self.xTrayCheck)
         
         #second row (recycler stuff)
         recycleGroup = QGroupBox('Recycle Bin')
@@ -57,24 +57,56 @@ class Main(QWidget):
         recycleGroup.setLayout(recycleMainLayout)
         
         recyclelayout1 = QHBoxLayout()
-        recycleCheck = QCheckBox('Use recycle bin')
-        showRecycleButton = QPushButton('Show recycle bin')
-        clearRecycleButton = QPushButton('Clear recycle bin')
-        recyclelayout1.addWidget(recycleCheck)
-        recyclelayout1.addWidget(showRecycleButton)
-        recyclelayout1.addWidget(clearRecycleButton)
+        self.recycleCheck = QCheckBox('Use recycle bin')
+        self.showRecycleButton = QPushButton('Show recycle bin')
+        self.clearRecycleButton = QPushButton('Clear recycle bin')
+        recyclelayout1.addWidget(self.recycleCheck)
+        recyclelayout1.addWidget(self.showRecycleButton)
+        recyclelayout1.addWidget(self.clearRecycleButton)
         recycleMainLayout.addLayout(recyclelayout1)
         
         reyclelayout2 = QHBoxLayout()
         reyclelayout2.addWidget(QLabel('Recycle bin capacity'))
-        recycleCapacity = QLineEdit()
-        recycleCapacity.setValidator(QIntValidator(1, 200))
-        reyclelayout2.addWidget(recycleCapacity)
+        self.recycleCapacityEdit = QLineEdit()
+        self.recycleCapacityEdit.setValidator(QIntValidator(1, 200))
+        reyclelayout2.addWidget(self.recycleCapacityEdit)
         recycleMainLayout.addLayout(reyclelayout2)
+        
+        #third row, saving stuff
+        savingGroup = QGroupBox('Save Options')
+        mainsavingLayout = QVBoxLayout()
+        savingGroup.setLayout(mainsavingLayout)
+        
+        savelayout1 = QHBoxLayout()
+        savelayout1.addWidget(QLabel('Default save options'))
+        self.savingOption = QComboBox() #scaled image, original, scaled with drawing, original with drawing.
+        self.savePromptCheck = QCheckBox('Alwasys show prompt')
+        savelayout1.addWidget(self.savingOption)
+        savelayout1.addWidget(self.savePromptCheck)
+        mainsavingLayout.addLayout(savelayout1)
+        
+        savelayout2 = QHBoxLayout()
+        savelayout2.addWidget(QLabel('Default save location'))
+        self.defaultSaveLocation = QLineEdit()
+        self.useLastLocationCheck = QCheckBox('Use last save location')
+        savelayout2.addWidget(self.defaultSaveLocation)
+        mainsavingLayout.addLayout(savelayout2)
+        mainsavingLayout.addWidget(self.useLastLocationCheck )
+        
+        
+        #bottom
+        
         
         self.generaltab.layout.addLayout(temphbox)
         self.generaltab.layout.addWidget(recycleGroup)
+        self.generaltab.layout.addWidget(savingGroup)
+        self.captureButton = QPushButton('Capture')
+    
+        self.generaltab.layout.addWidget(self.captureButton)
+ 
+        
         self.resize(self.tabs.sizeHint())
+      
         
         self.show()
     
