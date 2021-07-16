@@ -8,6 +8,8 @@ class ConfigManager:
     dynamic variable addition, deletion, renaming etc not implemented yet.
     """
 
+    loaded = False
+
     def __init__(
         self, path, default: dict = None, addMissingVars=True, removeExtraVars=False
     ):
@@ -21,13 +23,13 @@ class ConfigManager:
         addMissingVars will compare default's vars with the existing config ini file, and add any missing variables
         removeExtraVars will remove any variables that is in the config file, but not the default.
         """
-        self.default = default if default is not None else dict()
+
         self.config = ConfigParser()
-        self.path = path
 
         self.vals = dict()
         self.secs = dict()
-
+        self.path = path
+        self.default = default if default is not None else dict()
         if os.path.isfile(path):
             self.config.read(path)
         else:
@@ -42,11 +44,22 @@ class ConfigManager:
                 if addMissingVars:
                     if key not in self.vals.keys():
                         self.loadVar(vals[1], key)
+                        if not self.config.has_section(vals[1]):
+                            self.config.add_section(vals[1])
+                        self.config.set(vals[1], key, str(vals[0]))
 
             for key in self.vals.keys():
                 if removeExtraVars and key not in self.default.keys():
                     self.vals.pop(key)
-                    self.secs.pop(key)
+                    s = self.secs.pop(key)
+                    self.config.remove_option(s, key)
+
+            for section in self.config.sections():
+                if not self.config.options(section):
+                    self.config.remove_section(section)
+            self.save()
+
+        self.loaded = True
 
     def newConfig(self):
         self.config.clear()
@@ -72,21 +85,58 @@ class ConfigManager:
 
         self.save()
 
+    def typeCheck(self, name, val):
+        def _raise(e):
+            raise e
+
+        {
+            "i": lambda: _raise(TypeError("must be int"))
+            if type(val) is not int
+            else "",
+            "f": lambda: _raise(TypeError("must be float"))
+            if type(val) is not float
+            else "",
+            "s": lambda: _raise(TypeError("must be string"))
+            if type(val) is not str
+            else "",
+            "l": lambda: _raise(TypeError("must be list"))
+            if type(val) is not list
+            else "",
+        }[name[0]]
+
+    def __getitem__(self, key):
+        return self.vals[key]
+
+    def __setitem__(self, key, val):
+        if key in self.vals:
+            self.typeCheck(key, val)
+            self.vals[key] = val
+            self.config.set(self.secs[key], key, val)
+
+        else:
+            raise KeyError()
+
     def __setattr__(self, name: str, value) -> None:
-        try:
-            super().__setattr__(name, value)
-        except AttributeError:
+
+        if self.loaded:
             if name in self.vals.keys():
-                self.vals[name] = (value, self.vals[name][1])
+                self.typeCheck(name, value)
+                self.vals[name] = value
+                self.config.set(self.secs[name], name, str(value))
+
                 self.save()
             else:
-                raise AttributeError()
+
+                super().__setattr__(name, value)
+        else:
+            super.__setattr__(self, name, value)
 
     def __getattribute__(self, name: str):
         try:
             return super().__getattribute__(name)
         except AttributeError:
             if name in self.vals.keys():
+
                 return self.vals[name]
             else:
                 raise AttributeError()
@@ -140,3 +190,6 @@ if __name__ == "__main__":
             "lilist": ([2, 3, 4], "list"),
         },
     )
+    c.inum = 44
+    print(c.inum)
+    print(dir(c), "vals" in dir(c))
