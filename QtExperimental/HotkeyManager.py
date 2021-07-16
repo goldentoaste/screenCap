@@ -7,6 +7,7 @@ import threading
 import win32con
 import ctypes
 from ctypes import wintypes
+import time
 
 byref = ctypes.byref
 user32 = ctypes.windll.user32
@@ -144,6 +145,7 @@ class HotkeyManager(threading.Thread):
         msg = wintypes.MSG()
         try:
             while True:
+                
                 if self.task:
                     func, args, kwargs = self.task.pop(0)
                     func(*args, **kwargs)
@@ -154,6 +156,7 @@ class HotkeyManager(threading.Thread):
                             func()
                     user32.TranslateMessage(byref(msg))
                     user32.DispatchMessageA(byref(msg))
+                time.sleep(0.1)
         finally:
             for id in self.callbacks.keys():
                 user32.UnregisterHotKey(None, id)
@@ -242,7 +245,7 @@ class HotKeyTestWindow(QDialog):
         self.manager.recordNewHotkey(
             "testing recording",
             lambda: print("recorded hot stuff clicked"),
-            lambda s: (label.setText(s), print(s)),
+            lambda s: (label.setText(s), ''),
         )
 
     def keyPressEvent(self, a0: QtGui.QKeyEvent) -> None:

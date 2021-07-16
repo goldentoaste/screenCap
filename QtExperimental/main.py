@@ -53,60 +53,66 @@ class Main(QWidget):
         
         #second row (recycler stuff)
         recycleGroup = QGroupBox('Recycle Bin')
-        recycleMainLayout = QVBoxLayout()
-        recycleGroup.setLayout(recycleMainLayout)
-        
-        recyclelayout1 = QHBoxLayout()
-        self.recycleCheck = QCheckBox('Use recycle bin')
         self.showRecycleButton = QPushButton('Show recycle bin')
         self.clearRecycleButton = QPushButton('Clear recycle bin')
-        recyclelayout1.addWidget(self.recycleCheck)
-        recyclelayout1.addWidget(self.showRecycleButton)
-        recyclelayout1.addWidget(self.clearRecycleButton)
-        recycleMainLayout.addLayout(recyclelayout1)
-        
-        reyclelayout2 = QHBoxLayout()
-        reyclelayout2.addWidget(QLabel('Recycle bin capacity'))
         self.recycleCapacityEdit = QLineEdit()
         self.recycleCapacityEdit.setValidator(QIntValidator(1, 200))
-        reyclelayout2.addWidget(self.recycleCapacityEdit)
-        recycleMainLayout.addLayout(reyclelayout2)
+        self.recycleCheck = QCheckBox('Use recycle bin')
         
+        recycleMainLayout = QHBoxLayout()
+        recycleGroup.setLayout(recycleMainLayout)
+        
+        recyclelayout1 = QVBoxLayout()
+        recyclelayout2 = QVBoxLayout()
+        recycleButtonGroup = QHBoxLayout()
+        
+        recyclelayout1.addWidget(self.recycleCheck)
+        recyclelayout1.addWidget(QLabel('Recycle bin capacity'))
+        
+        recycleButtonGroup.addWidget(self.showRecycleButton)
+        recycleButtonGroup.addWidget(self.clearRecycleButton)
+        
+        recyclelayout2.addLayout(recycleButtonGroup)
+        recyclelayout2.addWidget(self.recycleCapacityEdit)
+        
+        
+        recycleMainLayout.addLayout(recyclelayout1)
+        recycleMainLayout.addLayout(recyclelayout2)
+        
+        
+    
         #third row, saving stuff
         savingGroup = QGroupBox('Save Options')
         mainsavingLayout = QVBoxLayout()
         savingGroup.setLayout(mainsavingLayout)
         
-        savelayout1 = QHBoxLayout()
-        savelayout1.addWidget(QLabel('Default save options'))
         self.savingOption = QComboBox() #scaled image, original, scaled with drawing, original with drawing.
         self.savePromptCheck = QCheckBox('Alwasys show prompt')
-        savelayout1.addWidget(self.savingOption)
-        savelayout1.addWidget(self.savePromptCheck)
-        mainsavingLayout.addLayout(savelayout1)
-        
-        savelayout2 = QHBoxLayout()
-        savelayout2.addWidget(QLabel('Default save location'))
         self.defaultSaveLocation = QLineEdit()
         self.useLastLocationCheck = QCheckBox('Use last save location')
-        savelayout2.addWidget(self.defaultSaveLocation)
-        mainsavingLayout.addLayout(savelayout2)
-        mainsavingLayout.addWidget(self.useLastLocationCheck )
+            
+        savelayoutUp = QHBoxLayout()
+        
+        
+        savelayoutLeft = QVBoxLayout()
+        savelayoutLeft.addWidget(QLabel('Default save options'))
+        savelayoutLeft.addWidget(QLabel('Default save location'))
+        
+        saveUpRight = QHBoxLayout()
+        saveUpRight.addWidget()
+
         
         
         #bottom
-        
-        
         self.generaltab.layout.addLayout(temphbox)
         self.generaltab.layout.addWidget(recycleGroup)
         self.generaltab.layout.addWidget(savingGroup)
         self.captureButton = QPushButton('Capture')
     
         self.generaltab.layout.addWidget(self.captureButton)
- 
         
         self.resize(self.tabs.sizeHint())
-      
+    
         
         self.show()
     
