@@ -141,11 +141,9 @@ class HotkeyManager(threading.Thread):
         http://timgolden.me.uk/python/win32_how_do_i/catch_system_wide_hotkeys.html
         thanks!
         """
-
         msg = wintypes.MSG()
         try:
             while True:
-                
                 if self.task:
                     func, args, kwargs = self.task.pop(0)
                     func(*args, **kwargs)

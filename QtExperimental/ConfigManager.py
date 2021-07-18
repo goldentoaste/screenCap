@@ -46,7 +46,11 @@ class ConfigManager:
                         self.loadVar(vals[1], key)
                         if not self.config.has_section(vals[1]):
                             self.config.add_section(vals[1])
-                        self.config.set(vals[1], key, str(vals[0]))
+                        self.config.set(
+                            vals[1],
+                            key,
+                            self.getVarString(key, vals[0]),
+                        )
 
             for key in self.vals.keys():
                 if removeExtraVars and key not in self.default.keys():
@@ -60,6 +64,11 @@ class ConfigManager:
             self.save()
 
         self.loaded = True
+
+    def getVarString(self,name, val):
+        return str(val) if name[0] != "l"else (
+                    "|".join([str(item) for item in val]) if len(val) > 0 else ""
+                )
 
     def newConfig(self):
         self.config.clear()
@@ -76,11 +85,7 @@ class ConfigManager:
             self.config.set(
                 val[1],
                 key,
-                str(val[0])
-                if key[0] != "l"
-                else (
-                    "|".join([str(item) for item in val[0]]) if len(val[0]) > 0 else ""
-                ),
+                self.getVarString(key, val[0]),
             )
 
         self.save()
@@ -111,7 +116,7 @@ class ConfigManager:
         if key in self.vals:
             self.typeCheck(key, val)
             self.vals[key] = val
-            self.config.set(self.secs[key], key, val)
+            self.config.set(self.secs[key], key, self.getVarString(key, val))
 
         else:
             raise KeyError()
@@ -122,7 +127,7 @@ class ConfigManager:
             if name in self.vals.keys():
                 self.typeCheck(name, value)
                 self.vals[name] = value
-                self.config.set(self.secs[name], name, str(value))
+                self.config.set(self.secs[name], name, self.getVarString(name, value))
 
                 self.save()
             else:
@@ -192,4 +197,4 @@ if __name__ == "__main__":
     )
     c.inum = 44
     print(c.inum)
-    print(dir(c), "vals" in dir(c))
+    

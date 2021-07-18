@@ -1,4 +1,5 @@
-from configparser import ConfigParser
+import os
+from ConfigManager import ConfigManager
 from os import path, getenv
 from PyQt5.QtGui import QIntValidator
 from PyQt5.QtWidgets import *
@@ -6,15 +7,22 @@ import sys
 configDir = path.join(getenv("appdata"), "screenCap")
 configFile = path.join(configDir, "config.ini")
 
-
+from values import defaultVariables
+from PyQt5.QtCore import QFile, Qt
 class Main(QWidget):
     
     def __init__(self):
         super().__init__()
+        self.initConfig()
         self.initGUI()
         
+    
+    def initConfig(self):
+        self.config = ConfigManager('D:\Python Project\screenCap\QtExperimental\config.ini', defaultVariables)
+    
     def initGUI(self):
         self.setWindowTitle("screenCap owo")
+        self.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
         
         self.tabs = QTabWidget(self)
         self.generaltab = QWidget()
@@ -55,7 +63,7 @@ class Main(QWidget):
         recycleGroup = QGroupBox('Recycle Bin')
         self.showRecycleButton = QPushButton('Show recycle bin')
         self.clearRecycleButton = QPushButton('Clear recycle bin')
-        self.recycleCapacityEdit = QLineEdit()
+        self.recycleCapacityEdit = CustomLineEdit()
         self.recycleCapacityEdit.setValidator(QIntValidator(1, 200))
         self.recycleCheck = QCheckBox('Use recycle bin')
         
@@ -88,7 +96,7 @@ class Main(QWidget):
         
         self.savingOption = QComboBox() #scaled image, original, scaled with drawing, original with drawing.
         self.savePromptCheck = QCheckBox('Alwasys show prompt')
-        self.defaultSaveLocation = QLineEdit()
+        self.defaultSaveLocation = CustomLineEdit()
         self.useLastLocationCheck = QCheckBox('Use last save location')
             
         savelayoutUp = QHBoxLayout()
@@ -98,8 +106,19 @@ class Main(QWidget):
         savelayoutLeft.addWidget(QLabel('Default save options'))
         savelayoutLeft.addWidget(QLabel('Default save location'))
         
+        saveRight = QVBoxLayout()
         saveUpRight = QHBoxLayout()
-        saveUpRight.addWidget()
+        saveUpRight.addWidget(self.savingOption)
+        saveUpRight.addWidget(self.savePromptCheck)
+        
+        saveRight.addLayout(saveUpRight)
+        saveRight.addWidget(self.defaultSaveLocation)
+        
+        
+        savelayoutUp.addLayout(savelayoutLeft)
+        savelayoutUp.addLayout(saveRight)
+        mainsavingLayout.addLayout(savelayoutUp)
+        mainsavingLayout.addWidget(self.useLastLocationCheck)
 
         
         
@@ -110,50 +129,112 @@ class Main(QWidget):
         self.captureButton = QPushButton('Capture')
     
         self.generaltab.layout.addWidget(self.captureButton)
+        self.setupGeneralTab()
         
         self.resize(self.tabs.sizeHint())
     
         
         self.show()
     
-    def loadConfig(self):
-        self.config = ConfigParser()
-        self.config.read(configFile)
+    
+    def setupGeneralTab(self):
         
-        if not self.config.has_section("General"):
-            self.config.add_section("General")
+        def connectck(check, func):
+            check.stateChanged.connect(lambda i: func())
         
-        if not self.config.has_section("Painter"):
-            self.config.add_section("Painter")
+        def startUp():
+            
+            self.config.istartup = int(self.startUpCheck.isChecked())
+            #TODO implement start up behaviour
+            
+        self.startUpCheck.stateChanged.connect(lambda i: startUp())
         
-        if not self.config.has_section("KeyBinds"):
-            self.config.add_section("KeyBinds")
+        def startMin():
+            
+            self.config.istartup = int(self.startminCheck.isChecked())
+            #TODO implement start up behaviour
+            
+        self.startminCheck.stateChanged.connect(lambda i: startMin())
+        
+        def minToTray():
+            self.config.imintray = int(self.minTrayCheck.isChecked())
+        connectck(self.minTrayCheck, minToTray)
+        
+        def minX():
+            self.config.iminx = int(self.xTrayCheck.isChecked())
+        connectck(self.xTrayCheck, minX)
+
+        def useRecycle():
+            self.config.iuserecycle =  int(self.recycleCheck.isChecked())
+        connectck(self.recycleCheck, useRecycle)
+        
+        def showRecycle():
+            print('show recycle clicked')
+            #TODO implement recycle menu
+        
+        self.showRecycleButton.clicked.connect(lambda: showRecycle())
+        
+        def clearRecycle():
+            print('clear recycle cliked')
+            #TODO implement recycle menu
+        self.clearRecycleButton.clicked.connect(lambda: clearRecycle())
+        
+        
+        def capacityChange():
+            if self.recycleCapacityEdit.text() == '':
+                self.recycleCapacityEdit.setText('0')
+            print('capacityChange',int(self.recycleCapacityEdit.text()))
+            
+        self.recycleCapacityEdit.lostFocus = capacityChange
+
+        def saveOption(val):
+            self.config.isaveoption = val
+        
+        self.savingOption.currentIndexChanged.connect(lambda i: saveOption(i))
+        
+        def alwaysShowPrompt():
+            self.config.ishowsaveprompt = int(self.savePromptCheck.isChecked())
+            self.savingOption.setDisabled(self.savePromptCheck.isChecked())
+            
+        connectck(self.savePromptCheck, alwaysShowPrompt)
+        
+        def getSaveLocation():
+            path, _ = QFileDialog.getExistingDirectory(self, 'Choose default save location', os.getenv('HOME'))
+            if path:
+                self.config.ssavelocation = path
+                print(path)
+
+        def checkValidPath():
+            if not os.path.exists(self.defaultSaveLocation.text()):
+                self.defaultSaveLocation.setText(self.config.ssavelocation)
                 
-        def getIntConfig(section, varName, default=0):
-            try:
-                return self.config.getint(section, varName)
-            except Exception:
-                return default
-
-        def getStrConfig(section,varName, default=""):
-            try:
-                return self.config.get(section, varName)
-            except Exception:
-                return default
+        self.defaultSaveLocation.onFocus = getSaveLocation
+        self.defaultSaveLocation.lostFocus = checkValidPath
         
-        self.startUp = getIntConfig("General", "startUp")
-        self.startMin = getIntConfig("General", "startMin")
-        self.minimize = getIntConfig("General", "minimize")
-        self.admin = getIntConfig("General", "admin")
-        self.recycleSize = getIntConfig("General", "recycleSize")
+        def useLastLocation():
+            self.config.iuselastsave = int(self.useLastLocationCheck.isChecked())
+            self.defaultSaveLocation.setDisabled(self.useLastLocationCheck.isChecked())
+        
+        connectck(self.useLastLocationCheck, useLastLocation)
+        
+        
+        
 
+class CustomLineEdit(QLineEdit):
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.onFocus = lambda: ()
+        self.lostFocus = lambda: ()
 
-
-
+    def focusInEvent(self, a0) -> None:
+        self.onFocus()
+        return super().focusInEvent(a0)
+    
+    def focusOutEvent(self, a0) -> None:
+        self.lostFocus()
+        return super().focusOutEvent(a0)
 if __name__ == "__main__":
-    
     app = QApplication(sys.argv)
-    print(sys.argv)
     ex = Main()
-    
     sys.exit(app.exec_())

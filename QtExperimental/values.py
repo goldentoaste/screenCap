@@ -144,3 +144,16 @@ conversionTable = {
 
 keycodeTable = {item[1]:item[0] for item in conversionTable.items()}
 
+
+defaultVariables = {
+    'istartup' : (0, 'main'),
+    'istartmin' : (0, 'main'),
+    'imintray' : (0, 'main'),
+    'iminx' : (0, 'main'),
+    'iuserecycle' : (0, 'main'),
+    'irecyclecapacity' : (1, 'main'),
+    'isaveoption' : (0, 'main'),
+    'ishowsaveprompt' : (0, 'main'),
+    'ssavelocation' : (0, 'main'),
+    'iuselastsave' : (0, 'main'),
+}
