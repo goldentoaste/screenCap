@@ -87,7 +87,9 @@ Here is a [modernized](https://github.com/tylearymf/SETUNA2) version of SETUNA, 
 
 # Currently working on:
 - rewrite the whole thing in pyqt5 
-# ~~Currently working on:
+
+
+# ~~Currently working on:~~
 - rework resizing snapshots. (drag on corners to scale)
 - improve cropping. Entering cropping mode should enlarge snapshot window so that reserving edges is trivial.
 - quick sketch on snapshot
