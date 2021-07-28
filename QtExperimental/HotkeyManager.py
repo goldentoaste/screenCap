@@ -31,6 +31,7 @@ class HotkeyManager(threading.Thread):
         self.keyStringCallback = None
 
         self.task = []
+        self.islocal = False
 
     def getModsCode(self, mods) -> int:
         num = 0
@@ -57,15 +58,18 @@ class HotkeyManager(threading.Thread):
         self.hotkeys[name] = [self.index, None, set()]
         self._stopRecording()
 
-    def recordNewHotkey(self, name, hotkeyCallback, stringCallback):
+    def recordNewHotkey(self, name, hotkeyCallback, stringCallback, islocal=False):
+
+        self.islocal = islocal
         self.task.append(
-            (self._recordNewHotKey, [name, hotkeyCallback, stringCallback], {})
+            (self._recordNewHotKey, [name, hotkeyCallback, stringCallback, islocal], {})
         )
 
-    def _recordNewHotKey(self, name, hotkeyCallback, stringCallback):
-        print("start")
+    def _recordNewHotKey(self, name, hotkeyCallback, stringCallback, islocal):
+        self.islocal = islocal
+
         if self.recording:
-            print("stoping in start")
+
             self._stopRecording()
         self.recording = name
         self.keyStringCallback = stringCallback
@@ -75,11 +79,10 @@ class HotkeyManager(threading.Thread):
         self.callbacks[self.index] = hotkeyCallback
 
     def stopRecording(self):
+
         self.task.append((self._stopRecording, [], {}))
 
     def _stopRecording(self):
-        print("stop")
-
         def clearFields():
             self.recording = None
             self.currentKey = None
@@ -91,7 +94,7 @@ class HotkeyManager(threading.Thread):
             vals = (self.index, self.currentKey, self.currentMods)
             print(f"registering hotkey {vals[1]}")
 
-            if not user32.RegisterHotKey(
+            if not self.islocal and not user32.RegisterHotKey(
                 None,
                 vals[0],
                 self.getModsCode(vals[2]),
@@ -117,7 +120,6 @@ class HotkeyManager(threading.Thread):
                     self.hotkeys[self.recording][1] = self.currentKey
                     self.hotkeys[self.recording][2].update(self.currentMods)
 
-                    self.keyStringCallback("Success")
                     clearFields()
                     return
 
@@ -148,6 +150,7 @@ class HotkeyManager(threading.Thread):
                     func, args, kwargs = self.task.pop(0)
                     func(*args, **kwargs)
                 if user32.PeekMessageA(byref(msg), None, 0, 0, 1) != 0:
+
                     if msg.message == win32con.WM_HOTKEY:
                         func = self.callbacks.get(msg.wParam)
                         if func and not self.recording:
@@ -184,6 +187,7 @@ class HotkeyManager(threading.Thread):
         a0 should the forwarded key event from a Qt widget, for the
         purpose of recording hotkeys
         """
+
         if a0.isAutoRepeat() or not self.recording:
             return
 
@@ -204,8 +208,10 @@ class HotkeyManager(threading.Thread):
         a0 should the forwarded key event from a Qt widget, for the
         purpose of recording hotkeys
         """
+
         if not self.recording:
             return
+
         if a0.nativeVirtualKey() in self.currentMods and self.currentKey is None:
             self.currentMods.remove(a0.nativeVirtualKey())
 
@@ -243,7 +249,7 @@ class HotKeyTestWindow(QDialog):
         self.manager.recordNewHotkey(
             "testing recording",
             lambda: print("recorded hot stuff clicked"),
-            lambda s: (label.setText(s), ''),
+            lambda s: (label.setText(s), ""),
         )
 
     def keyPressEvent(self, a0: QtGui.QKeyEvent) -> None:

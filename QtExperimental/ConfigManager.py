@@ -109,6 +109,12 @@ class ConfigManager:
             else "",
         }[name[0]]
 
+    def getSection(self,val):
+        if val in self.secs:
+            return self.secs[val]
+        raise KeyError()
+
+
     def __getitem__(self, key):
         return self.vals[key]
 
@@ -141,7 +147,6 @@ class ConfigManager:
             return super().__getattribute__(name)
         except AttributeError:
             if name in self.vals.keys():
-
                 return self.vals[name]
             else:
                 raise AttributeError()

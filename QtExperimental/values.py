@@ -154,6 +154,16 @@ defaultVariables = {
     'irecyclecapacity' : (1, 'main'),
     'isaveoption' : (0, 'main'),
     'ishowsaveprompt' : (0, 'main'),
-    'ssavelocation' : (0, 'main'),
+    'ssavelocation' : ('', 'main'),
     'iuselastsave' : (0, 'main'),
+    #hotkeys
+    'licapture':([17, 49], 'global'),
+    'licopy':([17, 50], 'local')
+    
 }
+
+hotkeys = {
+    'licapture': (lambda: print('capture'), 'Capture screen(global)'),
+    'licopy':( lambda: print('copy'), 'Copy image'),
+}
+

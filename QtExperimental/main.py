@@ -1,3 +1,4 @@
+from HotkeyManager import HotkeyManager
 import os
 from ConfigManager import ConfigManager
 from os import path, getenv, remove, mkdir
@@ -8,7 +9,7 @@ import sys
 configDir = path.join(getenv("appdata"), "screenCap")
 configFile = path.join(configDir, "config.ini")
 
-from values import defaultVariables
+from values import defaultVariables, hotkeys
 from PyQt5.QtCore import Qt
 from win32com.client import Dispatch
 import pythoncom
@@ -42,7 +43,12 @@ class Main(QWidget):
     def __init__(self):
         super().__init__()
         self.initConfig()
+        self.initHotkeys()
         self.initGUI()
+
+    def initHotkeys(self):
+        self.hotkeysManager = HotkeyManager()
+        self.hotkeysManager.start()
 
     def initConfig(self):
         self.config = ConfigManager(
@@ -65,6 +71,7 @@ class Main(QWidget):
 
     def initGUI(self):
         self.setWindowTitle("screenCap owo")
+        
         self.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
 
         self.tabs = QTabWidget(self)
@@ -169,25 +176,62 @@ class Main(QWidget):
         self.applyGeneralConfig()
         self.setupGeneralTab()
 
-        self.resize(self.tabs.sizeHint())
-
+        self.initHotkeysTab()
+    
+        self.setFixedSize(self.tabs.sizeHint())
         self.show()
 
-    def applyGeneralConfig(self):
+    def initHotkeysTab(self):
+        def lineeditRecord(item, name, func, islocal):
+
+            self.hotkeysManager.recordNewHotkey(
+                name, func, lambda s: item.setText(s), islocal
+            )
+            item.onkeydown = self.hotkeysManager.keyDown
+            item.onkeyup = self.hotkeysManager.keyUp
+
+        def makeFunc(func, params):
+            return lambda: func(*params)
+
+        form = QFormLayout()
+        form.titles = []
+        form.lines = []
+        self.hotkeystab.setLayout(form)
+
+        r = iter(range(len(hotkeys)))
+        for key, val in hotkeys.items():
+            i = next(r)
+            form.titles.append(QLabel(val[1]))
+            form.lines.append(CustomLineEdit())
+
+            form.lines[i].onFocus = makeFunc(
+                lineeditRecord,
+                (form.lines[i], key, val[0], not val[1].endswith("(global)")),
+            )
+            form.lines[i].lostFocus = self.hotkeysManager.stopRecording
+
+            form.addRow(form.titles[i], form.lines[i])
         
+    
+        self.hotkeystab.setLayout(form)
+
+    def applyGeneralConfig(self):
+
         self.startUpCheck.setChecked(bool(self.config.istartup))
         self.startminCheck.setChecked(bool(self.config.istartmin))
         self.minTrayCheck.setChecked(bool(self.config.imintray))
         self.xTrayCheck.setChecked(bool(self.config.iminx))
         self.recycleCheck.setChecked(bool(self.config.iuserecycle))
         self.recycleCapacityEdit.setText(str(self.config.irecyclecapacity))
-        self.savingOption.addItems(['Scaled', 'Scaled with drawings', 'Original', 'Original with drawings'])
+        self.savingOption.addItems(
+            ["Scaled", "Scaled w/ sketch", "Original", "Original w/ sketch"]
+        )
         self.savingOption.setCurrentIndex(self.config.isaveoption)
         self.savePromptCheck.setChecked(bool(self.config.ishowsaveprompt))
         self.defaultSaveLocation.setText(self.config.ssavelocation)
         self.useLastLocationCheck.setChecked(bool(self.config.iuselastsave))
 
-    def updateDidsabled(self):
+    def updateDisabled(self):
         self.showRecycleButton.setEnabled(self.recycleCheck.isChecked())
         self.clearRecycleButton.setEnabled(self.recycleCheck.isChecked())
         self.recycleCapacityEdit.setEnabled(self.recycleCheck.isChecked())
@@ -215,7 +259,7 @@ class Main(QWidget):
         self.startUpCheck.stateChanged.connect(lambda i: startUp())
 
         def startMin():
-            self.config.istartup = int(self.startminCheck.isChecked())
+            self.config.istartmin = int(self.startminCheck.isChecked())
             # TODO implement start up behaviour
 
         self.startminCheck.stateChanged.connect(lambda i: startMin())
@@ -262,7 +306,7 @@ class Main(QWidget):
 
         def alwaysShowPrompt():
             self.config.ishowsaveprompt = int(self.savePromptCheck.isChecked())
-            self.updateDidsabled()
+            self.updateDisabled()
 
         connectck(self.savePromptCheck, alwaysShowPrompt)
 
@@ -273,7 +317,6 @@ class Main(QWidget):
             if path:
                 self.config.ssavelocation = path
                 self.defaultSaveLocation.setText(path)
-                print(path)
 
         def checkValidPath():
             if not os.path.exists(self.defaultSaveLocation.text()):
@@ -284,7 +327,7 @@ class Main(QWidget):
 
         def useLastLocation():
             self.config.iuselastsave = int(self.useLastLocationCheck.isChecked())
-            self.updateDidsabled()
+            self.updateDisabled()
 
         connectck(self.useLastLocationCheck, useLastLocation)
 
@@ -294,7 +337,9 @@ class CustomLineEdit(QLineEdit):
         super().__init__(*args, **kwargs)
         self.onFocus = lambda: ()
         self.lostFocus = lambda: ()
-        self.onclick = lambda : ()
+        self.onclick = lambda: ()
+        self.onkeydown = lambda a: ()
+        self.onkeyup = lambda a: ()
 
     def focusInEvent(self, a0) -> None:
         self.onFocus()
@@ -303,10 +348,17 @@ class CustomLineEdit(QLineEdit):
     def focusOutEvent(self, a0) -> None:
         self.lostFocus()
         return super().focusOutEvent(a0)
-    
+
     def mousePressEvent(self, a0) -> None:
         self.onclick()
         return super().mousePressEvent(a0)
+
+    def keyPressEvent(self, a0) -> None:
+
+        self.onkeydown(a0)
+
+    def keyReleaseEvent(self, a0) -> None:
+        self.onkeyup(a0)
 
 
 if __name__ == "__main__":
