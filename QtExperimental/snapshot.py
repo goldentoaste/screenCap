@@ -17,6 +17,19 @@ from PIL.ImageQt import ImageQt
 import sys
 
 
+"""
+-cropping - done owo
+-resizing(by dragging corners)
+-painting, paint settings controller
+-saving
+-adapting crop, resize, save wit paint
+-right click menu manager
+-color picker?
+
+
+"""
+
+
 class Snapshot(QWidget):
     def __init__(self, master, image=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -91,15 +104,16 @@ class Snapshot(QWidget):
         self.crop()
 
     def crop(self, margin=50):
-        if self.isCropping: return
+        if self.isCropping:
+            return
         self.isCropping = True
         self.viewRect = self.view.sceneRect()
         self.cropMargin = margin
         self.move(self.pos() + QPoint(-margin, -margin))
-        
+
         self.view.setSceneRect(self.expandRect(self.displayImage.rect(), margin))
         self.resize(self.view.sceneRect().size().toSize())
-        
+
     def expandRect(self, rect: QRectF, amount: float) -> QRectF:
         """
         expands a QRectF by 'amount' px in all directions
@@ -118,14 +132,12 @@ class Snapshot(QWidget):
     def replaceOriginalImage(self):
 
         self.displayImage = self.displayImage.copy(self.view.sceneRect().toRect())
-        #the pixmap stays at 0,0
+        # the pixmap stays at 0,0
         self.displayPix.setPixmap(QPixmap.fromImage(self.displayImage))
-        
-        
+
         # move view to 0,0), where the image is
         rect = self.view.sceneRect()
-        self.view.setSceneRect(QRectF(0,0, rect.width(), rect.height()))
-        
+        self.view.setSceneRect(QRectF(0, 0, rect.width(), rect.height()))
 
     def stopCrop(self):
 
@@ -138,25 +150,24 @@ class Snapshot(QWidget):
         if selectedRect.width() < 20 or selectedRect.height() < 20:
             return
         limit = self.displayPix.pixmap().rect()
-        limit.moveTopLeft(QPoint(self.cropMargin, self.cropMargin)) # move the limt rect of counter margin
-
-        
+        limit.moveTopLeft(
+            QPoint(self.cropMargin, self.cropMargin)
+        )  # move the limt rect of counter margin
 
         selectedRect = self.limitRect(selectedRect, limit)
-        #save the limited rect for transformation, before the sceneRect offset
+        # save the limited rect for transformation, before the sceneRect offset
         limitedSelectionRect = QRectF(selectedRect)
-        print(selectedRect.topLeft(),self.view.sceneRect().topLeft())
+        print(selectedRect.topLeft(), self.view.sceneRect().topLeft())
         selectedRect.moveTopLeft(
             selectedRect.topLeft() + self.view.sceneRect().topLeft()
-        ) # move the selection rect to show the region actually select, in case the top left corner is not the corner of the image
-
+        )  # move the selection rect to show the region actually select, in case the top left corner is not the corner of the image
 
         self.selectRectItem.hide()
 
         self.isCropping = False
 
         # uses the original selection rect for movement, since the an alternative processed rect is used for grabbing image instead.
-    
+
         self.move(self.mapToGlobal(limitedSelectionRect.topLeft().toPoint()))
 
         # change size after moving, since resizing could cause window pos to change?
@@ -166,7 +177,7 @@ class Snapshot(QWidget):
             self.replaceOriginalImage()
 
     def mouseReleaseEvent(self, a0: QtWidgets.QGraphicsSceneMouseEvent) -> None:
-        
+
         self.stopCrop()
 
     def mousePressEvent(self, a0: QtGui.QMouseEvent) -> None:
@@ -235,9 +246,10 @@ class Snapshot(QWidget):
 
         if a0.key() == Qt.Key.Key_Escape:
             self.close()
-            
+
         if a0.key() == Qt.Key.Key_Space:
             self.crop()
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
