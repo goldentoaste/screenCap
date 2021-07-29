@@ -15,7 +15,7 @@ import desktopmagic.screengrab_win32
 from PIL import Image
 from PIL.ImageQt import ImageQt
 import sys
-
+import time
 
 """
 -cropping - done owo
@@ -95,27 +95,41 @@ class Snapshot(QWidget):
         image.putalpha(255)
         self.originalImage = ImageQt(image)
         self.displayImage = self.originalImage
-        image = Image.open("testing.jpeg")
-        image.putalpha(255)
-        self.displayImage = ImageQt(image)
+        # image = Image.open("testing.jpeg")
+        # image.putalpha(255)
+        # self.displayImage = ImageQt(image)
         self.firstCrop = True
         self.move(*self.getBoundBox()[:2])
         self.initialize()
         self.crop()
 
-    def crop(self, margin=50, useOriginal = False):
+    def crop(self, margin=50, useOriginal=False):
         if self.isCropping:
             return
         self.isCropping = True
         self.viewRect = self.view.sceneRect()
         self.cropMargin = margin
-        self.move(self.pos() - QPoint(margin, margin) - self.view.sceneRect().topLeft().toPoint())
+        self.usingOriginal = useOriginal
+        self.move(
+            self.pos()
+            - QPoint(margin, margin)
+            - self.view.sceneRect().topLeft().toPoint()
+        )
 
         if useOriginal:
             self.view.setSceneRect(self.expandRect(self.displayImage.rect(), margin))
         else:
-            #use temp pixmap while useOriginal is not used. TODO 
-            self.view.setSceneRect(self.expandRect(self.view.sceneRect(), margin))
+            # use temp pixmap while useOriginal is not used. TODO
+            t = time.time()
+            self.displayPix.setPixmap(
+                QPixmap.fromImage(
+                    self.displayImage.copy(self.view.sceneRect().toRect())
+                )
+            )
+            r = self.view.sceneRect()
+            r.moveTopLeft(QPoint(0, 0))
+            self.view.setSceneRect(self.expandRect(r, margin))
+            print(time.time()  - t)
         self.resize(self.view.sceneRect().size().toSize())
 
     def expandRect(self, rect: QRectF, amount: float) -> QRectF:
@@ -134,7 +148,7 @@ class Snapshot(QWidget):
         return (p.x(), p.y())
 
     def replaceOriginalImage(self):
-
+        # t = time.time()
         self.displayImage = self.displayImage.copy(self.view.sceneRect().toRect())
         # the pixmap stays at 0,0
         self.displayPix.setPixmap(QPixmap.fromImage(self.displayImage))
@@ -142,15 +156,18 @@ class Snapshot(QWidget):
         # move view to 0,0), where the image is
         rect = self.view.sceneRect()
         self.view.setSceneRect(QRectF(0, 0, rect.width(), rect.height()))
-
-    def stopCrop(self):
-
-        selectedRect = self.getCorrectCoord(
-            self.iniPos.x(),
-            self.iniPos.y(),
-            self.selectRect.width() + self.iniPos.x(),
-            self.selectRect.height() + self.iniPos.y(),
-        )
+        # print(time.time() - t)
+        
+    def stopCrop(self, canceling = False):
+        if not canceling:
+            selectedRect = self.getCorrectCoord(
+                self.iniPos.x(),
+                self.iniPos.y(),
+                self.selectRect.width() + self.iniPos.x(),
+                self.selectRect.height() + self.iniPos.y(),
+            )
+        else:
+            selectedRect = self.view.sceneRect()
         if selectedRect.width() < 20 or selectedRect.height() < 20:
             return
         limit = self.displayPix.pixmap().rect()
@@ -161,7 +178,7 @@ class Snapshot(QWidget):
         selectedRect = self.limitRect(selectedRect, limit)
         # save the limited rect for transformation, before the sceneRect offset
         limitedSelectionRect = QRectF(selectedRect)
-    
+
         selectedRect.moveTopLeft(
             selectedRect.topLeft() + self.view.sceneRect().topLeft()
         )  # move the selection rect to show the region actually select, in case the top left corner is not the corner of the image
@@ -172,9 +189,10 @@ class Snapshot(QWidget):
 
         # uses the original selection rect for movement, since the an alternative processed rect is used for grabbing image instead.
 
-        self.move(self.mapToGlobal(limitedSelectionRect.topLeft().toPoint()))
-
-        # change size after moving, since resizing could cause window pos to change?
+        self.move(self.mapToGlobal(limitedSelectionRect.topLeft().toPoint()) - QPoint(1, 1))
+        
+        if self.usingOriginal:
+            self.displayPix.setPixmap(QPixmap.fromImage(self.displayImage))
         self.view.setSceneRect(selectedRect)
         self.resize(selectedRect.size().toSize())
         if self.firstCrop:
@@ -182,7 +200,6 @@ class Snapshot(QWidget):
             self.firstCrop = False
 
     def mouseReleaseEvent(self, a0: QtWidgets.QGraphicsSceneMouseEvent) -> None:
-
         self.stopCrop()
 
     def mousePressEvent(self, a0: QtGui.QMouseEvent) -> None:
@@ -213,7 +230,7 @@ class Snapshot(QWidget):
             delta = a0.globalPos() - self.lastpos
             delta = delta.toPoint() if type(delta) is QPointF else delta
             self.move(self.pos() + delta)
-            print(self.pos(), self)
+            
             self.lastpos = a0.globalPos()
 
     def limitRect(self, rect: QRectF, limit: QRectF):
@@ -250,10 +267,13 @@ class Snapshot(QWidget):
     def keyPressEvent(self, a0: QtGui.QKeyEvent) -> None:
 
         if a0.key() == Qt.Key.Key_Escape:
-            self.close()
-
+            if self.firstCrop or not self.isCropping:
+                self.close()
+            elif self.isCropping:
+                self.stopCrop(canceling=True)
+                
         if a0.key() == Qt.Key.Key_Space:
-            self.crop()
+            self.crop(50, True)
 
 
 if __name__ == "__main__":
