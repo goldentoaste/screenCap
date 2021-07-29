@@ -103,15 +103,19 @@ class Snapshot(QWidget):
         self.initialize()
         self.crop()
 
-    def crop(self, margin=50):
+    def crop(self, margin=50, useOriginal = False):
         if self.isCropping:
             return
         self.isCropping = True
         self.viewRect = self.view.sceneRect()
         self.cropMargin = margin
-        self.move(self.pos() + QPoint(-margin, -margin))
+        self.move(self.pos() - QPoint(margin, margin) - self.view.sceneRect().topLeft().toPoint())
 
-        self.view.setSceneRect(self.expandRect(self.displayImage.rect(), margin))
+        if useOriginal:
+            self.view.setSceneRect(self.expandRect(self.displayImage.rect(), margin))
+        else:
+            #use temp pixmap while useOriginal is not used. TODO 
+            self.view.setSceneRect(self.expandRect(self.view.sceneRect(), margin))
         self.resize(self.view.sceneRect().size().toSize())
 
     def expandRect(self, rect: QRectF, amount: float) -> QRectF:
@@ -157,7 +161,7 @@ class Snapshot(QWidget):
         selectedRect = self.limitRect(selectedRect, limit)
         # save the limited rect for transformation, before the sceneRect offset
         limitedSelectionRect = QRectF(selectedRect)
-        print(selectedRect.topLeft(), self.view.sceneRect().topLeft())
+    
         selectedRect.moveTopLeft(
             selectedRect.topLeft() + self.view.sceneRect().topLeft()
         )  # move the selection rect to show the region actually select, in case the top left corner is not the corner of the image
@@ -175,6 +179,7 @@ class Snapshot(QWidget):
         self.resize(selectedRect.size().toSize())
         if self.firstCrop:
             self.replaceOriginalImage()
+            self.firstCrop = False
 
     def mouseReleaseEvent(self, a0: QtWidgets.QGraphicsSceneMouseEvent) -> None:
 
