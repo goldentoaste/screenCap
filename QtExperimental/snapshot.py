@@ -6,6 +6,7 @@ from PyQt5.QtGui import QColor, QCursor, QImage, QPen, QPixmap, QTransform
 from PyQt5.QtWidgets import (
     QApplication,
     QFrame,
+    QGraphicsRectItem,
     QGraphicsScene,
     QGraphicsView,
     QHBoxLayout,
@@ -57,7 +58,7 @@ class Snapshot(QWidget):
         self.displayPix.setPos(0, 0)
 
         self.view = QGraphicsView(self.scene)
-        self.view.setStyleSheet("background-color: rgba(40, 40, 40, 0.6)")
+        self.view.setStyleSheet("background-color: rgba(40, 40, 40, 0.5)")
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self.view.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.view.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
@@ -79,8 +80,6 @@ class Snapshot(QWidget):
         self.view.mouseReleaseEvent = self.mouseReleaseEvent
         self.show()
 
-    def updateDisplay(self):
-        pass
 
     def fromImage(self, pilImage: Image.Image):
         pilImage.putalpha(255)
@@ -99,8 +98,11 @@ class Snapshot(QWidget):
         # image.putalpha(255)
         # self.displayImage = ImageQt(image)
         self.firstCrop = True
-        self.move(*self.getBoundBox()[:2])
+        p = self.getBoundBox()[:2]
+        self.move(p[0] - 1, p[1] - 1)
+        
         self.initialize()
+        self.maskingrect : QGraphicsRectItem = self.scene.addRect(self.view.sceneRect(),QPen(), QColor(0,0,0, 127))
         self.crop()
 
     def crop(self, margin=50, useOriginal=False):
@@ -119,8 +121,8 @@ class Snapshot(QWidget):
         if useOriginal:
             self.view.setSceneRect(self.expandRect(self.displayImage.rect(), margin))
         else:
-            # use temp pixmap while useOriginal is not used. TODO
-            t = time.time()
+            # use temp pixmap while useOriginal is not used. 
+            
             self.displayPix.setPixmap(
                 QPixmap.fromImage(
                     self.displayImage.copy(self.view.sceneRect().toRect())
@@ -129,7 +131,7 @@ class Snapshot(QWidget):
             r = self.view.sceneRect()
             r.moveTopLeft(QPoint(0, 0))
             self.view.setSceneRect(self.expandRect(r, margin))
-            print(time.time()  - t)
+            
         self.resize(self.view.sceneRect().size().toSize())
 
     def expandRect(self, rect: QRectF, amount: float) -> QRectF:
@@ -146,9 +148,10 @@ class Snapshot(QWidget):
 
     def qPointToTuple(self, p: QPointF):
         return (p.x(), p.y())
+    
 
     def replaceOriginalImage(self):
-        # t = time.time()
+        
         self.displayImage = self.displayImage.copy(self.view.sceneRect().toRect())
         # the pixmap stays at 0,0
         self.displayPix.setPixmap(QPixmap.fromImage(self.displayImage))
@@ -156,7 +159,7 @@ class Snapshot(QWidget):
         # move view to 0,0), where the image is
         rect = self.view.sceneRect()
         self.view.setSceneRect(QRectF(0, 0, rect.width(), rect.height()))
-        # print(time.time() - t)
+        
         
     def stopCrop(self, canceling = False):
         if not canceling:
@@ -226,6 +229,7 @@ class Snapshot(QWidget):
                     self.selectRect.bottomRight().y(),
                 )
             )
+            self.maskingrect.mask
         else:
             delta = a0.globalPos() - self.lastpos
             delta = delta.toPoint() if type(delta) is QPointF else delta
