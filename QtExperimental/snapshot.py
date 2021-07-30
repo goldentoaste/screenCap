@@ -6,6 +6,7 @@ from PyQt5.QtGui import QColor, QCursor, QImage, QPen, QPixmap, QTransform
 from PyQt5.QtWidgets import (
     QApplication,
     QFrame,
+    QGraphicsEffect,
     QGraphicsRectItem,
     QGraphicsScene,
     QGraphicsView,
@@ -102,8 +103,15 @@ class Snapshot(QWidget):
         self.move(p[0] - 1, p[1] - 1)
         
         self.initialize()
-        self.maskingrect : QGraphicsRectItem = self.scene.addRect(self.view.sceneRect(),QPen(), QColor(0,0,0, 127))
-        self.crop()
+        
+        c = QColor(0,0,0, 100)
+        r = QRectF()
+        p = QPen(QColor(0,0,0,0), 0)
+        self.maskingtop : QGraphicsRectItem = self.scene.addRect(self.view.sceneRect(),p, c)
+        self.maskingleft : QGraphicsRectItem = self.scene.addRect(r, p,c)
+        self.maskingright : QGraphicsRectItem = self.scene.addRect(r, p,c)
+        self.maskingbot : QGraphicsRectItem = self.scene.addRect(r, p, c)
+        self.crop(margin=0)
 
     def crop(self, margin=50, useOriginal=False):
         if self.isCropping:
@@ -133,7 +141,8 @@ class Snapshot(QWidget):
             self.view.setSceneRect(self.expandRect(r, margin))
             
         self.resize(self.view.sceneRect().size().toSize())
-
+        
+        
     def expandRect(self, rect: QRectF, amount: float) -> QRectF:
         """
         expands a QRectF by 'amount' px in all directions
@@ -201,6 +210,10 @@ class Snapshot(QWidget):
         if self.firstCrop:
             self.replaceOriginalImage()
             self.firstCrop = False
+            self.maskingright.hide()
+            self.maskingleft.hide()
+            self.maskingtop.hide()
+            self.maskingbot.hide()
 
     def mouseReleaseEvent(self, a0: QtWidgets.QGraphicsSceneMouseEvent) -> None:
         self.stopCrop()
@@ -221,15 +234,23 @@ class Snapshot(QWidget):
         if self.isCropping:
             diff: QPointF = a0.pos() - self.iniPos
             self.selectRect.setSize(QSizeF(diff.x(), diff.y()))
-            self.selectRectItem.setRect(
-                self.getCorrectCoord(
-                    self.selectRect.x(),
-                    self.selectRect.y(),
-                    self.selectRect.bottomRight().x(),
-                    self.selectRect.bottomRight().y(),
+            rect = self.getCorrectCoord(
+                    self.iniPos.x(),
+                    self.iniPos.y(),
+                    a0.x(),
+                    a0.y(),
                 )
+           
+            self.selectRectItem.setRect(
+                self.selectRect
             )
-            self.maskingrect.mask
+            vrect = self.view.sceneRect()
+            
+            
+            self.maskingtop.setRect(QRectF(QPointF(0,0), QSizeF(vrect.width(), rect.top())))
+            self.maskingleft.setRect(QRectF(QPointF(0, rect.top()), QSizeF(rect.left() , rect.height())))
+            self.maskingbot.setRect(QRectF(QPointF(0,rect.bottom()), QSizeF(vrect.width(), vrect.height() - rect.bottom())))
+            self.maskingright.setRect(QRectF(QPointF(rect.right(), rect.top()), QSizeF(vrect.width() - rect.right() , rect.height())))
         else:
             delta = a0.globalPos() - self.lastpos
             delta = delta.toPoint() if type(delta) is QPointF else delta
