@@ -26,7 +26,8 @@ o.func()
 
 from PIL import ImageQt
 from PyQt5 import QtGui
-from PyQt5.QtCore import QPoint, QPointF
+from PyQt5.QtCore import QPoint, QPointF, Qt
+from PyQt5.QtWidgets import QApplication, QSizeGrip, QWidget
 
 def f1(a : int):
     print(a)
@@ -36,4 +37,33 @@ def f2(b:float):
     
 f1(2); f2(2)
 
-QtGui.QScreen
+
+import sys
+
+
+class stuff(QWidget):
+    
+    
+    def __init__(self, *args, **kwargs):
+        
+        super().__init__(*args, **kwargs)
+        
+        self.resize(400, 400
+                    )
+        self.setWindowFlags(
+            Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.FramelessWindowHint 
+        )
+        
+        
+        self.grip = QSizeGrip(self)
+        self.grip.resize(16, 16)
+        self.show()
+        
+    def resizeEvent(self, a0: QtGui.QResizeEvent) -> None:
+        self.grip.move(a0.size().width() - 16, a0.size().height() - 16)
+        return super().resizeEvent(a0)
+    
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    ex = stuff()
+    sys.exit(app.exec_())
