@@ -273,7 +273,7 @@ class Snapshot(QWidget):
         
         limit = self.view.sceneRect()
         limit.moveTopLeft(
-            self.view.mapToScene(QPoint(self.cropMargin, self.cropMargin))
+            QPoint(self.cropMargin, self.cropMargin)
         )  # move the limt rect of counter margin
 
         
@@ -291,10 +291,8 @@ class Snapshot(QWidget):
         
         self.selectRectItem.hide()
 
-        
-
         # uses the original selection rect for movement, since the an alternative processed rect is used for grabbing image instead.
-        print('mapping', self.view.mapToGlobal(limitedSelectionRect.topLeft().toPoint()), limitedSelectionRect.topLeft().toPoint())
+    
         self.move(
             self.view.mapToGlobal(limitedSelectionRect.topLeft().toPoint()) - QPoint(3, 3)
         )
