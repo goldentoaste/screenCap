@@ -5,8 +5,6 @@ from PyQt5.QtCore import QMargins, QPoint, QPointF, QRect, QRectF, QSize, QSizeF
 from PyQt5.QtGui import QColor, QCursor, QImage, QPainter, QPen, QPixmap, QTransform
 from PyQt5.QtWidgets import (
     QApplication,
-    QFrame,
-    QGraphicsEffect,
     QGraphicsRectItem,
     QGraphicsScene,
     QGraphicsView,
@@ -18,7 +16,7 @@ import desktopmagic.screengrab_win32
 from PIL import Image
 from PIL.ImageQt import ImageQt
 import sys
-import time
+
 
 """
 -cropping - done owo
@@ -181,7 +179,7 @@ class Snapshot(QWidget):
         # self.displayImage = ImageQt(image)
         self.firstCrop = True
         p = self.getBoundBox()[:2]
-        self.move(p[0] - 1, p[1] - 1)
+        self.move(p[0], p[1])
 
         self.initialize()
 
@@ -234,7 +232,7 @@ class Snapshot(QWidget):
         if amount <= 0:
             return QRectF(rect)
         rect = QRectF(rect)
-        rect.moveTopLeft(rect.topLeft() - QPointF(amount, amount))
+        rect.moveTopLeft(rect.topLeft() - QPointF(amount, amount) + QPoint(2, 2))
         rect.setWidth(rect.width() + amount * 2)
         rect.setHeight(rect.height() + amount * 2)
         return rect
@@ -248,13 +246,13 @@ class Snapshot(QWidget):
         # the pixmap stays at 0,0
         self.displayPix.setPixmap(QPixmap.fromImage(self.displayImage))
         self.displayPix.setPos(QPoint())
-        print(self.displayPix.pos())
+      
         # move view to 0,0), where the image is
         self.view.setSceneRect(QRectF(self.displayPix.pixmap().rect()))
 
     def stopCrop(self, canceling=False):
 
-        print('start', self.displayPix.scale())
+       
         if not canceling:
             selectedRect = self.view.mapToScene(
                 self.getCorrectCoord(
@@ -264,23 +262,22 @@ class Snapshot(QWidget):
                     self.selectRect.height() + self.iniPos.y(),
                 ).toRect()
             ).boundingRect()
-         
+
         else:
             selectedRect = self.view.sceneRect()
 
         if selectedRect.width() < 20 or selectedRect.height() < 20:
             return
-        
-        limit = self.view.sceneRect()
-        limit.moveTopLeft(
-            QPoint(self.cropMargin, self.cropMargin)
-        )  # move the limt rect of counter margin
 
-        
-        print('before', selectedRect, limit)
+        limit = self.displayPix.sceneBoundingRect()
+        # limit.moveTopLeft(
+        #     QPoint(self.cropMargin, self.cropMargin)
+        # )  # move the limt rect of counter margin
+
+    
         selectedRect = self.limitRect(selectedRect, limit)
-        
-        print('after', selectedRect)
+
+    
         # save the limited rect for transformation, before the sceneRect offset
         limitedSelectionRect = QRectF(selectedRect)
 
@@ -288,13 +285,13 @@ class Snapshot(QWidget):
         #     selectedRect.topLeft() + self.view.sceneRect().topLeft()
         # )  # move the selection rect to show the region actually select, in case the top left corner is not the corner of the image
 
-        
         self.selectRectItem.hide()
 
         # uses the original selection rect for movement, since the an alternative processed rect is used for grabbing image instead.
-    
+
         self.move(
-            self.view.mapToGlobal(limitedSelectionRect.topLeft().toPoint()) - QPoint(3, 3)
+            self.mapToGlobal(limitedSelectionRect.topLeft().toPoint())
+            + QPoint(self.cropMargin , self.cropMargin )
         )
 
         if not self.usingOriginal:
@@ -312,9 +309,9 @@ class Snapshot(QWidget):
             self.maskingleft.hide()
             self.maskingtop.hide()
             self.maskingbot.hide()
-            self.displayPix.setTransformationMode(
-                Qt.TransformationMode.SmoothTransformation
-            )
+            # self.displayPix.setTransformationMode(
+            #     Qt.TransformationMode.SmoothTransformation
+            # )
 
         self.isCropping = False
 
