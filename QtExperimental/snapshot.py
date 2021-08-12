@@ -1,4 +1,4 @@
-from re import S
+
 from PyQt5 import QtGui
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import QMargins, QPoint, QPointF, QRectF, QSize, QSizeF, Qt
