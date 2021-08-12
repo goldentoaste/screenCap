@@ -1,8 +1,9 @@
 from re import S
 from PyQt5 import QtGui
 from PyQt5 import QtWidgets
-from PyQt5.QtCore import QMargins, QPoint, QPointF, QRect, QRectF, QSize, QSizeF, Qt
-from PyQt5.QtGui import QColor, QCursor, QImage, QPainter, QPen, QPixmap, QTransform
+from PyQt5.QtCore import QMargins, QPoint, QPointF, QRectF, QSize, QSizeF, Qt
+from PyQt5.QtGui import QColor, QCursor, QImage, QPen, QPixmap
+
 from PyQt5.QtWidgets import (
     QApplication,
     QGraphicsRectItem,
@@ -10,8 +11,9 @@ from PyQt5.QtWidgets import (
     QGraphicsView,
     QHBoxLayout,
     QSizeGrip,
-    QWidget,
+    QWidget
 )
+
 import desktopmagic.screengrab_win32
 from PIL import Image
 from PIL.ImageQt import ImageQt
@@ -26,8 +28,6 @@ import sys
 -adapting crop, resize, save wit paint
 -right click menu manager
 -color picker?
-
-
 """
 
 
@@ -50,10 +50,9 @@ class Grip(QSizeGrip):
 
         s = self.parent().size()
         ratio = s.width() / s.height()
+        
         if abs(dx) > abs(dy):
-
             self.parent().resize(s.width() + dx, int((s.width() + dx) / ratio))
-
         else:
             self.parent().resize(int((s.height() + dy) * ratio), s.height() + dy)
 
@@ -246,13 +245,12 @@ class Snapshot(QWidget):
         # the pixmap stays at 0,0
         self.displayPix.setPixmap(QPixmap.fromImage(self.displayImage))
         self.displayPix.setPos(QPoint())
-      
+
         # move view to 0,0), where the image is
         self.view.setSceneRect(QRectF(self.displayPix.pixmap().rect()))
 
     def stopCrop(self, canceling=False):
 
-       
         if not canceling:
             selectedRect = self.view.mapToScene(
                 self.getCorrectCoord(
@@ -330,7 +328,6 @@ class Snapshot(QWidget):
             self.selectRectItem.setRect(self.selectRect)
 
     def mouseMoveEvent(self, a0: QtGui.QMouseEvent) -> None:
-
         # todo remove later
         if a0.buttons() == Qt.MouseButton.RightButton:
             delta = a0.globalPos() - self.lastpos
