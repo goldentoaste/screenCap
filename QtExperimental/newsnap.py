@@ -40,6 +40,7 @@ class Snapshot(QWidget):
         self.cropping = False
         self.lastpos = None
         self.moveLock = False
+        self.cropOffset = QPoint()
 
         if image:
             self.fromImage(image)
@@ -183,6 +184,21 @@ class Snapshot(QWidget):
         self.displayPix.setPos(QPoint())
         self.view.setSceneRect(self.displayPix.boundingRect())
         self.move(self.pos() + QPoint(1, 1))
+        self.cropOffset = QPointF()
+
+    def resizeEvent(self, a0: QtGui.QResizeEvent) -> None:
+        print(self.displayPix.scale())
+        if not self.cropping:
+            size = self.view.sceneRect().size().toSize()
+            size.scale(a0.size(), Qt.AspectRatioMode.KeepAspectRatio)
+
+            self.displayPix.setScale(
+                size.width() / self.view.sceneRect().size().width()
+            )
+            self.displayPix.setPos(self.view.mapToScene(QPoint(0, 0)) - self.cropOffset)
+            self.resize(size)
+        self.grip.move(self.rect().bottomRight() - QPoint(16, 16))
+        
 
     def stopCrop(self, canceling=False):
 
@@ -193,9 +209,10 @@ class Snapshot(QWidget):
 
         limit = self.displayPix.sceneBoundingRect()
 
-        print(limit, rect)
+
         rect = limit.intersected(rect)
-        print("limited", rect)
+
+        self.cropOffset = rect.topLeft()
         self.move(
             self.view.mapToGlobal(self.view.mapFromScene(rect.topLeft().toPoint()))
             + (QPoint(1, 1)
@@ -204,6 +221,7 @@ class Snapshot(QWidget):
         )
 
         if not self.usingOriginal:
+            print('woah')
             rect.moveTopLeft(rect.topLeft() + self.originalOffset)
             self.displayPix.setPixmap(QPixmap.fromImage(self.displayImage))
 
@@ -221,6 +239,7 @@ class Snapshot(QWidget):
 
         self.selectionBox.hide()
         self.cropping = False
+
 
     def wheelEvent(self, a0: QtGui.QWheelEvent) -> None:
         a0.accept()
@@ -282,18 +301,7 @@ class Snapshot(QWidget):
         if a0.key() == Qt.Key.Key_Space:
             self.startCrop(50, True)
 
-    def resizeEvent(self, a0: QtGui.QResizeEvent) -> None:
-
-        if not self.cropping:
-            size = self.view.sceneRect().size().toSize()
-            size.scale(a0.size(), Qt.AspectRatioMode.KeepAspectRatio)
-
-            self.displayPix.setScale(
-                size.width() / self.view.sceneRect().size().width()
-            )
-            self.displayPix.setPos(self.view.mapToScene(QPoint(0, 0)))
-            self.resize(size)
-        self.grip.move(self.rect().bottomRight() - QPoint(16, 16))
+    
 
     def getBoundBox(self):
         bounds = desktopmagic.screengrab_win32.getDisplayRects()
