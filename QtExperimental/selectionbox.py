@@ -57,7 +57,7 @@ class SelectionBox(QtWidgets.QRubberBand):
         self.setCursor(Qt.CursorShape.ClosedHandCursor)
 
     def mouseMoveEvent(self, a0: QtGui.QMouseEvent) -> None:
-        self.move(self.x() + a0.globalX() - self.lastpos.x(), self.y() + a0.globalY() - self.lastpos.y() )
+        self.move(self.x() + a0.globalX() - self.lastpos.x(), self.y() + a0.globalY() - self.lastpos.y())
         self.lastpos = a0.globalPos()
 
     def mouseReleaseEvent(self, a0: QtGui.QMouseEvent) -> None:

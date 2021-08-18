@@ -11,13 +11,14 @@ from PyQt5.QtCore import (
     QSizeF,
     Qt,
 )
-from PyQt5.QtGui import QColor, QCursor, QPen, QPixmap, QImage
+from PyQt5.QtGui import QBrush, QColor, QCursor, QPainter, QPen, QPixmap, QImage
 from PyQt5.QtWidgets import (
     QApplication,
     QGraphicsRectItem,
     QGraphicsScene,
     QGraphicsView,
     QHBoxLayout,
+    QMainWindow,
     QSizeGrip,
     QSizePolicy,
     QWidget,
@@ -61,9 +62,27 @@ class Snapshot(QWidget):
         self.displayPix.setZValue(0)
         self.displayPix.setPos(0, 0)
 
+        self.borderRect = self.scene.addRect(
+            QRectF(), QPen(QColor(255, 255, 255), 2), QBrush(Qt.BrushStyle.NoBrush)
+        )
+        self.borderRect.setZValue(100)
+
         self.view = QGraphicsView(self.scene)
 
-        self.view.setStyleSheet("background-color: rgba(40, 40, 40, 0.5)")
+        def resizeView(a0):
+            QGraphicsView.resizeEvent(self.view, a0)
+            self.borderRect.setRect(
+                self.view.mapToScene(self.view.rect()).boundingRect()
+            )
+
+        def setRect(newR):
+            QGraphicsView.setSceneRect(self.view, newR)
+            self.borderRect.setRect(self.view.sceneRect())
+
+        self.view.resizeEvent = resizeView
+        self.view.setSceneRect = setRect
+        self.view.setStyleSheet("background-color: rgba(40, 40, 40, 0.5); border: 0px")
+
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self.view.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.view.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
@@ -73,12 +92,11 @@ class Snapshot(QWidget):
         self.selectionBox = SelectionBox(1, self)
         self.selectionBox.hide()
 
-        self.setLayout(QHBoxLayout())
+        self.layout = QHBoxLayout()
+        self.setLayout(self.layout)
+        self.layout.setContentsMargins(QMargins())
 
-        self.layout().addWidget(self.view)
-
-        self.layout().setContentsMargins(QMargins())
-        self.layout().setSpacing(0)
+        self.layout.addWidget(self.view)
 
         self.view.mouseMoveEvent = self.mouseMoveEvent
         self.view.mouseReleaseEvent = self.mouseReleaseEvent
@@ -96,7 +114,9 @@ class Snapshot(QWidget):
 
         self.grip.mousePressEvent = press
         self.grip.mouseReleaseEvent = release
-        self.view.wheelEvent = self.wheelEvent
+        # self.view.wheelEvent = self.wheelEvent
+
+        self.currentSize = (self.width(), self.height())
         self.show()
 
     def fromImage(self, image: Image.Image):
@@ -118,7 +138,7 @@ class Snapshot(QWidget):
         self.displayImage = self.originalImage
         self.fullscreenCrop = True
 
-        self.move(*(x + 1 for x in self.getBoundBox()[:2]))
+        self.move(*(x  for x in self.getBoundBox()[:2]))
 
         self.initialize()
 
@@ -132,7 +152,7 @@ class Snapshot(QWidget):
         self.maskingright: QGraphicsRectItem = self.scene.addRect(r, p, c)
         self.maskingbot: QGraphicsRectItem = self.scene.addRect(r, p, c)
 
-        self.startCrop(margin=2)
+        self.startCrop(margin=2, useOriginal=True)
 
     def startCrop(self, margin=0, useOriginal=False):
         if self.cropping:
@@ -141,7 +161,8 @@ class Snapshot(QWidget):
 
         self.cropMargin = margin
         self.usingOriginal = useOriginal
-
+        
+        print('before',     self.pos())
         if useOriginal:
             self.view.setSceneRect(
                 self.displayPix.sceneBoundingRect().marginsAdded(
@@ -157,20 +178,13 @@ class Snapshot(QWidget):
                 )
             )
             self.view.setSceneRect(
-                self.view.sceneRect().marginsAdded(
+                self.displayPix.sceneBoundingRect().marginsAdded(
                     QMarginsF(margin, margin, margin, margin)
                 )
             )
-        self.move(
-            self.view.mapToGlobal(
-                self.view.mapFromScene(self.displayPix.sceneBoundingRect().topLeft())
-            )
-            - QPoint(margin, margin)
-            + (QPoint(1, 1)
-            if self.fullscreenCrop
-            else QPoint(2, 2))
-        )
 
+        self.move(self.pos() - QPoint(margin, margin))
+        print('after', self.pos())
         self.resize(self.view.sceneRect().size().toSize())
         self.displayPix.setTransformationMode(
             Qt.TransformationMode.SmoothTransformation
@@ -183,22 +197,20 @@ class Snapshot(QWidget):
         self.displayPix.setPixmap(QPixmap.fromImage(self.displayImage))
         self.displayPix.setPos(QPoint())
         self.view.setSceneRect(self.displayPix.boundingRect())
-        self.move(self.pos() + QPoint(1, 1))
+        self.move(self.pos())
         self.cropOffset = QPointF()
 
     def resizeEvent(self, a0: QtGui.QResizeEvent) -> None:
-        print(self.displayPix.scale())
+
         if not self.cropping:
-            size = self.view.sceneRect().size().toSize()
+            size = QSize(*self.currentSize)
             size.scale(a0.size(), Qt.AspectRatioMode.KeepAspectRatio)
 
-            self.displayPix.setScale(
-                size.width() / self.view.sceneRect().size().width()
-            )
-            self.displayPix.setPos(self.view.mapToScene(QPoint(0, 0)) - self.cropOffset)
+            self.displayPix.setScale(size.width() / self.displayImage.width())
+
+            self.view.setSceneRect(self.displayPix.sceneBoundingRect())
             self.resize(size)
         self.grip.move(self.rect().bottomRight() - QPoint(16, 16))
-        
 
     def stopCrop(self, canceling=False):
 
@@ -209,19 +221,17 @@ class Snapshot(QWidget):
 
         limit = self.displayPix.sceneBoundingRect()
 
-
         rect = limit.intersected(rect)
 
         self.cropOffset = rect.topLeft()
+        
+        
+        
         self.move(
-            self.view.mapToGlobal(self.view.mapFromScene(rect.topLeft().toPoint()))
-            + (QPoint(1, 1)
-            if self.fullscreenCrop
-            else QPoint(0, 0))
+            (rect.topLeft() + self.pos() - self.view.sceneRect().topLeft()).toPoint()
         )
 
         if not self.usingOriginal:
-            print('woah')
             rect.moveTopLeft(rect.topLeft() + self.originalOffset)
             self.displayPix.setPixmap(QPixmap.fromImage(self.displayImage))
 
@@ -240,6 +250,7 @@ class Snapshot(QWidget):
         self.selectionBox.hide()
         self.cropping = False
 
+        self.currentSize = (self.width(), self.height())
 
     def wheelEvent(self, a0: QtGui.QWheelEvent) -> None:
         a0.accept()
@@ -249,6 +260,18 @@ class Snapshot(QWidget):
             self.stopCrop()
 
     def mousePressEvent(self, a0: QtGui.QMouseEvent) -> None:
+
+        # print(
+        #     "local pos ",
+        #     a0.pos(),
+        #     "global pos ",
+        #     a0.globalPos(),
+        #     "scene pos",
+        #     self.view.mapToScene(a0.pos()),
+        #     "corner pos ",
+        #     self.view.mapFromScene(self.displayPix.sceneBoundingRect().topLeft()),
+        # ) 
+
         self.inipos = a0.pos()
         self.lastpos = a0.globalPos()
 
@@ -300,8 +323,6 @@ class Snapshot(QWidget):
 
         if a0.key() == Qt.Key.Key_Space:
             self.startCrop(50, True)
-
-    
 
     def getBoundBox(self):
         bounds = desktopmagic.screengrab_win32.getDisplayRects()
