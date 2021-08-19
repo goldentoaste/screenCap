@@ -11,7 +11,7 @@ from PyQt5.QtCore import (
     QSizeF,
     Qt,
 )
-from PyQt5.QtGui import QBrush, QColor, QCursor, QPainter, QPen, QPixmap, QImage
+from PyQt5.QtGui import QBrush, QColor, QCursor, QPainter, QPen, QPixmap, QImage, QTransform
 from PyQt5.QtWidgets import (
     QApplication,
     QGraphicsRectItem,
@@ -87,6 +87,7 @@ class Snapshot(QWidget):
         self.view.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.view.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.view.resize(self.displayPix.boundingRect().size().toSize())
+        
         self.resize(self.view.size())
 
         self.selectionBox = SelectionBox(1, self)
@@ -117,6 +118,7 @@ class Snapshot(QWidget):
         # self.view.wheelEvent = self.wheelEvent
 
         self.currentSize = (self.width(), self.height())
+        #self.currentSize = (int(self.width() / self.displayPix.scale()), int(self.height() / self.displayPix.scale()))
         self.show()
 
     def fromImage(self, image: Image.Image):
@@ -162,7 +164,8 @@ class Snapshot(QWidget):
         self.cropMargin = margin
         self.usingOriginal = useOriginal
         
-        print('before',     self.pos())
+        print('before', self.pos(), self.view.mapToGlobal(self.view.mapFromScene(self.displayPix.pos())))
+        
         if useOriginal:
             self.view.setSceneRect(
                 self.displayPix.sceneBoundingRect().marginsAdded(
@@ -183,8 +186,9 @@ class Snapshot(QWidget):
                 )
             )
 
+        
         self.move(self.pos() - QPoint(margin, margin))
-        print('after', self.pos())
+        print('after', self.pos(), self.view.mapToGlobal(self.view.mapFromScene(self.displayPix.pos())))
         self.resize(self.view.sceneRect().size().toSize())
         self.displayPix.setTransformationMode(
             Qt.TransformationMode.SmoothTransformation
@@ -197,7 +201,7 @@ class Snapshot(QWidget):
         self.displayPix.setPixmap(QPixmap.fromImage(self.displayImage))
         self.displayPix.setPos(QPoint())
         self.view.setSceneRect(self.displayPix.boundingRect())
-        self.move(self.pos())
+    
         self.cropOffset = QPointF()
 
     def resizeEvent(self, a0: QtGui.QResizeEvent) -> None:
@@ -210,6 +214,7 @@ class Snapshot(QWidget):
 
             self.view.setSceneRect(self.displayPix.sceneBoundingRect())
             self.resize(size)
+            
         self.grip.move(self.rect().bottomRight() - QPoint(16, 16))
 
     def stopCrop(self, canceling=False):
@@ -224,8 +229,6 @@ class Snapshot(QWidget):
         rect = limit.intersected(rect)
 
         self.cropOffset = rect.topLeft()
-        
-        
         
         self.move(
             (rect.topLeft() + self.pos() - self.view.sceneRect().topLeft()).toPoint()
@@ -250,7 +253,7 @@ class Snapshot(QWidget):
         self.selectionBox.hide()
         self.cropping = False
 
-        self.currentSize = (self.width(), self.height())
+        self.currentSize = (self.width(), self.height() )
 
     def wheelEvent(self, a0: QtGui.QWheelEvent) -> None:
         a0.accept()
