@@ -60,6 +60,8 @@ class PaintToolbar(QWidget):
         self.initGui()
 
     def initGui(self):
+        
+        self.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
         metric = QFontMetrics(QFont())
         mainlayout = QHBoxLayout()
 
@@ -70,7 +72,6 @@ class PaintToolbar(QWidget):
         self.radiusSlider = QSlider(Qt.Orientation.Horizontal)
         self.radiusSlider.setMinimum(1)
         self.radiusSlider.setMaximum(15)
-
         self.radiusSlider.setPageStep(1)
         self.radiusSlider.valueChanged.connect(
             lambda val: (
@@ -78,6 +79,7 @@ class PaintToolbar(QWidget):
                 self.radiusIcon.setRadius(val),
             )
         )
+        self.radiusField.
 
         self.alphaField = NumEditTemp("Alpha *%", "*", 0, 100)
         self.alphaField.setFixedWidth(metric.horizontalAdvance("Alpha 100%  "))
@@ -159,6 +161,7 @@ class NumEditTemp(QLineEdit):
         self.blankChar = blankChar
         self.min = min
         self.max = max
+        self.onFinish = lambda s: ()
 
         self.editingFinished.connect(self.finish)
         self.setStyleSheet("margin: 0px")
@@ -171,6 +174,7 @@ class NumEditTemp(QLineEdit):
             num = self.min
 
         self.setText(self.format.replace(self.blankChar, str(num)))
+        self.onFinish(num)
 
 
 class RadiusIcon(QWidget):
