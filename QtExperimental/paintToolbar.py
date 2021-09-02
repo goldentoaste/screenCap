@@ -1,5 +1,5 @@
 import sys
-from typing import ClassVar
+from typing import ClassVar, List
 from PyQt5 import QtGui
 from PyQt5 import QtWidgets
 from PyQt5 import QtCore
@@ -53,14 +53,36 @@ from ConfigManager import ConfigManager
 import re
 
 
+PATH = 0
+LINE = 1
+RECT = 2
+CIRCLE = 3
+
+
+class DrawOptions:
+    
+    pen: QPen
+    brush: QBrush
+    shape: int
+
+
 class PaintToolbar(QWidget):
     def __init__(self, *args, **kwargs):
 
         super().__init__(*args, **kwargs)
         self.initGui()
 
+    def initVals(self):
+        #todo, to be called after initGui()
+        pass
+    
+    def getDrawOptions(self):
+        return 
+
+    
+    
     def initGui(self):
-        
+        self.setWindowFlags(Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.Tool)
         self.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
         metric = QFontMetrics(QFont())
         mainlayout = QHBoxLayout()
@@ -79,7 +101,7 @@ class PaintToolbar(QWidget):
                 self.radiusIcon.setRadius(val),
             )
         )
-        self.radiusField.
+        self.radiusField.onFinish = lambda val : self.radiusSlider.setSliderPosition(val)
 
         self.alphaField = NumEditTemp("Alpha *%", "*", 0, 100)
         self.alphaField.setFixedWidth(metric.horizontalAdvance("Alpha 100%  "))
@@ -91,6 +113,7 @@ class PaintToolbar(QWidget):
         self.alphaSlider.valueChanged.connect(
             lambda val: self.alphaField.setText(f"Alpha {val}%")
         )
+        self.alphaField.onFinish = lambda val: self.alphaSlider.setSliderPosition(val)
 
         self.penButton = QPushButton(QIcon("icons/pen.svg"), "")
         self.penButton.setIconSize(QSize(35, 35))
