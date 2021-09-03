@@ -60,7 +60,7 @@ CIRCLE = 3
 
 
 class DrawOptions:
-    
+
     pen: QPen
     brush: QBrush
     shape: int
@@ -70,19 +70,39 @@ class PaintToolbar(QWidget):
     def __init__(self, *args, **kwargs):
 
         super().__init__(*args, **kwargs)
+        self.currentSelection = 0
+        self.currentColor = QColor()
         self.initGui()
 
     def initVals(self):
-        #todo, to be called after initGui()
+        # todo, to be called after initGui()
         pass
-    
-    def getDrawOptions(self):
-        return 
 
-    
-    
+    def getDrawOptions(self):
+        o = DrawOptions()
+        o.shape = self.currentSelection
+        color = self.currentColor
+        color.setAlpha(self.alphaSlider.value() * 256 // 100)
+        o.pen = QPen(
+            color,
+            self.radiusSlider.value(),
+            Qt.PenStyle.SolidLine,
+            Qt.PenCapStyle.RoundCap,
+            Qt.PenJoinStyle.RoundJoin,
+        )
+        o.brush = QBrush(
+            color,
+            Qt.BrushStyle.NoBrush
+            if not self.fillCheck.isChecked()
+            else Qt.BrushStyle.SolidPattern,
+        )
+        return o
+
     def initGui(self):
-        self.setWindowFlags(Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.Tool)
+        self.setWindowFlags(
+            Qt.WindowType.CustomizeWindowHint | Qt.WindowType.WindowCloseButtonHint | Qt.WindowType.WindowStaysOnTopHint
+        )
+
         self.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
         metric = QFontMetrics(QFont())
         mainlayout = QHBoxLayout()
@@ -101,7 +121,7 @@ class PaintToolbar(QWidget):
                 self.radiusIcon.setRadius(val),
             )
         )
-        self.radiusField.onFinish = lambda val : self.radiusSlider.setSliderPosition(val)
+        self.radiusField.onFinish = lambda val: self.radiusSlider.setSliderPosition(val)
 
         self.alphaField = NumEditTemp("Alpha *%", "*", 0, 100)
         self.alphaField.setFixedWidth(metric.horizontalAdvance("Alpha 100%  "))
@@ -115,17 +135,25 @@ class PaintToolbar(QWidget):
         )
         self.alphaField.onFinish = lambda val: self.alphaSlider.setSliderPosition(val)
 
+        def assignmentSelection(val):
+            self.currentSelection = val
+
         self.penButton = QPushButton(QIcon("icons/pen.svg"), "")
         self.penButton.setIconSize(QSize(35, 35))
 
+        self.penButton.clicked.connect(lambda x: assignmentSelection(PATH))
+
         self.lineButton = QPushButton(QIcon("icons/line.svg"), "")
         self.lineButton.setIconSize(QSize(35, 35))
+        self.lineButton.clicked.connect(lambda x: assignmentSelection(LINE))
 
         self.rectButton = QPushButton(QIcon("icons/rect.svg"), "")
         self.rectButton.setIconSize(QSize(35, 35))
+        self.rectButton.clicked.connect(lambda x: assignmentSelection(RECT))
 
         self.elipseButton = QPushButton(QIcon("icons/circle.svg"), "")
         self.elipseButton.setIconSize(QSize(35, 35))
+        self.elipseButton.clicked.connect(lambda x: assignmentSelection(CIRCLE))
         self.fillCheck = QCheckBox("Fill")
 
         colorGroup = QGridLayout()
@@ -133,9 +161,14 @@ class PaintToolbar(QWidget):
         colorGroup.setHorizontalSpacing(0)
 
         self.colorButtons = []
+
+        def assignColor(color):
+            self.currentColor = color
+
         for i in range(10):
             c = ColorButton(QSize(58, 58))
             c.setColor(QColor(i * 10, i * 20, i * 10))
+            c.onleftclick = lambda x, c=c: (print(c.color.name()), assignColor(c.color))
             self.colorButtons.append(c)
 
             colorGroup.addWidget(c, i // 5, i % 5)
@@ -257,7 +290,7 @@ class ColorButton(QPushButton):
         if e.buttons() == Qt.MouseButton.LeftButton:
             self.onleftclick(self.color)
         elif e.buttons() == Qt.MouseButton.RightButton:
-            color = QColorDialog.getColor()
+            color = QColorDialog.getColor(self.color, self.parent())
             if not color.isValid():
                 return
             self.color = color
@@ -267,6 +300,6 @@ class ColorButton(QPushButton):
 if __name__ == "__main__":
 
     app = QApplication(sys.argv)
-
+    app.setQuitOnLastWindowClosed(True)
     ex = PaintToolbar()
     sys.exit(app.exec_())
