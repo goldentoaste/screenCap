@@ -59,6 +59,9 @@ class Snapshot(QWidget):
         else:
             self.fromFullscreen()
 
+
+
+
     def initialize(self):
         self.setWindowFlags(
             Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.FramelessWindowHint
@@ -126,7 +129,7 @@ class Snapshot(QWidget):
 
         self.grip.mousePressEvent = press
         self.grip.mouseReleaseEvent = release
-        # self.view.wheelEvent = self.wheelEvent
+
 
         self.currentRect = (0, 0, 0, 0)
         self.currentWidth = self.displayImage.width()

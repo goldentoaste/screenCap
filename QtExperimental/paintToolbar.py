@@ -82,7 +82,7 @@ class PaintToolbar(QWidget):
         o = DrawOptions()
         o.shape = self.currentSelection
         color = self.currentColor
-        color.setAlpha(self.alphaSlider.value() * 256 // 100)
+        color.setAlpha(self.alphaSlider.value() * 255 // 100)
         o.pen = QPen(
             color,
             self.radiusSlider.value(),
@@ -96,6 +96,7 @@ class PaintToolbar(QWidget):
             if not self.fillCheck.isChecked()
             else Qt.BrushStyle.SolidPattern,
         )
+        print('making darw options!! 0w0', color.name(), color.alpha())
         return o
 
     def initGui(self):
