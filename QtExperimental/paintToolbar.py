@@ -64,6 +64,7 @@ class DrawOptions:
     pen: QPen
     brush: QBrush
     shape: int
+    opacity: float
 
 
 class PaintToolbar(QWidget):
@@ -82,7 +83,8 @@ class PaintToolbar(QWidget):
         o = DrawOptions()
         o.shape = self.currentSelection
         color = self.currentColor
-        color.setAlpha(self.alphaSlider.value() * 255 // 100)
+        color.setAlpha(255)
+        o.opacity = self.alphaSlider.value() / 100
         o.pen = QPen(
             color,
             self.radiusSlider.value(),

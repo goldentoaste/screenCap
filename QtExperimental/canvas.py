@@ -5,6 +5,7 @@ from PyQt5 import QtWidgets
 from PyQt5 import QtCore
 from PyQt5.QtCore import (
     QBuffer,
+    QLine,
     QLineF,
     QMargins,
     QMarginsF,
@@ -40,6 +41,8 @@ from PyQt5.QtWidgets import (
     QFileDialog,
     QGraphicsEllipseItem,
     QGraphicsItemGroup,
+    QGraphicsLineItem,
+    QGraphicsOpacityEffect,
     QGraphicsPathItem,
     QGraphicsRectItem,
     QGraphicsScene,
@@ -90,9 +93,13 @@ class Canvas:
 
         self.currentPos = QPoint()
 
-        self.testrect = self.scene.addRect(
-            QRectF(), QColor(0, 0, 0), self.drawOption.brush
-        )
+        self.tempLine : QGraphicsLineItem = self.scene.addLine(QLineF(), QPen())
+        self.tempLine.hide()
+        
+        self.drawingLine = False
+        self.view.setMouseTracking(True)
+
+
 
     def onEnter(self, a0: QMouseEvent):
         self.drawOption = self.toolbar.getDrawOptions()
@@ -100,29 +107,77 @@ class Canvas:
     def onClick(self, a0: QMouseEvent):
 
         self.iniPos = self.view.mapFromParent(a0.pos())
-        self.lastPos = self.iniPos
-        self.currentLerpPos = a0.pos()
+        mapped = self.view.mapToScene(self.iniPos)
+        
+        if a0.buttons() == Qt.MouseButton.RightButton:
+            self.drawingLine = False
+            self.tempLine.hide()
+            return
+        
+        if self.drawingLine: 
+            self.path.lineTo(mapped)
+            self.lastPos = mapped
+            self.currentObject.setPath(self.path)
+            
+            if not self.ctrl:
+                self.drawingLine = False
+                self.tempLine.hide()
+                
+            return
 
+        
         item = None
 
         opt = self.drawOption.shape
 
-        if opt == PATH or opt == LINE:
-            self.path = QPainterPath(self.view.mapToScene(self.iniPos))
+        if opt == PATH:
+            self.currentLerpPos = self.iniPos
+            self.path = QPainterPath(mapped)
             item = QGraphicsPathItem(self.path)
+            if self.ctrl:
+                print('ctrl')
+                self.lockMode = 'h'
+                self.lockVal = self.iniPos.x()
 
-            self.currentPath = QPainterPath()
+            elif self.alt:
+                print('alt')
+                self.lockMode = 'v'
+                self.lockVal= self.iniPos.y()
+            else:
+                print('none')
+                self.lockMode = 'n'
+            
+        elif opt == LINE:
+            self.path = QPainterPath(mapped)
+            item = QGraphicsPathItem(self.path)
+            self.lastPos = self.iniPos
+            self.tempLine.show()
+            self.tempLine.setPen(self.drawOption.pen)
+            self.tempLine.setLine(QLineF(mapped,mapped))
+            
+            self.drawingLine = True
         elif opt == RECT:
             item = QGraphicsRectItem()
-            return
+            
+
         elif opt == CIRCLE:
             item = QGraphicsEllipseItem()
-            return
+        
+        if (opt == RECT or opt == CIRCLE) and self.ctrl:
+            self.lockMode = 'b'
+        else:
+            self.lockMode = 'n'
+        
 
         item.setPos(self.view.mapToScene(self.iniPos))
         item.setPen(self.drawOption.pen)
         item.setBrush(self.drawOption.brush)
         item.setPos(QPointF(0, 0))
+        
+        item.setGraphicsEffect(QGraphicsOpacityEffect())
+        item.setOpacity(self.drawOption.opacity)
+        print(self.drawOption.opacity)
+        
 
         self.currentObject = item
         self.group.addToGroup(item)
@@ -132,47 +187,69 @@ class Canvas:
         pass
 
     def onMove(self, a0: QMouseEvent):
+        self.currentPos = a0.pos()
+        opt = self.drawOption.shape
         if a0.buttons() == Qt.MouseButton.LeftButton:
-            opt = self.drawOption.shape
             if opt == PATH:
-                self.currentLerpPos = smoothStep(self.currentLerpPos, a0.pos(), 0.35)
-                if self.alt:
+                if self.lockMode == 'v':
                     self.path.lineTo(
                         self.view.mapToScene(
-                            QPoint(int(self.currentLerpPos.x()), self.altPos.y())
+                            QPoint(int(a0.x()), self.lockVal)
                         )
                     )
-                elif self.ctrl:
+                elif self.lockMode == 'h':
                     self.path.lineTo(
-                        self.view.mapToScene(
-                            QPoint(self.ctrlPos.x(), int(self.currentLerpPos.y()))
+                        self.view.mapToScene(   
+                            QPoint(self.lockVal, int(a0.y()))
                         )
                     )
                 else:
+                    self.currentLerpPos = smoothStep(self.currentLerpPos, a0.pos(), 0.35)
                     self.path.lineTo(
                         self.view.mapToScene(self.currentLerpPos.toPoint())
                     )
 
                 self.currentObject.setPath(self.path)
+    
+            elif opt == RECT:
+                
+                if self.lockMode == 'b':
+                    size = QSizeF(1, 1).scaled(QSizeF(a0.x() - self.iniPos.x(), a0.y() - self.iniPos.y()), Qt.AspectRatioMode.KeepAspectRatio)
+                    self.currentObject.setRect(QRectF(self.iniPos, size).normalized())
+                    
+                else:
+                    self.currentObject.setRect(QRectF(self.view.mapToScene(self.iniPos), self.view.mapToScene(a0.pos())).normalized())
+                    
+                    
+            elif opt == CIRCLE:
+                size = QSizeF(a0.x() - self.iniPos.x(), a0.y() - self.iniPos.y())
+                if self.lockMode == 'b':
+                    size = QSizeF(1, 1).scaled(size, Qt.AspectRatioMode.KeepAspectRatio)
+                
+                self.currentObject.setRect(QRectF(self.iniPos.x() - size.width() /2, self.iniPos.y() - size.height()/2, size.width(), size.height()))
+                
+            
+                
+            
         
-        self.currentPos = a0.pos()
+        if opt == LINE and self.drawingLine:
+            self.tempLine.show()
+            mapped = self.view.mapToScene(a0.pos())
+            self.tempLine.setLine(QLineF(self.lastPos, mapped))
 
     
 
     def keyDown(self, a0: QKeyEvent):
-        print('??')
+        print(a0.key())
         if a0.key() == Qt.Key.Key_Control:
-            print('ctrl')
             self.ctrl = True
-            self.ctrlPos = QPoint(self.currentPos.x(), self.currentPos.y())
+            
 
         elif a0.key() == Qt.Key.Key_Alt:
             self.alt = True
-            self.altPos = QPoint(self.currentPos.x(), self.currentPos.y())
 
     def keyUp(self, a0: QKeyEvent):
         if a0.key() == Qt.Key.Key_Control:
-            
             self.ctrl = False
             
 
