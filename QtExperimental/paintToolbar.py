@@ -57,6 +57,8 @@ PATH = 0
 LINE = 1
 RECT = 2
 CIRCLE = 3
+ERASE = 4
+SELECT = 5
 
 
 class DrawOptions:
@@ -67,6 +69,12 @@ class DrawOptions:
     opacity: float
 
 
+def loadImage(path, x, y):
+    return QPixmap(path, "PNG").scaled(
+        x, y, transformMode=Qt.TransformationMode.SmoothTransformation
+    )
+
+
 class PaintToolbar(QWidget):
     def __init__(self, *args, **kwargs):
 
@@ -74,6 +82,24 @@ class PaintToolbar(QWidget):
         self.currentSelection = 0
         self.currentColor = QColor()
         self.initGui()
+        self.initCursors()
+
+    def initCursors(self):
+        self.cursors = {
+            (PATH, False, False): loadImage("icons/cross.png", 32, 32),
+            (PATH, True, False): loadImage("icons/crossHLine.png", 32, 32),
+            (PATH, False, True): loadImage("icons/crossVLine.png", 32, 32),
+            (LINE, False, False): loadImage("icons/crossLine.png", 32, 32),
+            (LINE, True, False): loadImage("icons/crossZigZag.png", 32, 32),
+            (RECT, False, False): loadImage("icons/crossRect.png", 32, 32),
+            (CIRCLE, False, False): loadImage("icons/crossCircle.png", 32, 32),
+            (SELECT, False, False): loadImage("icons/crossCircle.png", 32, 32),
+            (ERASE, False, False): loadImage("icons/crossCircle.png", 32, 32),
+            
+        }
+
+    def getCursors(self):
+        return self.cursors
 
     def initVals(self):
         # todo, to be called after initGui()
@@ -85,6 +111,7 @@ class PaintToolbar(QWidget):
         color = self.currentColor
         color.setAlpha(255)
         o.opacity = self.alphaSlider.value() / 100
+        print(o.opacity)
         o.pen = QPen(
             color,
             self.radiusSlider.value(),
@@ -98,12 +125,14 @@ class PaintToolbar(QWidget):
             if not self.fillCheck.isChecked()
             else Qt.BrushStyle.SolidPattern,
         )
-        print('making darw options!! 0w0', color.name(), color.alpha())
+
         return o
 
     def initGui(self):
         self.setWindowFlags(
-            Qt.WindowType.CustomizeWindowHint | Qt.WindowType.WindowCloseButtonHint | Qt.WindowType.WindowStaysOnTopHint
+            Qt.WindowType.CustomizeWindowHint
+            | Qt.WindowType.WindowCloseButtonHint
+            | Qt.WindowType.WindowStaysOnTopHint
         )
 
         self.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
@@ -113,10 +142,10 @@ class PaintToolbar(QWidget):
         self.radiusField = NumEditTemp("* px", "*", 1, 20)
         self.radiusField.setFixedWidth(metric.horizontalAdvance("20 px  "))
 
-        self.radiusIcon = RadiusIcon(1, Qt.GlobalColor.black, QSize(40, 40))
+        self.radiusIcon = RadiusIcon(1, Qt.GlobalColor.black, QSize(25, 25))
         self.radiusSlider = QSlider(Qt.Orientation.Horizontal)
         self.radiusSlider.setMinimum(1)
-        self.radiusSlider.setMaximum(15)
+        self.radiusSlider.setMaximum(20)
         self.radiusSlider.setPageStep(1)
         self.radiusSlider.valueChanged.connect(
             lambda val: (
@@ -142,21 +171,30 @@ class PaintToolbar(QWidget):
             self.currentSelection = val
 
         self.penButton = QPushButton(QIcon("icons/pen.svg"), "")
-        self.penButton.setIconSize(QSize(35, 35))
+        self.penButton.setIconSize(QSize(24, 24))
 
         self.penButton.clicked.connect(lambda x: assignmentSelection(PATH))
 
         self.lineButton = QPushButton(QIcon("icons/line.svg"), "")
-        self.lineButton.setIconSize(QSize(35, 35))
+        self.lineButton.setIconSize(QSize(24, 24))
         self.lineButton.clicked.connect(lambda x: assignmentSelection(LINE))
 
         self.rectButton = QPushButton(QIcon("icons/rect.svg"), "")
-        self.rectButton.setIconSize(QSize(35, 35))
+        self.rectButton.setIconSize(QSize(24, 24))
         self.rectButton.clicked.connect(lambda x: assignmentSelection(RECT))
 
         self.elipseButton = QPushButton(QIcon("icons/circle.svg"), "")
-        self.elipseButton.setIconSize(QSize(35, 35))
+        self.elipseButton.setIconSize(QSize(24, 24))
         self.elipseButton.clicked.connect(lambda x: assignmentSelection(CIRCLE))
+
+        self.eraseButton = QPushButton(QIcon("icons/eraser.png"), "")
+        self.eraseButton.clicked.connect(lambda x: assignmentSelection(ERASE))
+        self.eraseButton.setIconSize(QSize(24, 24))
+
+        self.selectButton = QPushButton(QIcon("icons/cursor.png"), "")
+        self.selectButton.clicked.connect(lambda x: assignmentSelection(SELECT))
+        self.selectButton.setIconSize(QSize(24, 24))
+
         self.fillCheck = QCheckBox("Fill")
 
         colorGroup = QGridLayout()
@@ -171,7 +209,7 @@ class PaintToolbar(QWidget):
         for i in range(10):
             c = ColorButton(QSize(58, 58))
             c.setColor(QColor(i * 10, i * 20, i * 10))
-            c.onleftclick = lambda x, c=c: (print(c.color.name()), assignColor(c.color))
+            c.onleftclick = lambda x, c=c: assignColor(c.color)
             self.colorButtons.append(c)
 
             colorGroup.addWidget(c, i // 5, i % 5)
@@ -197,6 +235,8 @@ class PaintToolbar(QWidget):
         buttonGroup.addWidget(self.lineButton)
         buttonGroup.addWidget(self.rectButton)
         buttonGroup.addWidget(self.elipseButton)
+        buttonGroup.addWidget(self.eraseButton)
+        buttonGroup.addWidget(self.selectButton)
         buttonGroup.addWidget(self.fillCheck)
 
         allleftGroup = QVBoxLayout()
@@ -246,7 +286,7 @@ class RadiusIcon(QWidget):
         self.setFixedSize(size)
 
     def sizeHint(self) -> QtCore.QSize:
-        print(self.prefSize)
+
         return self.prefSize
 
     def minimumSizeHint(self) -> QtCore.QSize:
@@ -269,7 +309,7 @@ class RadiusIcon(QWidget):
         painter.setBrush(self.color)
         painter.setBackground(QColor(230, 230, 230))
 
-        painter.drawEllipse(self.rect().center(), self.radius, self.radius)
+        painter.drawEllipse(self.rect().center(), self.radius // 2, self.radius // 2)
 
 
 class ColorButton(QPushButton):
@@ -298,6 +338,7 @@ class ColorButton(QPushButton):
                 return
             self.color = color
             self.setStyleSheet(f"QPushButton {{background-color: {self.color.name()}}}")
+            self.onleftclick(self.color)
 
 
 if __name__ == "__main__":
