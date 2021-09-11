@@ -160,7 +160,12 @@ defaultVariables = {
     'iuselastsave' : (0, 'main'),
     #hotkeys
     'licapture':([17, 49], 'global'),
-    'licopy':([17, 50], 'local')
+    'licopy':([17, 50], 'local'),
+    
+    #painter
+    'isize' : (5, 'painter'),
+    'ialpha': (100, 'painter'),
+    'lscolors' : (['#000000', '#ffffff', '#ff69b4','#dc143c' , '#fd6500', '#ffd600', '#a52a2a', '#32cd32', '#4169E1', '#8A2BE2'], 'painter')
     
 }
 

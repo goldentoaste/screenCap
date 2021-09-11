@@ -1,3 +1,4 @@
+from os import path
 import sys
 from typing import ClassVar
 from PyQt5 import QtGui
@@ -36,6 +37,7 @@ from PyQt5.QtGui import (
 from PyQt5.QtWidgets import (
     QApplication,
     QGraphicsEllipseItem,
+    QGraphicsItem,
     QGraphicsLineItem,
     QGraphicsOpacityEffect,
     QGraphicsPathItem,
@@ -49,7 +51,16 @@ from PyQt5.QtWidgets import (
 from ConfigManager import ConfigManager
 
 
-from paintToolbar import PATH, LINE, RECT, CIRCLE, SELECT, PaintToolbar, DrawOptions
+from paintToolbar import (
+    ERASE,
+    PATH,
+    LINE,
+    RECT,
+    CIRCLE,
+    SELECT,
+    PaintToolbar,
+    DrawOptions,
+)   
 
 
 def smoothStep(p1: QPointF, p2: QPointF, amount: float):
@@ -80,9 +91,8 @@ class Canvas:
         self.group = self.scene.createItemGroup([])
 
         self.objects = []
-        self.currentObject = 0
-
-        self.currentPos = QPoint()
+        self.currentObject = None
+        self.currentLerpPos = QPointF()
 
         self.tempLine: QGraphicsLineItem = self.scene.addLine(QLineF(), QPen())
         self.tempLine.hide()
@@ -94,16 +104,28 @@ class Canvas:
 
         self.view.setCursor(
             QCursor(
-                self.toolbar.getCursors().get(
-                    (self.drawOption.shape, self.ctrl, self.alt),
-                    self.toolbar.getCursors().get((self.drawOption, False, False)),
+                *(
+                    self.toolbar.getCursors().get(
+                        (self.drawOption.shape, self.ctrl, self.alt),
+                        self.toolbar.getCursors().get((self.drawOption, False, False)),
+                    )
                 ),
-                16,
-                16,
             )
         )
+        
+    def clear(self) :
+        for item in self.objects:
+            self.scene.removeItem(item)
+        self.objects.clear()   
+    
+    def scale(self):
+        return self.group.scale()
+    
+    def setScale(self, scale: float):
+        self.group.setScale(scale)
 
     def onEnter(self, a0: QMouseEvent):
+        print('updating')
         self.drawOption = self.toolbar.getDrawOptions()
         self.updateCursor()
 
@@ -111,33 +133,54 @@ class Canvas:
 
         self.iniPos = self.view.mapFromParent(a0.pos())
         mapped = self.view.mapToScene(self.iniPos)
+        opt = self.drawOption.shape
+        self.lastPos = mapped
 
-        if a0.buttons() == Qt.MouseButton.RightButton and self.drawingLine:
+        # handling line behaviour
+        if opt != LINE or (
+            a0.buttons() == Qt.MouseButton.RightButton and self.drawingLine
+        ):
+
             self.drawingLine = False
             self.tempLine.hide()
             self.finishLine()
-            return
+            if opt == LINE:
+
+                return
 
         if self.drawingLine:
             self.path.lineTo(mapped)
-            self.lastPos = mapped
+
             self.currentObject.setPath(self.path)
 
             if not self.ctrl:
                 self.drawingLine = False
                 self.tempLine.hide()
                 self.finishLine()
-
             return
+
+        # dealing with select and erase
+
+        if opt == SELECT:
+            self.currentObject = self.view.itemAt(self.iniPos)
+
+            self.offset = (
+                (mapped - self.currentObject.pos())
+                if self.currentObject is not None
+                else None
+            )
+            return
+        elif opt == ERASE:
+            item = self.view.itemAt(self.iniPos)
+            self.deleteObj(self.iniPos)
+            return
+
         item = None
-        opt = self.drawOption.shape
         filled = self.drawOption.brush.style() != Qt.BrushStyle.NoBrush
         if opt == PATH:
-            self.currentLerpPos = self.iniPos
+            self.currentLerpPos = mapped
             self.path = QPainterPath(mapped)
-            item = PathItem(
-                filled, self.path
-            )
+            item = PathItem(filled, self.path)
             if self.ctrl:
                 self.lockMode = "h"
                 self.lockVal = self.iniPos.x()
@@ -150,9 +193,7 @@ class Canvas:
 
         elif opt == LINE:
             self.path = QPainterPath(mapped)
-            item = PathItem(
-                filled, self.path
-            )
+            item = PathItem(filled, self.path)
             self.lastPos = self.iniPos
             self.tempLine.show()
             self.tempLine.setPen(self.drawOption.pen)
@@ -164,9 +205,6 @@ class Canvas:
 
         elif opt == CIRCLE:
             item = CircleItem(filled)
-        elif opt == SELECT:
-            print(self.view.itemAt(self.iniPos))
-            return
 
         if (opt == RECT or opt == CIRCLE) and self.ctrl:
             self.lockMode = "b"
@@ -187,19 +225,46 @@ class Canvas:
         self.objects.append(item)
 
     def onRelease(self, a0: QMouseEvent):
+        if self.currentObject is not None:
+            opt = self.drawOption.shape
+            if opt == LINE or opt == PATH:
+                if self.currentObject.path().length() == 0:
+                    self.deleteObj(self.currentObject)
+            elif opt == RECT or opt == CIRCLE:
+                if self.currentObject.rect().size() == QSizeF():
+                    self.deleteObj(self.currentObject)
+            return
         s = self.drawOption.shape
-        print("on release", s)
+
         if s == PATH or s == CIRCLE or s == RECT:
             self.finishLine()
 
+    def undo(self):
+        if len(self.objects) > 0:
+            self.deleteObj(self.objects[-1])
+
+    def deleteObj(self, o):
+        if isinstance(o, QGraphicsItem):
+            item = o
+        else:
+            item = self.view.itemAt(o)
+        if item is None:
+            return
+        self.objects.remove(item)
+        self.scene.removeItem(item)
+
     def finishLine(self):
-        print("final")
+        if self.currentObject is None or type(self.currentObject) is QGraphicsPathItem:
+            return
         self.currentObject.finalize()
 
     def onMove(self, a0: QMouseEvent):
-        self.currentPos = a0.pos()
+
         opt = self.drawOption.shape
+
         if a0.buttons() == Qt.MouseButton.LeftButton:
+            mappedIniPos = self.view.mapToScene(self.iniPos)
+            mappedCurPos = self.view.mapToScene(a0.pos())
             if opt == PATH:
 
                 if self.lockMode == "v":
@@ -212,46 +277,41 @@ class Canvas:
                     )
                 else:
                     self.currentLerpPos = smoothStep(
-                        self.currentLerpPos, a0.pos(), 0.35
+                        self.currentLerpPos, mappedCurPos, 0.35
                     )
-                    self.path.lineTo(
-                        self.view.mapToScene(self.currentLerpPos.toPoint())
-                    )
+                    self.path.lineTo(self.currentLerpPos.toPoint())
 
                 self.currentObject.setPath(self.path)
-            elif opt == RECT:
+
+            elif opt == CIRCLE or opt == RECT:
+                dx = mappedCurPos.x() - mappedIniPos.x()
+                dy = mappedCurPos.y() - mappedIniPos.y()
+
+                size = QSizeF(dx, dy)
+
                 if self.lockMode == "b":
-                    dx = a0.x() - self.iniPos.x()
-                    dy = a0.y() - self.iniPos.y()
-                    size = QSizeF(1, 1).scaled(
-                        QSizeF(dx, dy), Qt.AspectRatioMode.KeepAspectRatio
-                    )
+                    size = QSizeF(1, 1).scaled(size, Qt.AspectRatioMode.KeepAspectRatio)
                     if dy > 0 and dx < 0:
                         size.setHeight(size.height() * -1)
                     elif dx > 0 and dy < 0:
                         size.setWidth(size.width() * -1)
-                    self.currentObject.setRect(QRectF(self.iniPos, size).normalized())
-                else:
+
+                if opt == CIRCLE:
                     self.currentObject.setRect(
                         QRectF(
-                            self.view.mapToScene(self.iniPos),
-                            self.view.mapToScene(a0.pos()),
+                            mappedIniPos.x() - size.width(),
+                            mappedIniPos.y() - size.height(),
+                            size.width() * 2,
+                            size.height() * 2,
                         ).normalized()
                     )
+                elif opt == RECT:
+                    self.currentObject.setRect(QRectF(mappedIniPos, size).normalized())
 
-            elif opt == CIRCLE:
-                size = QSizeF(a0.x() - self.iniPos.x(), a0.y() - self.iniPos.y())
-                if self.lockMode == "b":
-                    size = QSizeF(1, 1).scaled(size, Qt.AspectRatioMode.KeepAspectRatio)
-
-                self.currentObject.setRect(
-                    QRectF(
-                        self.iniPos.x() - size.width() / 2,
-                        self.iniPos.y() - size.height() / 2,
-                        size.width(),
-                        size.height(),
-                    )
-                )
+            elif opt == SELECT and self.currentObject is not None:
+                self.currentObject.setPos(self.view.mapToScene(a0.pos()) - self.offset)
+            elif opt == ERASE:
+                self.deleteObj(a0.pos())
 
         if opt == LINE and self.drawingLine:
             self.tempLine.show()
@@ -259,12 +319,13 @@ class Canvas:
             self.tempLine.setLine(QLineF(self.lastPos, mapped))
 
     def keyDown(self, a0: QKeyEvent):
-
+     
         if a0.key() == Qt.Key.Key_Control:
             self.ctrl = True
 
         elif a0.key() == Qt.Key.Key_Alt:
             self.alt = True
+      
 
     def keyUp(self, a0: QKeyEvent):
         if a0.key() == Qt.Key.Key_Control:
@@ -281,7 +342,7 @@ class PathItem(QGraphicsPathItem):
 
         self.filled = filled
 
-    def shape(self) -> QtGui.QPainterPath:
+    def shape(self) -> QtGui.QPainterPath:  
         if self.filled:
             return super().shape()
         else:
@@ -334,7 +395,7 @@ class CanvasTesting(QWidget):
         self.canvas.onClick(a0)
 
     def mouseReleaseEvent(self, a0: QtGui.QMouseEvent) -> None:
-        print("mouse release")
+
         self.canvas.onRelease(a0)
 
     def keyPressEvent(self, a0: QtGui.QKeyEvent) -> None:

@@ -93,7 +93,6 @@ class ConfigManager:
     def typeCheck(self, name, val):
         def _raise(e):
             raise e
-
         {
             "i": lambda: _raise(TypeError("must be int"))
             if type(val) is not int

@@ -1,3 +1,4 @@
+from ConfigManager import ConfigManager
 from PyQt5 import QtGui
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import (
@@ -40,6 +41,9 @@ from selectionbox import SelectionBox
 import win32clipboard as clipboard
 import os
 
+from paintToolbar import PaintToolbar
+from canvas import Canvas
+
 
 class Snapshot(QWidget):
     def __init__(self, master, image=None, *args, **kwargs):
@@ -64,7 +68,7 @@ class Snapshot(QWidget):
 
     def initialize(self):
         self.setWindowFlags(
-            Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.FramelessWindowHint
+            Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.FramelessWindowHint | Qt.WindowType.SubWindow
         )
 
         self.setMinimumSize(QSize(20, 20))
@@ -133,9 +137,32 @@ class Snapshot(QWidget):
 
         self.currentRect = (0, 0, 0, 0)
         self.currentWidth = self.displayImage.width()
+        
+        #test canvas
+        import values
+        self.config = ConfigManager('D:\Python Project\screenCap\QtExperimental\config.ini',values.defaultVariables )
+        self.toolbar = PaintToolbar(self.config)
+        self.toolbar.hide()
+        self.canvas = Canvas(self.scene, self.view, self.toolbar)
+        
+        self.painting = False
+        
 
         self.showNormal()
         self.view.setSceneRect(self.displayPix.boundingRect())
+    
+    
+    def startPaint(self):
+        self.painting = True
+        self.toolbar.show()
+        self.canvas.updateCursor()
+        
+    def stopPaint(self):
+        self.painting = False
+        self.view.setCursor(Qt.CursorShape.ArrowCursor)
+    
+    
+    
 
     def fromImage(self, image: Image.Image):
         image.putalpha(255)
@@ -325,8 +352,16 @@ class Snapshot(QWidget):
         a0.accept()
 
     def mouseReleaseEvent(self, a0: QtWidgets.QGraphicsSceneMouseEvent) -> None:
+        
+        if self.painting:
+            self.canvas.onRelease(a0)
+        
         if self.cropping:
             self.stopCrop()
+            
+    def enterEvent(self, a0) -> None:
+        if self.painting:
+            self.canvas.onEnter(a0)
 
     def mouseDoubleClickEvent(self, a0: QtGui.QMouseEvent) -> None:
 
@@ -353,17 +388,10 @@ class Snapshot(QWidget):
 
     def mousePressEvent(self, a0: QtGui.QMouseEvent) -> None:
 
-        # print(
-        #     "local pos ",
-        #     a0.pos(),
-        #     "global pos ",
-        #     a0.globalPos(),
-        #     "scene pos",
-        #     self.view.mapToScene(a0.pos()),
-        #     "corner pos ",
-        #     self.view.mapFromScene(self.displayPix.sceneBoundingRect().topLeft()),
-        # )
-
+        if self.painting:
+            self.canvas.onClick(a0)
+            return
+        
         self.inipos = a0.pos()
         self.lastpos = a0.globalPos()
 
@@ -374,38 +402,56 @@ class Snapshot(QWidget):
 
     def mouseMoveEvent(self, a0: QtGui.QMouseEvent) -> None:
 
-        if self.cropping:
+        if self.painting:
+            self.canvas.onMove(a0)
+            return
 
-            rect = QRect(self.inipos, a0.pos()).normalized()
-            self.selectionBox.setGeometry(rect)
+        if a0.buttons() == Qt.MouseButton.LeftButton:
+            if self.cropping :
 
-            vrect = self.view.sceneRect()
+                rect = QRect(self.inipos, a0.pos()).normalized()
+                self.selectionBox.setGeometry(rect)
 
-            self.maskingtop.setRect(
-                QRectF(QPointF(0, 0), QSizeF(vrect.width(), rect.top()))
-            )
-            self.maskingleft.setRect(
-                QRectF(QPointF(0, rect.top()), QSizeF(rect.left(), rect.height()))
-            )
-            self.maskingbot.setRect(
-                QRectF(
-                    QPointF(0, rect.bottom()),
-                    QSizeF(vrect.width(), vrect.height() - rect.bottom()),
+                vrect = self.view.sceneRect()
+
+                self.maskingtop.setRect(
+                    QRectF(QPointF(0, 0), QSizeF(vrect.width(), rect.top()))
                 )
-            )
-            self.maskingright.setRect(
-                QRectF(
-                    QPointF(rect.right(), rect.top()),
-                    QSizeF(vrect.width() - rect.right(), rect.height()),
+                self.maskingleft.setRect(
+                    QRectF(QPointF(0, rect.top()), QSizeF(rect.left(), rect.height()))
                 )
-            )
-        elif not self.moveLock:
-            delta = a0.globalPos() - self.lastpos
-            self.move(self.pos() + delta)
+                self.maskingbot.setRect(
+                    QRectF(
+                        QPointF(0, rect.bottom()),
+                        QSizeF(vrect.width(), vrect.height() - rect.bottom()),
+                    )
+                )
+                self.maskingright.setRect(
+                    QRectF(
+                        QPointF(rect.right(), rect.top()),
+                        QSizeF(vrect.width() - rect.right(), rect.height()),
+                    )
+                )
+            elif not self.moveLock:
+                delta = a0.globalPos() - self.lastpos
+                self.move(self.pos() + delta)
 
-            self.lastpos = a0.globalPos()
+                self.lastpos = a0.globalPos()
+
+
+    def keyReleaseEvent(self, a0: QtGui.QKeyEvent) -> None:
+        if self.painting:
+            self.canvas.keyUp(a0)
 
     def keyPressEvent(self, a0: QtGui.QKeyEvent) -> None:
+        
+        if a0.key() == Qt.Key.Key_P:
+            self.startPaint()
+        
+        if self.painting:
+            self.canvas.keyDown(a0)
+            return
+
 
         if a0.key() == Qt.Key.Key_Escape:
             if self.fullscreenCrop or not self.cropping:
@@ -428,6 +474,9 @@ class Snapshot(QWidget):
         return bounds[0]
 
     def enterEvent(self, a0) -> None:
+        if self.painting:
+            self.canvas.onEnter(a0)
+        
         if self.fullscreenCrop or self.cropping or self.mini:
             self.grip.hide()
         else:

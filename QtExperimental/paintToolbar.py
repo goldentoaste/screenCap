@@ -76,34 +76,48 @@ def loadImage(path, x, y):
 
 
 class PaintToolbar(QWidget):
-    def __init__(self, *args, **kwargs):
+    def __init__(self,config: ConfigManager, *args, **kwargs):
 
         super().__init__(*args, **kwargs)
+        self.config = config
         self.currentSelection = 0
         self.currentColor = QColor()
         self.initGui()
         self.initCursors()
+        self.initVals()
 
     def initCursors(self):
         self.cursors = {
-            (PATH, False, False): loadImage("icons/cross.png", 32, 32),
-            (PATH, True, False): loadImage("icons/crossHLine.png", 32, 32),
-            (PATH, False, True): loadImage("icons/crossVLine.png", 32, 32),
-            (LINE, False, False): loadImage("icons/crossLine.png", 32, 32),
-            (LINE, True, False): loadImage("icons/crossZigZag.png", 32, 32),
-            (RECT, False, False): loadImage("icons/crossRect.png", 32, 32),
-            (CIRCLE, False, False): loadImage("icons/crossCircle.png", 32, 32),
-            (SELECT, False, False): loadImage("icons/crossCircle.png", 32, 32),
-            (ERASE, False, False): loadImage("icons/crossCircle.png", 32, 32),
+            (PATH, False, False): (loadImage("icons/cross.png", 32, 32), 16, 16),
+            (PATH, True, False): (loadImage("icons/crossHLine.png", 32, 32), 16, 16),
+            (PATH, False, True): (loadImage("icons/crossVLine.png", 32, 32), 16, 16),
+            (LINE, False, False): (loadImage("icons/crossLine.png", 32, 32), 16, 16),
+            (LINE, True, False): (loadImage("icons/crossZigZag.png", 32, 32), 16, 16),
+            (RECT, False, False): (loadImage("icons/crossRect.png", 32, 32), 16, 16),
+            (CIRCLE, False, False): (loadImage("icons/crossCircle.png", 32, 32), 16, 16),
+            (SELECT, False, False): (Qt.CursorShape.ArrowCursor,),
+            (ERASE, False, False): (loadImage("icons/eraserDark.png", 24, 24), 0, 24),
             
         }
+    
+    def setTestingVals(self):
+        pass
 
     def getCursors(self):
         return self.cursors
 
     def initVals(self):
-        # todo, to be called after initGui()
-        pass
+        self.radiusField.setText(f'{self.config.isize} px')
+        self.radiusSlider.setValue(self.config.isize)
+        
+        self.alphaField.setText(f'Alpha {self.config.ialpha}%')
+        self.alphaSlider.setValue(self.config.ialpha)
+        
+        colors = self.config.lscolors
+        self.currentColor = QColor(colors[0])
+        
+        for i in range(len(colors)):
+            self.colorButtons[i].setColor(QColor(colors[i]))
 
     def getDrawOptions(self):
         o = DrawOptions()
@@ -111,7 +125,7 @@ class PaintToolbar(QWidget):
         color = self.currentColor
         color.setAlpha(255)
         o.opacity = self.alphaSlider.value() / 100
-        print(o.opacity)
+        
         o.pen = QPen(
             color,
             self.radiusSlider.value(),
@@ -132,12 +146,18 @@ class PaintToolbar(QWidget):
         self.setWindowFlags(
             Qt.WindowType.CustomizeWindowHint
             | Qt.WindowType.WindowCloseButtonHint
-            | Qt.WindowType.WindowStaysOnTopHint
+            | Qt.WindowType.WindowStaysOnTopHint 
+            
         )
 
         self.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
         metric = QFontMetrics(QFont())
         mainlayout = QHBoxLayout()
+
+
+        def setConfig(name, val):
+            self.config.__setattr__(name, val)
+            
 
         self.radiusField = NumEditTemp("* px", "*", 1, 20)
         self.radiusField.setFixedWidth(metric.horizontalAdvance("20 px  "))
@@ -151,9 +171,10 @@ class PaintToolbar(QWidget):
             lambda val: (
                 self.radiusField.setText(f"{val} px"),
                 self.radiusIcon.setRadius(val),
+                setConfig('isize', val)
             )
         )
-        self.radiusField.onFinish = lambda val: self.radiusSlider.setSliderPosition(val)
+        self.radiusField.onFinish = lambda val: (self.radiusSlider.setSliderPosition(val), setConfig('isize', val))
 
         self.alphaField = NumEditTemp("Alpha *%", "*", 0, 100)
         self.alphaField.setFixedWidth(metric.horizontalAdvance("Alpha 100%  "))
@@ -163,9 +184,9 @@ class PaintToolbar(QWidget):
         self.alphaSlider.setMaximum(100)
         self.alphaSlider.setPageStep(5)
         self.alphaSlider.valueChanged.connect(
-            lambda val: self.alphaField.setText(f"Alpha {val}%")
+            lambda val: (self.alphaField.setText(f"Alpha {val}%"), setConfig('ialpha', val))
         )
-        self.alphaField.onFinish = lambda val: self.alphaSlider.setSliderPosition(val)
+        self.alphaField.onFinish = lambda val: (self.alphaSlider.setSliderPosition(val), setConfig('ialpha', val)   )
 
         def assignmentSelection(val):
             self.currentSelection = val
@@ -201,15 +222,22 @@ class PaintToolbar(QWidget):
         colorGroup.setVerticalSpacing(0)
         colorGroup.setHorizontalSpacing(0)
 
-        self.colorButtons = []
+        self.colorButtons : List[ColorButton] = []
 
-        def assignColor(color):
+        
+
+        def updateConfigColor(button :ColorButton):
+            color = button.color.name()
+            colors = self.config.lscolors
+            colors[button.index] = color
+            self.config.lscolors = colors
+            
             self.currentColor = color
 
         for i in range(10):
-            c = ColorButton(QSize(58, 58))
+            c = ColorButton(QSize(58, 58), i)
             c.setColor(QColor(i * 10, i * 20, i * 10))
-            c.onleftclick = lambda x, c=c: assignColor(c.color)
+            c.onleftclick = lambda x, c=c: updateConfigColor(c)
             self.colorButtons.append(c)
 
             colorGroup.addWidget(c, i // 5, i % 5)
@@ -313,11 +341,12 @@ class RadiusIcon(QWidget):
 
 
 class ColorButton(QPushButton):
-    def __init__(self, size: QSize, *args, **kwargs):
+    def __init__(self, size: QSize, index:int, *args, **kwargs):
 
         super().__init__(*args, **kwargs)
 
         self.preferSize = size
+        self.index = index
 
         self.onleftclick = lambda color: ()
 
@@ -342,8 +371,8 @@ class ColorButton(QPushButton):
 
 
 if __name__ == "__main__":
-
+    import values
     app = QApplication(sys.argv)
     app.setQuitOnLastWindowClosed(True)
-    ex = PaintToolbar()
+    ex = PaintToolbar(ConfigManager('D:\Python Project\screenCap\QtExperimental\config.ini', values.defaultVariables))
     sys.exit(app.exec_())
