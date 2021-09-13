@@ -1,9 +1,8 @@
 modifiers = [16, 17, 18, 91]
 
-modCode = {16:0x0004, 17:0x0002, 18:0x0001, 91:0x0008}
+modCode = {16: 0x0004, 17: 0x0002, 18: 0x0001, 91: 0x0008}
 
 NOREPEAT = 0x4000
-
 
 
 conversionTable = {
@@ -142,35 +141,50 @@ conversionTable = {
     219: "[",
     220: "\\",
     221: "]",
-    222: "quote"}
+    222: "quote",
+}
 
-keycodeTable = {item[1]:item[0] for item in conversionTable.items()}
+keycodeTable = {item[1]: item[0] for item in conversionTable.items()}
 
 
 defaultVariables = {
-    'istartup' : (0, 'main'),
-    'istartmin' : (0, 'main'),
-    'imintray' : (0, 'main'),
-    'iminx' : (0, 'main'),
-    'iuserecycle' : (0, 'main'),
-    'irecyclecapacity' : (1, 'main'),
-    'isaveoption' : (0, 'main'),
-    'ishowsaveprompt' : (0, 'main'),
-    'ssavelocation' : ('', 'main'),
-    'iuselastsave' : (0, 'main'),
-    #hotkeys
-    'licapture':([17, 49], 'global'),
-    'licopy':([17, 50], 'local'),
+    "istartup": (0, "main"),
+    "istartmin": (0, "main"),
+    "imintray": (0, "main"),
+    "iminx": (0, "main"),
+    "iuserecycle": (0, "main"),
+    "irecyclecapacity": (1, "main"),
+    "isaveoption": (0, "main"),
+    "ishowsaveprompt": (0, "main"),
+    "ssavelocation": ("", "main"),
+    "iuselastsave": (0, "main"),
+    # hotkeys
+    "licapture": ([17, 49], "global"),
+    "licopy": ([17, 50], "local"),
+    # painter
+    "isize": (5, "painter"),
+    "ialpha": (100, "painter"),
+    "lscolors": (
+        [
+            "#000000",
+            "#ffffff",
+            "#ff69b4",
+            "#dc143c",
+            "#fd6500",
+            "#ffd600",
+            "#a52a2a",
+            "#32cd32",
+            "#4169E1",
+            "#8A2BE2",
+        ],
+        "painter",
+    ),
     
-    #painter
-    'isize' : (5, 'painter'),
-    'ialpha': (100, 'painter'),
-    'lscolors' : (['#000000', '#ffffff', '#ff69b4','#dc143c' , '#fd6500', '#ffd600', '#a52a2a', '#32cd32', '#4169E1', '#8A2BE2'], 'painter')
-    
+    #recycler
+    "imaxsize": (10, "reycler")
 }
 
 hotkeys = {
-    'licapture': (lambda: print('capture'), 'Capture screen(global)'),
-    'licopy':( lambda: print('copy'), 'Copy image'),
+    "licapture": (lambda: print("capture"), "Capture screen(global)"),
+    "licopy": (lambda: print("copy"), "Copy image"),
 }
-
