@@ -491,7 +491,5 @@ class Snapshot(QWidget):
 if __name__ == "__main__":
 
     app = QApplication(sys.argv)
-    app.lastWindowClosed.connect(lambda: print("last closed!"))
-    app.setQuitOnLastWindowClosed(True)
     ex = Snapshot(None, None)
     sys.exit(app.exec_())

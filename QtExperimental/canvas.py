@@ -1,24 +1,9 @@
 import sys
-from os import path
-from typing import ClassVar
+from typing import List, Union
 
-from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtCore import QBuffer, QLine, QLineF, QMargins, QMarginsF, QPoint, QPointF, QRect, QRectF, QRegExp, QSize, QSizeF, Qt
-from PyQt5.QtGui import (
-    QBrush,
-    QColor,
-    QCursor,
-    QFont,
-    QFontMetrics,
-    QIcon,
-    QKeyEvent,
-    QMouseEvent,
-    QPainter,
-    QPainterPath,
-    QPainterPathStroker,
-    QPen,
-    QPixmap,
-)
+from PyQt5 import QtCore, QtGui
+from PyQt5.QtCore import QLineF, QPoint, QPointF, QRectF, QSizeF, Qt
+from PyQt5.QtGui import QCursor, QKeyEvent, QMouseEvent, QPainterPath, QPainterPathStroker, QPen
 from PyQt5.QtWidgets import (
     QApplication,
     QGraphicsEllipseItem,
@@ -38,6 +23,7 @@ from paintToolbar import CIRCLE, ERASE, LINE, PATH, RECT, SELECT, DrawOptions, P
 
 
 def smoothStep(p1: QPointF, p2: QPointF, amount: float):
+    # return p1 + amount * (p2 - p1)
     amount = (amount ** 2) * (3 - 2 * amount)
     return QPointF((1 - amount) * p1.x() + p2.x() * amount, (1 - amount) * p1.y() + p2.y() * amount)
 
@@ -57,7 +43,7 @@ class Canvas:
 
         self.group = self.scene.createItemGroup([])
 
-        self.objects = []
+        self.objects: List[QGraphicsItem] = []
         self.currentObject = None
         self.currentLerpPos = QPointF()
 
@@ -71,12 +57,10 @@ class Canvas:
 
         self.view.setCursor(
             QCursor(
-                *(
-                    self.toolbar.getCursors().get(
-                        (self.drawOption.shape, self.ctrl, self.alt),
-                        self.toolbar.getCursors().get((self.drawOption, False, False)),
-                    )
-                ),
+                *self.toolbar.getCursors().get(
+                    (self.drawOption.shape, self.ctrl, self.alt),
+                    self.toolbar.getCursors().get((self.drawOption.shape, False, False)),
+                )
             )
         )
 
@@ -92,7 +76,7 @@ class Canvas:
         self.group.setScale(scale)
 
     def onEnter(self, a0: QMouseEvent):
-        print("updating")
+
         self.drawOption = self.toolbar.getDrawOptions()
         self.updateCursor()
 
@@ -103,25 +87,21 @@ class Canvas:
         opt = self.drawOption.shape
         self.lastPos = mapped
 
-        # handling line behaviour
-        if opt != LINE or (a0.buttons() == Qt.MouseButton.RightButton and self.drawingLine):
-
+        if a0.buttons() == Qt.MouseButton.RightButton and self.drawingLine:
+            # cancel the current line, in case there is a unfinished/hovering line
             self.drawingLine = False
             self.tempLine.hide()
-            self.finishLine()
-            if opt == LINE:
-
-                return
 
         if self.drawingLine:
             self.path.lineTo(mapped)
-
+            print(self.path, self.currentObject, self.currentObject.path().length(), self.currentObject.boundingRect())
             self.currentObject.setPath(self.path)
 
             if not self.ctrl:
+                # ends the line drawing process, since ctrl = continue to draw is not pressed.
                 self.drawingLine = False
                 self.tempLine.hide()
-                self.finishLine()
+                self.finalizeCurrentShape()
             return
 
         # dealing with select and erase
@@ -141,7 +121,7 @@ class Canvas:
         if opt == PATH:
             self.currentLerpPos = mapped
             self.path = QPainterPath(mapped)
-            item = PathItem(filled, self.path)
+            item = PathItem(filled)
             if self.ctrl:
                 self.lockMode = "h"
                 self.lockVal = self.iniPos.x()
@@ -154,12 +134,16 @@ class Canvas:
 
         elif opt == LINE:
             self.path = QPainterPath(mapped)
-            item = PathItem(filled, self.path)
+            self.path.lineTo(
+                mapped + QPointF(0.01, 0.01)
+            )  # the line is invisible unless a tiny bit of it is already started here, i have no idea why. :^(
+            item = PathItem(filled)
+            item.setPath(self.path)
+
             self.lastPos = self.iniPos
             self.tempLine.show()
             self.tempLine.setPen(self.drawOption.pen)
             self.tempLine.setLine(QLineF(mapped, mapped))
-
             self.drawingLine = True
         elif opt == RECT:
             item = RectItem(filled)
@@ -188,34 +172,47 @@ class Canvas:
     def onRelease(self, a0: QMouseEvent):
         if self.currentObject is not None:
             opt = self.drawOption.shape
+            # delete the current obj if its not really visible (when the user clicks without dragging mostly likly)
             if opt == LINE or opt == PATH:
                 if self.currentObject.path().length() == 0:
                     self.deleteObj(self.currentObject)
+                    return
             elif opt == RECT or opt == CIRCLE:
                 if self.currentObject.rect().size() == QSizeF():
                     self.deleteObj(self.currentObject)
-            return
-        s = self.drawOption.shape
+                    return
 
+        s = self.drawOption.shape
         if s == PATH or s == CIRCLE or s == RECT:
-            self.finishLine()
+            self.finalizeCurrentShape()
 
     def undo(self):
         if len(self.objects) > 0:
             self.deleteObj(self.objects[-1])
 
-    def deleteObj(self, o):
+    def deleteObj(self, o: Union[QGraphicsItem, QPointF]):
+        """Deletes a given object, or try to find the item at a given position then deletes it.
+
+        Args:
+            o (Union[QGraphicsItem, QPointF]): Item to delete or pos to search.
+        """
         if isinstance(o, QGraphicsItem):
             item = o
         else:
             item = self.view.itemAt(o)
         if item is None:
+            # no item is found
             return
-        self.objects.remove(item)
-        self.scene.removeItem(item)
+        try:
+            self.objects.remove(item)
+            self.scene.removeItem(item)
+        except ValueError:
+            # value error when the item is found, should isn't in this canvas.
+            # prob the item selected is the background image.
+            return
 
-    def finishLine(self):
-        if self.currentObject is None or type(self.currentObject) is QGraphicsPathItem:
+    def finalizeCurrentShape(self):
+        if self.currentObject is None:
             return
         self.currentObject.finalize()
 
@@ -233,7 +230,7 @@ class Canvas:
                 elif self.lockMode == "h":
                     self.path.lineTo(self.view.mapToScene(QPoint(self.lockVal, int(a0.y()))))
                 else:
-                    self.currentLerpPos = smoothStep(self.currentLerpPos, mappedCurPos, 0.35)
+                    self.currentLerpPos = smoothStep(self.currentLerpPos, mappedCurPos, 0.2)
                     self.path.lineTo(self.currentLerpPos.toPoint())
 
                 self.currentObject.setPath(self.path)
@@ -269,7 +266,7 @@ class Canvas:
                 self.deleteObj(a0.pos())
 
         if opt == LINE and self.drawingLine:
-            self.tempLine.show()
+            # self.tempLine.show()
             mapped = self.view.mapToScene(a0.pos())
             self.tempLine.setLine(QLineF(self.lastPos, mapped))
 
@@ -287,23 +284,6 @@ class Canvas:
 
         elif a0.key() == Qt.Key.Key_Alt:
             self.alt = False
-
-
-class PathItem(QGraphicsPathItem):
-    def __init__(self, filled=False, *args, **kwargs):
-
-        super().__init__(*args, **kwargs)
-
-        self.filled = filled
-
-    def shape(self) -> QtGui.QPainterPath:
-        if self.filled:
-            return super().shape()
-        else:
-            p = QPainterPathStroker()
-            p.setWidth(4)
-            p.setCapStyle(Qt.PenCapStyle.SquareCap)
-            p.createStroke(self.path())
 
 
 class CanvasTesting(QWidget):
@@ -390,7 +370,6 @@ class RectItem(QGraphicsRectItem):
         self.lineShape = None
 
     def finalize(self):
-
         path = QPainterPath()
         path.addRect(self.rect())
         p = QPainterPathStroker()
@@ -401,6 +380,7 @@ class RectItem(QGraphicsRectItem):
     def shape(self) -> QtGui.QPainterPath:
         if self.filled or self.lineShape is None:
             return super().shape()
+
         return self.lineShape
 
 
@@ -409,12 +389,10 @@ class PathItem(QGraphicsPathItem):
 
         super().__init__(*args, **kwargs)
         self.filled = filled
-
         self.lineShape = None
 
     def finalize(self):
         p = QPainterPathStroker()
-        p.setCapStyle(Qt.PenCapStyle.RoundCap)
         p.setWidth(self.pen().width())
         self.lineShape = p.createStroke(self.path())
 

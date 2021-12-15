@@ -1,57 +1,14 @@
+import re
 import sys
-from typing import ClassVar, List
-from PyQt5 import QtGui
-from PyQt5 import QtWidgets
-from PyQt5 import QtCore
-from PyQt5.QtCore import (
-    QBuffer,
-    QLineF,
-    QMargins,
-    QMarginsF,
-    QPoint,
-    QPointF,
-    QRect,
-    QRectF,
-    QRegExp,
-    QSize,
-    QSizeF,
-    Qt,
-)
-from PyQt5.QtGui import (
-    QBrush,
-    QColor,
-    QCursor,
-    QFont,
-    QFontMetrics,
-    QIcon,
-    QPainter,
-    QPen,
-    QPixmap,
-    QImage,
-    QRegExpValidator,
-)
-from PyQt5.QtWidgets import (
-    QApplication,
-    QCheckBox,
-    QColorDialog,
-    QFileDialog,
-    QGraphicsRectItem,
-    QGraphicsScene,
-    QGraphicsView,
-    QGridLayout,
-    QHBoxLayout,
-    QLabel,
-    QLineEdit,
-    QPushButton,
-    QSizeGrip,
-    QSlider,
-    QVBoxLayout,
-    QWidget,
-)
+from dataclasses import dataclass
+from typing import List
+
+from PyQt5 import QtCore, QtGui
+from PyQt5.QtCore import QSize, Qt
+from PyQt5.QtGui import QBrush, QColor, QFont, QFontMetrics, QIcon, QPainter, QPen, QPixmap
+from PyQt5.QtWidgets import QApplication, QCheckBox, QColorDialog, QGridLayout, QHBoxLayout, QLineEdit, QPushButton, QSlider, QVBoxLayout, QWidget
 
 from ConfigManager import ConfigManager
-import re
-
 
 PATH = 0
 LINE = 1
@@ -61,27 +18,26 @@ ERASE = 4
 SELECT = 5
 
 
+@dataclass
 class DrawOptions:
 
-    pen: QPen
-    brush: QBrush
-    shape: int
-    opacity: float
+    pen: QPen = None
+    brush: QBrush = None
+    shape: int = 0
+    opacity: float = 0
 
 
 def loadImage(path, x, y):
-    return QPixmap(path, "PNG").scaled(
-        x, y, transformMode=Qt.TransformationMode.SmoothTransformation
-    )
+    return QPixmap(path, "PNG").scaled(x, y, transformMode=Qt.TransformationMode.SmoothTransformation)
 
 
 class PaintToolbar(QWidget):
-    def __init__(self,config: ConfigManager, *args, **kwargs):
+    def __init__(self, config: ConfigManager, *args, **kwargs):
 
         super().__init__(*args, **kwargs)
         self.config = config
         self.currentSelection = 0
-        self.currentColor : QColor = QColor()
+        self.currentColor: QColor = QColor()
         self.initGui()
         self.initCursors()
         self.initVals()
@@ -97,9 +53,8 @@ class PaintToolbar(QWidget):
             (CIRCLE, False, False): (loadImage("icons/crossCircle.png", 32, 32), 16, 16),
             (SELECT, False, False): (Qt.CursorShape.ArrowCursor,),
             (ERASE, False, False): (loadImage("icons/eraserDark.png", 24, 24), 0, 24),
-            
         }
-    
+
     def setTestingVals(self):
         pass
 
@@ -107,15 +62,15 @@ class PaintToolbar(QWidget):
         return self.cursors
 
     def initVals(self):
-        self.radiusField.setText(f'{self.config.isize} px')
+        self.radiusField.setText(f"{self.config.isize} px")
         self.radiusSlider.setValue(self.config.isize)
-        
-        self.alphaField.setText(f'Alpha {self.config.ialpha}%')
+
+        self.alphaField.setText(f"Alpha {self.config.ialpha}%")
         self.alphaSlider.setValue(self.config.ialpha)
-        
+
         colors = self.config.lscolors
         self.currentColor = QColor(colors[0])
-        
+
         for i in range(len(colors)):
             self.colorButtons[i].setColor(QColor(colors[i]))
 
@@ -125,7 +80,7 @@ class PaintToolbar(QWidget):
         color = self.currentColor
         color.setAlpha(255)
         o.opacity = self.alphaSlider.value() / 100
-        
+
         o.pen = QPen(
             color,
             self.radiusSlider.value(),
@@ -135,29 +90,20 @@ class PaintToolbar(QWidget):
         )
         o.brush = QBrush(
             color,
-            Qt.BrushStyle.NoBrush
-            if not self.fillCheck.isChecked()
-            else Qt.BrushStyle.SolidPattern,
+            Qt.BrushStyle.NoBrush if not self.fillCheck.isChecked() else Qt.BrushStyle.SolidPattern,
         )
 
         return o
 
     def initGui(self):
-        self.setWindowFlags(
-            Qt.WindowType.CustomizeWindowHint
-            | Qt.WindowType.WindowCloseButtonHint
-            | Qt.WindowType.WindowStaysOnTopHint 
-            
-        )
+        self.setWindowFlags(Qt.WindowType.CustomizeWindowHint | Qt.WindowType.WindowCloseButtonHint | Qt.WindowType.WindowStaysOnTopHint)
 
         self.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
         metric = QFontMetrics(QFont())
         mainlayout = QHBoxLayout()
 
-
         def setConfig(name, val):
             self.config.__setattr__(name, val)
-            
 
         self.radiusField = NumEditTemp("* px", "*", 1, 20)
         self.radiusField.setFixedWidth(metric.horizontalAdvance("20 px  "))
@@ -168,13 +114,9 @@ class PaintToolbar(QWidget):
         self.radiusSlider.setMaximum(20)
         self.radiusSlider.setPageStep(1)
         self.radiusSlider.valueChanged.connect(
-            lambda val: (
-                self.radiusField.setText(f"{val} px"),
-                self.radiusIcon.setRadius(val),
-                setConfig('isize', val)
-            )
+            lambda val: (self.radiusField.setText(f"{val} px"), self.radiusIcon.setRadius(val), setConfig("isize", val))
         )
-        self.radiusField.onFinish = lambda val: (self.radiusSlider.setSliderPosition(val), setConfig('isize', val))
+        self.radiusField.onFinish = lambda val: (self.radiusSlider.setSliderPosition(val), setConfig("isize", val))
 
         self.alphaField = NumEditTemp("Alpha *%", "*", 0, 100)
         self.alphaField.setFixedWidth(metric.horizontalAdvance("Alpha 100%  "))
@@ -183,10 +125,8 @@ class PaintToolbar(QWidget):
         self.alphaSlider.setMinimum(0)
         self.alphaSlider.setMaximum(100)
         self.alphaSlider.setPageStep(5)
-        self.alphaSlider.valueChanged.connect(
-            lambda val: (self.alphaField.setText(f"Alpha {val}%"), setConfig('ialpha', val))
-        )
-        self.alphaField.onFinish = lambda val: (self.alphaSlider.setSliderPosition(val), setConfig('ialpha', val)   )
+        self.alphaSlider.valueChanged.connect(lambda val: (self.alphaField.setText(f"Alpha {val}%"), setConfig("ialpha", val)))
+        self.alphaField.onFinish = lambda val: (self.alphaSlider.setSliderPosition(val), setConfig("ialpha", val))
 
         def assignmentSelection(val):
             self.currentSelection = val
@@ -222,17 +162,14 @@ class PaintToolbar(QWidget):
         colorGroup.setVerticalSpacing(0)
         colorGroup.setHorizontalSpacing(0)
 
-        self.colorButtons : List[ColorButton] = []
+        self.colorButtons: List[ColorButton] = []
 
-        
-
-        def updateConfigColor(button :ColorButton):
+        def updateConfigColor(button: ColorButton):
             color = button.color.name()
             colors = self.config.lscolors
             colors[button.index] = color
             self.config.lscolors = colors
-            
-            
+
             # self.currentColor = color
             self.currentColor = button.color
 
@@ -282,9 +219,7 @@ class PaintToolbar(QWidget):
 
 
 class NumEditTemp(QLineEdit):
-    def __init__(
-        self, format: str, blankChar: str, min: int, max: int, *args, **kwargs
-    ):
+    def __init__(self, format: str, blankChar: str, min: int, max: int, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.format = format
         self.blankChar = blankChar
@@ -343,7 +278,7 @@ class RadiusIcon(QWidget):
 
 
 class ColorButton(QPushButton):
-    def __init__(self, size: QSize, index:int, *args, **kwargs):
+    def __init__(self, size: QSize, index: int, *args, **kwargs):
 
         super().__init__(*args, **kwargs)
 
@@ -374,7 +309,8 @@ class ColorButton(QPushButton):
 
 if __name__ == "__main__":
     import values
+
     app = QApplication(sys.argv)
     app.setQuitOnLastWindowClosed(True)
-    ex = PaintToolbar(ConfigManager('D:\PythonProject\screenCap\QtExperimental\config.ini', values.defaultVariables))
+    ex = PaintToolbar(ConfigManager("D:\PythonProject\screenCap\QtExperimental\config.ini", values.defaultVariables))
     sys.exit(app.exec_())
