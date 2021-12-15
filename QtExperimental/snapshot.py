@@ -485,6 +485,9 @@ class Snapshot(QWidget):
             self.grip.show()
 
     def leaveEvent(self, a0) -> None:
+        if self.painting:
+            self.canvas.onExit(a0)
+            return
         self.grip.hide()
 
 

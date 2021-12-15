@@ -50,6 +50,8 @@ class Canvas:
         self.tempLine: QGraphicsLineItem = self.scene.addLine(QLineF(), QPen())
         self.tempLine.hide()
 
+        self.cursurDot = self.scene.addEllipse(QRectF(0,0,self.drawOption.pen.widthF(),self.drawOption.pen.widthF()), self.drawOption.pen)
+
         self.drawingLine = False
         self.view.setMouseTracking(True)
 
@@ -75,9 +77,17 @@ class Canvas:
     def setScale(self, scale: float):
         self.group.setScale(scale)
 
+    def onExit(self, a0:QMouseEvent):
+        self.cursurDot.hide()
+    
     def onEnter(self, a0: QMouseEvent):
 
         self.drawOption = self.toolbar.getDrawOptions()
+        self.cursurDot.setPen(self.drawOption.pen)
+        self.cursurDot.setBrush(self.drawOption.pen.color())
+        size = QSizeF(self.drawOption.pen.widthF(),self.drawOption.pen.widthF())
+        self.cursurDot.setRect(QRectF(QPointF(-size.width()/2, -size.height()/2), size))
+        self.cursurDot.show()
         self.updateCursor()
 
     def onClick(self, a0: QMouseEvent):
@@ -217,12 +227,14 @@ class Canvas:
         self.currentObject.finalize()
 
     def onMove(self, a0: QMouseEvent):
-
+        mappedCurPos = self.view.mapToScene(a0.pos())
+        self.cursurDot.setPos(mappedCurPos)
+        
         opt = self.drawOption.shape
 
         if a0.buttons() == Qt.MouseButton.LeftButton:
             mappedIniPos = self.view.mapToScene(self.iniPos)
-            mappedCurPos = self.view.mapToScene(a0.pos())
+            
             if opt == PATH:
 
                 if self.lockMode == "v":
@@ -331,6 +343,9 @@ class CanvasTesting(QWidget):
     def mouseReleaseEvent(self, a0: QtGui.QMouseEvent) -> None:
 
         self.canvas.onRelease(a0)
+    
+    def leaveEvent(self, a0: QtCore.QEvent) -> None:
+        self.canvas.onExit(a0)
 
     def keyPressEvent(self, a0: QtGui.QKeyEvent) -> None:
 
@@ -338,6 +353,8 @@ class CanvasTesting(QWidget):
 
     def keyReleaseEvent(self, a0: QtGui.QKeyEvent) -> None:
         self.canvas.keyUp(a0)
+        
+        
 
 
 class CircleItem(QGraphicsEllipseItem):
