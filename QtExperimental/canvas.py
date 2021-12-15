@@ -1,24 +1,9 @@
-from os import path
 import sys
+from os import path
 from typing import ClassVar
-from PyQt5 import QtGui
-from PyQt5 import QtWidgets
-from PyQt5 import QtCore
-from PyQt5.QtCore import (
-    QBuffer,
-    QLine,
-    QLineF,
-    QMargins,
-    QMarginsF,
-    QPoint,
-    QPointF,
-    QRect,
-    QRectF,
-    QRegExp,
-    QSize,
-    QSizeF,
-    Qt,
-)
+
+from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtCore import QBuffer, QLine, QLineF, QMargins, QMarginsF, QPoint, QPointF, QRect, QRectF, QRegExp, QSize, QSizeF, Qt
 from PyQt5.QtGui import (
     QBrush,
     QColor,
@@ -49,39 +34,21 @@ from PyQt5.QtWidgets import (
 )
 
 from ConfigManager import ConfigManager
-
-
-from paintToolbar import (
-    ERASE,
-    PATH,
-    LINE,
-    RECT,
-    CIRCLE,
-    SELECT,
-    PaintToolbar,
-    DrawOptions,
-)   
+from paintToolbar import CIRCLE, ERASE, LINE, PATH, RECT, SELECT, DrawOptions, PaintToolbar
 
 
 def smoothStep(p1: QPointF, p2: QPointF, amount: float):
     amount = (amount ** 2) * (3 - 2 * amount)
-    return QPointF(
-        (1 - amount) * p1.x() + p2.x() * amount, (1 - amount) * p1.y() + p2.y() * amount
-    )
+    return QPointF((1 - amount) * p1.x() + p2.x() * amount, (1 - amount) * p1.y() + p2.y() * amount)
 
 
 class Canvas:
-    def __init__(
-        self, scene: QGraphicsScene, view: QGraphicsView, toolbar: PaintToolbar
-    ):
+    def __init__(self, scene: QGraphicsScene, view: QGraphicsView, toolbar: PaintToolbar):
         self.scene = scene
         self.view = view
         self.toolbar = toolbar
 
-        self.view.setRenderHints(
-            QtGui.QPainter.HighQualityAntialiasing
-            | QtGui.QPainter.SmoothPixmapTransform
-        )
+        self.view.setRenderHints(QtGui.QPainter.HighQualityAntialiasing | QtGui.QPainter.SmoothPixmapTransform)
 
         self.drawOption: DrawOptions = toolbar.getDrawOptions()
 
@@ -112,20 +79,20 @@ class Canvas:
                 ),
             )
         )
-        
-    def clear(self) :
+
+    def clear(self):
         for item in self.objects:
             self.scene.removeItem(item)
-        self.objects.clear()   
-    
+        self.objects.clear()
+
     def scale(self):
         return self.group.scale()
-    
+
     def setScale(self, scale: float):
         self.group.setScale(scale)
 
     def onEnter(self, a0: QMouseEvent):
-        print('updating')
+        print("updating")
         self.drawOption = self.toolbar.getDrawOptions()
         self.updateCursor()
 
@@ -137,9 +104,7 @@ class Canvas:
         self.lastPos = mapped
 
         # handling line behaviour
-        if opt != LINE or (
-            a0.buttons() == Qt.MouseButton.RightButton and self.drawingLine
-        ):
+        if opt != LINE or (a0.buttons() == Qt.MouseButton.RightButton and self.drawingLine):
 
             self.drawingLine = False
             self.tempLine.hide()
@@ -164,11 +129,7 @@ class Canvas:
         if opt == SELECT:
             self.currentObject = self.view.itemAt(self.iniPos)
 
-            self.offset = (
-                (mapped - self.currentObject.pos())
-                if self.currentObject is not None
-                else None
-            )
+            self.offset = (mapped - self.currentObject.pos()) if self.currentObject is not None else None
             return
         elif opt == ERASE:
             item = self.view.itemAt(self.iniPos)
@@ -268,17 +229,11 @@ class Canvas:
             if opt == PATH:
 
                 if self.lockMode == "v":
-                    self.path.lineTo(
-                        self.view.mapToScene(QPoint(int(a0.x()), self.lockVal))
-                    )
+                    self.path.lineTo(self.view.mapToScene(QPoint(int(a0.x()), self.lockVal)))
                 elif self.lockMode == "h":
-                    self.path.lineTo(
-                        self.view.mapToScene(QPoint(self.lockVal, int(a0.y())))
-                    )
+                    self.path.lineTo(self.view.mapToScene(QPoint(self.lockVal, int(a0.y()))))
                 else:
-                    self.currentLerpPos = smoothStep(
-                        self.currentLerpPos, mappedCurPos, 0.35
-                    )
+                    self.currentLerpPos = smoothStep(self.currentLerpPos, mappedCurPos, 0.35)
                     self.path.lineTo(self.currentLerpPos.toPoint())
 
                 self.currentObject.setPath(self.path)
@@ -319,13 +274,12 @@ class Canvas:
             self.tempLine.setLine(QLineF(self.lastPos, mapped))
 
     def keyDown(self, a0: QKeyEvent):
-     
+
         if a0.key() == Qt.Key.Key_Control:
             self.ctrl = True
 
         elif a0.key() == Qt.Key.Key_Alt:
             self.alt = True
-      
 
     def keyUp(self, a0: QKeyEvent):
         if a0.key() == Qt.Key.Key_Control:
@@ -342,7 +296,7 @@ class PathItem(QGraphicsPathItem):
 
         self.filled = filled
 
-    def shape(self) -> QtGui.QPainterPath:  
+    def shape(self) -> QtGui.QPainterPath:
         if self.filled:
             return super().shape()
         else:
@@ -374,7 +328,7 @@ class CanvasTesting(QWidget):
         self.view.resize(self.size())
         self.view.setSceneRect(QRectF(0, 0, 500, 500))
 
-        self.toolbar = PaintToolbar()
+        self.toolbar = PaintToolbar(ConfigManager("d:/PythonProject/screenCap/QtExperimental/config.ini"))
         self.toolbar.show()
         self.canvas = Canvas(self.scene, self.view, self.toolbar)
 

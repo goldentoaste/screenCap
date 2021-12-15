@@ -1,11 +1,12 @@
 from configparser import ConfigParser
 
 import os
-
+from typing import List, Union
 
 class ConfigManager:
     """
     dynamic variable addition, deletion, renaming etc not implemented yet.
+    And is not needed for the current project.
     """
 
     loaded = False
@@ -29,7 +30,7 @@ class ConfigManager:
         self.vals = dict()
         self.secs = dict()
         self.path = path
-        self.default = default if default is not None else dict()
+        self.default = default if default else dict()
         if os.path.isfile(path):
             self.config.read(path)
         else:
@@ -87,13 +88,12 @@ class ConfigManager:
                 key,
                 self.getVarString(key, val[0]),
             )
-
         self.save()
 
     def typeCheck(self, name, val):
         def _raise(e):
             raise e
-        {
+        return {
             "i": lambda: _raise(TypeError("must be int"))
             if type(val) is not int
             else "",
@@ -109,46 +109,45 @@ class ConfigManager:
         }[name[0]]
 
     def getSection(self,val):
-        if val in self.secs:
-            return self.secs[val]
-        raise KeyError()
+        return self.secs[val]
 
 
-    def __getitem__(self, key):
+    def __getitem__(self, key) -> Union[str, int, float, List[Union[str, int, float]]]:
+        '''
+        returns a config value based on config key, via the list index operator.
+        '''
         return self.vals[key]
 
     def __setitem__(self, key, val):
-        if key in self.vals:
+        try:
             self.typeCheck(key, val)
             self.vals[key] = val
             self.config.set(self.secs[key], key, self.getVarString(key, val))
-
-        else:
+        except KeyError:
             raise KeyError()
 
     def __setattr__(self, name: str, value) -> None:
 
         if self.loaded:
-            if name in self.vals.keys():
+            try:
                 self.typeCheck(name, value)
                 self.vals[name] = value
                 self.config.set(self.secs[name], name, self.getVarString(name, value))
 
                 self.save()
-            else:
-
+            except KeyError:
                 super().__setattr__(name, value)
         else:
-            super.__setattr__(self, name, value)
+            super().__setattr__(name, value)
 
     def __getattribute__(self, name: str):
         try:
             return super().__getattribute__(name)
         except AttributeError:
-            if name in self.vals.keys():
+            try:
                 return self.vals[name]
-            else:
-                raise AttributeError()
+            except KeyError:
+                raise AttributeError(f"The config attribute is not found: {name}")
 
     def save(self):
         if not os.path.isdir(os.path.dirname(self.path)):
@@ -157,6 +156,12 @@ class ConfigManager:
             self.config.write(file)
 
     def loadVar(self, sec, opt):
+        '''Load a single variable from config file into
+
+        Args:
+            sec (str): Section of the config file
+            opt (str): Option of the given section
+        '''
         def intVar():
             try:
                 self.vals[opt] = self.config.getint(sec, opt)
@@ -191,7 +196,7 @@ class ConfigManager:
 
 if __name__ == "__main__":
     c = ConfigManager(
-        "D:\Python Project\screenCap\QtExperimental\config.ini",
+        "D:\PythonProject\screenCap\QtExperimental\config.ini",
         {
             "inum": (33, "main"),
             "fnum": (2.2, "main"),

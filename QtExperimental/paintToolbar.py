@@ -81,7 +81,7 @@ class PaintToolbar(QWidget):
         super().__init__(*args, **kwargs)
         self.config = config
         self.currentSelection = 0
-        self.currentColor = QColor()
+        self.currentColor : QColor = QColor()
         self.initGui()
         self.initCursors()
         self.initVals()
@@ -232,7 +232,9 @@ class PaintToolbar(QWidget):
             colors[button.index] = color
             self.config.lscolors = colors
             
-            self.currentColor = color
+            
+            # self.currentColor = color
+            self.currentColor = button.color
 
         for i in range(10):
             c = ColorButton(QSize(58, 58), i)
@@ -374,5 +376,5 @@ if __name__ == "__main__":
     import values
     app = QApplication(sys.argv)
     app.setQuitOnLastWindowClosed(True)
-    ex = PaintToolbar(ConfigManager('D:\Python Project\screenCap\QtExperimental\config.ini', values.defaultVariables))
+    ex = PaintToolbar(ConfigManager('D:\PythonProject\screenCap\QtExperimental\config.ini', values.defaultVariables))
     sys.exit(app.exec_())

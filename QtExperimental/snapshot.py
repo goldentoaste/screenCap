@@ -140,7 +140,7 @@ class Snapshot(QWidget):
         
         #test canvas
         import values
-        self.config = ConfigManager('D:\Python Project\screenCap\QtExperimental\config.ini',values.defaultVariables )
+        self.config = ConfigManager('D:\PythonProject\screenCap\QtExperimental\config.ini',values.defaultVariables )
         self.toolbar = PaintToolbar(self.config)
         self.toolbar.hide()
         self.canvas = Canvas(self.scene, self.view, self.toolbar)
@@ -442,6 +442,7 @@ class Snapshot(QWidget):
     def keyReleaseEvent(self, a0: QtGui.QKeyEvent) -> None:
         if self.painting:
             self.canvas.keyUp(a0)
+            
 
     def keyPressEvent(self, a0: QtGui.QKeyEvent) -> None:
         
@@ -455,6 +456,7 @@ class Snapshot(QWidget):
 
         if a0.key() == Qt.Key.Key_Escape:
             if self.fullscreenCrop or not self.cropping:
+                print("closing")
                 self.close()
             elif self.cropping:
                 self.stopCrop(canceling=True)
@@ -489,6 +491,7 @@ class Snapshot(QWidget):
 if __name__ == "__main__":
 
     app = QApplication(sys.argv)
-
+    app.lastWindowClosed.connect(lambda: print("last closed!"))
+    app.setQuitOnLastWindowClosed(True)
     ex = Snapshot(None, None)
     sys.exit(app.exec_())

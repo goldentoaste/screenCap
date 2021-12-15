@@ -111,7 +111,7 @@ if __name__ == "__main__":
     ex = Recycler(
         os.path.join(os.getenv("appdata"), "screenCap"),
         ConfigManager.ConfigManager(
-            "D:\Python Project\screenCap\QtExperimental\config.ini",
+            "D:\PythonProject\screenCap\QtExperimental\config.ini",
             default=values.defaultVariables,
         ),
     )
