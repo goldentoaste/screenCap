@@ -42,7 +42,7 @@ import win32clipboard as clipboard
 import os
 
 from paintToolbar import PaintToolbar
-from canvas import Canvas
+from canvas import Canvas,RectItem
 
 
 class Snapshot(QWidget):
@@ -75,15 +75,22 @@ class Snapshot(QWidget):
         self.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
 
         self.scene = QGraphicsScene()
-
+        print(self.scene.items())
         self.displayPix = self.scene.addPixmap(QPixmap.fromImage(self.displayImage))
-        self.displayPix.setZValue(0)
+        print(self.scene.items())
+        self.displayPix.setZValue(-100)
         self.displayPix.setPos(0, 0)
+        
 
-        self.borderRect = self.scene.addRect(
-            QRectF(), QPen(QColor(200, 200, 200), 2), QBrush(Qt.BrushStyle.NoBrush)
-        )
-        self.borderRect.setZValue(100)
+        # self.borderRect = self.scene.addRect(
+        #     QRectF(), QPen(QColor(200, 200, 200), 2), QBrush(Qt.BrushStyle.NoBrush)
+        # )
+        self.borderRect = RectItem(False,QRectF() )
+        self.borderRect.setPen(QPen(QColor(200, 200, 200), 2))
+        self.borderRect.setBrush(QBrush(Qt.BrushStyle.NoBrush))
+        self.borderRect.finalize()
+        self.scene.addItem(self.borderRect)
+     
 
         self.view = QGraphicsView(self.scene)
 
@@ -141,8 +148,9 @@ class Snapshot(QWidget):
         #test canvas
         import values
         self.config = ConfigManager('D:\PythonProject\screenCap\QtExperimental\config.ini',values.defaultVariables )
-        self.toolbar = PaintToolbar(self.config)
+        self.toolbar = PaintToolbar(self.config) #todo toolbar should belong to main
         self.toolbar.hide()
+
         self.canvas = Canvas(self.scene, self.view, self.toolbar)
         
         self.painting = False
@@ -150,7 +158,24 @@ class Snapshot(QWidget):
 
         self.showNormal()
         self.view.setSceneRect(self.displayPix.boundingRect())
-    
+        
+        #cropping masks
+        c = QColor(0, 0, 0, 100)
+        r = QRectF()
+        p = QPen(Qt.PenStyle.NoPen)
+        # p = QPen(QColor(0, 0, 0, 0), 0)
+
+        self.maskingtop: QGraphicsRectItem = self.scene.addRect(
+            self.view.sceneRect(), p, c
+        )
+        self.maskingleft: QGraphicsRectItem = self.scene.addRect(r, p, c)
+        self.maskingright: QGraphicsRectItem = self.scene.addRect(r, p, c)
+        self.maskingbot: QGraphicsRectItem = self.scene.addRect(r, p, c)
+
+        self.maskingtop.setZValue(-10)
+        self.maskingleft.setZValue(-10)
+        self.maskingright.setZValue(-10)
+        self.maskingbot.setZValue(-10)
     
     def startPaint(self):
         self.painting = True
@@ -187,15 +212,7 @@ class Snapshot(QWidget):
 
         self.initialize()
 
-        c = QColor(0, 0, 0, 100)
-        r = QRectF()
-        p = QPen(QColor(0, 0, 0, 0), 0)
-        self.maskingtop: QGraphicsRectItem = self.scene.addRect(
-            self.view.sceneRect(), p, c
-        )
-        self.maskingleft: QGraphicsRectItem = self.scene.addRect(r, p, c)
-        self.maskingright: QGraphicsRectItem = self.scene.addRect(r, p, c)
-        self.maskingbot: QGraphicsRectItem = self.scene.addRect(r, p, c)
+        
 
         self.startCrop(margin=2, useOriginal=True)
 
@@ -456,7 +473,6 @@ class Snapshot(QWidget):
 
         if a0.key() == Qt.Key.Key_Escape:
             if self.fullscreenCrop or not self.cropping:
-                print("closing")
                 self.close()
             elif self.cropping:
                 self.stopCrop(canceling=True)

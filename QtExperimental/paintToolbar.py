@@ -6,7 +6,7 @@ from typing import List
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtCore import QSize, Qt
 from PyQt5.QtGui import QBrush, QColor, QFont, QFontMetrics, QIcon, QPainter, QPen, QPixmap
-from PyQt5.QtWidgets import QApplication, QCheckBox, QColorDialog, QGridLayout, QHBoxLayout, QLineEdit, QPushButton, QSlider, QVBoxLayout, QWidget
+from PyQt5.QtWidgets import QApplication, QCheckBox, QColorDialog, QGridLayout, QHBoxLayout, QLineEdit, QMdiSubWindow, QPushButton, QSlider, QVBoxLayout, QWidget
 
 from ConfigManager import ConfigManager
 
@@ -96,7 +96,7 @@ class PaintToolbar(QWidget):
         return o
 
     def initGui(self):
-        self.setWindowFlags(Qt.WindowType.CustomizeWindowHint | Qt.WindowType.WindowCloseButtonHint | Qt.WindowType.WindowStaysOnTopHint)
+        self.setWindowFlags(Qt.WindowType.CustomizeWindowHint | Qt.WindowType.WindowCloseButtonHint | Qt.WindowType.WindowStaysOnTopHint    )
 
         self.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
         metric = QFontMetrics(QFont())
@@ -311,6 +311,5 @@ if __name__ == "__main__":
     import values
 
     app = QApplication(sys.argv)
-    app.setQuitOnLastWindowClosed(True)
     ex = PaintToolbar(ConfigManager("D:\PythonProject\screenCap\QtExperimental\config.ini", values.defaultVariables))
     sys.exit(app.exec_())

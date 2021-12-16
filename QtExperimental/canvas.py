@@ -6,7 +6,7 @@ from PyQt5.QtCore import QLineF, QPoint, QPointF, QRectF, QSizeF, Qt
 from PyQt5.QtGui import QCursor, QKeyEvent, QMouseEvent, QPainterPath, QPainterPathStroker, QPen
 from PyQt5.QtWidgets import (
     QApplication,
-    QGraphicsEllipseItem,
+    QGraphicsEllipseItem, 
     QGraphicsItem,
     QGraphicsLineItem,
     QGraphicsOpacityEffect,
@@ -51,12 +51,11 @@ class Canvas:
         self.tempLine.hide()
 
         self.cursurDot = self.scene.addEllipse(QRectF(0,0,self.drawOption.pen.widthF(),self.drawOption.pen.widthF()), self.drawOption.pen)
-
+        self.cursurDot.hide()
         self.drawingLine = False
         self.view.setMouseTracking(True)
 
     def updateCursor(self):
-
         self.view.setCursor(
             QCursor(
                 *self.toolbar.getCursors().get(
@@ -83,14 +82,20 @@ class Canvas:
     def onEnter(self, a0: QMouseEvent):
 
         self.drawOption = self.toolbar.getDrawOptions()
-        self.cursurDot.setPen(self.drawOption.pen)
-        self.cursurDot.setBrush(self.drawOption.pen.color())
-        size = QSizeF(self.drawOption.pen.widthF(),self.drawOption.pen.widthF())
-        self.cursurDot.setRect(QRectF(QPointF(-size.width()/2, -size.height()/2), size))
-        self.cursurDot.show()
+        
+        if self.drawOption.shape == ERASE or self.drawOption.shape == SELECT:
+            self.cursurDot.hide()
+        else:
+            self.cursurDot.setPen(self.drawOption.pen)
+            self.cursurDot.setBrush(self.drawOption.pen.color())
+            size = QSizeF(self.drawOption.pen.widthF(),self.drawOption.pen.widthF())
+            self.cursurDot.setRect(QRectF(QPointF(-size.width()/2, -size.height()/2), size))
+            self.cursurDot.show()
         self.updateCursor()
 
     def onClick(self, a0: QMouseEvent):
+        
+        self.toolbar.raise_()
 
         self.iniPos = self.view.mapFromParent(a0.pos())
         mapped = self.view.mapToScene(self.iniPos)
@@ -104,7 +109,6 @@ class Canvas:
 
         if self.drawingLine:
             self.path.lineTo(mapped)
-            print(self.path, self.currentObject, self.currentObject.path().length(), self.currentObject.boundingRect())
             self.currentObject.setPath(self.path)
 
             if not self.ctrl:
@@ -177,6 +181,7 @@ class Canvas:
 
         self.currentObject = item
         self.group.addToGroup(item)
+
         self.objects.append(item)
 
     def onRelease(self, a0: QMouseEvent):
@@ -200,19 +205,21 @@ class Canvas:
         if len(self.objects) > 0:
             self.deleteObj(self.objects[-1])
 
-    def deleteObj(self, o: Union[QGraphicsItem, QPointF]):
+    def deleteObj(self, object: Union[QGraphicsItem, QPointF]):
         """Deletes a given object, or try to find the item at a given position then deletes it.
 
         Args:
             o (Union[QGraphicsItem, QPointF]): Item to delete or pos to search.
         """
-        if isinstance(o, QGraphicsItem):
-            item = o
+        if isinstance(object, QGraphicsItem):
+            item = object
         else:
-            item = self.view.itemAt(o)
+            item = self.view.itemAt(object)
+            
         if item is None:
             # no item is found
             return
+        
         try:
             self.objects.remove(item)
             self.scene.removeItem(item)
