@@ -42,13 +42,20 @@ import win32clipboard as clipboard
 import os
 
 from paintToolbar import PaintToolbar
-from canvas import Canvas,RectItem
+from canvas import Canvas, RectItem
+import values
 
+
+#todo implement resizing canvas.
 
 class Snapshot(QWidget):
-    def __init__(self, master, image=None, *args, **kwargs):
+    def __init__(self, master = None, image=None, debugConfigPath = None, *args, **kwargs):
 
         super().__init__(*args, **kwargs)
+        
+        
+        self.config = ConfigManager(debugConfigPath if debugConfigPath else values.defaultConfigPath,values.defaultVariables) 
+        #: TODO each snapshould not create their own config! should be given by main, so that every entity shares the same config.
 
         self.master = master
 
@@ -181,12 +188,11 @@ class Snapshot(QWidget):
         self.painting = True
         self.toolbar.show()
         self.canvas.updateCursor()
-        
+    
+    
     def stopPaint(self):
         self.painting = False
         self.view.setCursor(Qt.CursorShape.ArrowCursor)
-    
-    
     
 
     def fromImage(self, image: Image.Image):
@@ -510,5 +516,5 @@ class Snapshot(QWidget):
 if __name__ == "__main__":
 
     app = QApplication(sys.argv)
-    ex = Snapshot(None, None)
+    ex = Snapshot(None, None, debugConfigPath=values.debugConfigPath)
     sys.exit(app.exec_())
