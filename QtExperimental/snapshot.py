@@ -12,6 +12,7 @@ from PyQt5.QtCore import (
     QSize,
     QSizeF,
     Qt,
+    right,
 )
 from PyQt5.QtGui import (
     QBrush,
@@ -154,10 +155,14 @@ class Snapshot(QWidget):
         
         #test canvas
         import values
+        import rightclickMenu
         self.config = ConfigManager('D:\PythonProject\screenCap\QtExperimental\config.ini',values.defaultVariables )
         self.toolbar = PaintToolbar(self.config) #todo toolbar should belong to main
         self.toolbar.hide()
-
+        
+        self.contextMenu = rightclickMenu.MenuPage(self.config)
+        
+        
         self.canvas = Canvas(self.scene, self.view, self.toolbar)
         
         self.painting = False
@@ -183,6 +188,12 @@ class Snapshot(QWidget):
         self.maskingleft.setZValue(-10)
         self.maskingright.setZValue(-10)
         self.maskingbot.setZValue(-10)
+    
+    
+    
+    def contextMenuEvent(self, a0: QtGui.QContextMenuEvent) -> None:
+        
+        self.contextMenu.buildMenu(target=self).popup(a0.globalPos())
     
     def startPaint(self):
         self.painting = True
@@ -248,9 +259,11 @@ class Snapshot(QWidget):
         self.close()
     
     def save(self):
+        
+        print("heyheyehy")
         filename, _ = QFileDialog.getSaveFileName(self, 'Choose save location', os.getenv('HOME'), 'Image files (*.png *.jpg)')
 
-    def startCrop(self, margin=0, useOriginal=False):
+    def startCrop(self, margin=50, useOriginal=False):
         if self.cropping:
             return
 

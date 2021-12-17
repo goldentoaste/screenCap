@@ -169,7 +169,6 @@ class ConfigManager:
             try:
 
                 temp = self.config.get(sec, opt).split("|")
-              
                 if not temp[0]:
                     self.vals[opt] = []  # if temp is blank, just make it an empty array
                     return

@@ -4,7 +4,7 @@ from PyQt5 import QtGui, QtWidgets
 
 from PyQt5.QtCore import QRectF, QSize, Qt
 
-from PyQt5.QtWidgets import QApplication, QHBoxLayout, QLabel, QListView, QListWidget, QPushButton, QVBoxLayout, QWidget
+from PyQt5.QtWidgets import QApplication, QHBoxLayout, QLabel, QListView, QListWidget, QMenu, QPushButton, QVBoxLayout, QWidget
 
 from ConfigManager import ConfigManager
 import values
@@ -19,12 +19,19 @@ class MenuPage(QtWidgets.QWidget):
         
         super().__init__(*args, **kwargs)
         self.config = config
+        
+        self.menu = None
+        self.needUpdate = False
         self.initGui()
         self.initValues()
         self.show()
         
     
-    
+    def contextMenuEvent(self, a0: QtGui.QContextMenuEvent) -> None:
+        
+        self.menu = self.buildMenu()
+        self.menu.popup(self.mapToGlobal(a0.pos()))
+        return super().contextMenuEvent(a0)
     def initGui(self):
         layout = QHBoxLayout()
         self.currentList = CurrentListView(self.config)
@@ -41,33 +48,16 @@ class MenuPage(QtWidgets.QWidget):
         left.addWidget(self.addDividerButton)
         layout.addLayout(left)
         
-        middleLayout = QVBoxLayout()
-        self.leftButton = QPushButton("<")
-        self.rightButton = QPushButton(">")
-        
-
-        
-        middleLayout.addWidget(self.leftButton)
-        middleLayout.addWidget(self.rightButton)
-
-        layout.addLayout(middleLayout)
-        
         right = QVBoxLayout()
         right.addWidget(QLabel("Available options:"))
         right.addWidget(self.availableList)
         layout.addLayout(right)
         
         self.setLayout(layout)
-        self.leftButton.setMaximumWidth(50)
-        self.rightButton.setMaximumWidth(50)
-        # self.leftButton.setStyleSheet(f'''QPushButton{{
-        #     margin: 1px;
-        #     }}''')
     
     
     def initValues(self):
 
-        
         available = self.config.lsavailablecommands
         current = self.config.lscurrentcommands
         
@@ -86,7 +76,30 @@ class MenuPage(QtWidgets.QWidget):
             self.currentList.addItem(divider)
             self.config.lscurrentcommands = self.config.lscurrentcommands+ [shortDivider]
         self.addDividerButton.clicked.connect(onDividerClick)
-
+        
+        
+    def buildMenu(self, target = None)-> QMenu:
+        # .TODO maybe cache the menu generated
+        if self.menu is not None and not self.needUpdate:
+            return self.menu
+        
+        def callFunc(key):
+            values.rightclickOptions[key](target)
+        
+        self.menu = QMenu(target)
+        funcs = []
+        for i in range(self.currentList.count()):
+            text = self.currentList.item(i).text()
+          
+            if text == divider:
+                self.menu.addSeparator()
+            else:
+                action = self.menu.addAction(text)
+                action.triggered.connect((lambda t: (lambda : callFunc(key = t)))(text) if target is not None else (lambda text = text: print(text, type(text), "hi")))
+        
+        for f in funcs:
+            f()
+        return self.menu
 
 class CurrentListView(QListWidget):
     
@@ -98,7 +111,7 @@ class CurrentListView(QListWidget):
 
     def dropEvent(self, event: QtGui.QDropEvent) -> None:
         super().dropEvent(event)
-        
+        self.parent().needUpdate = True #breaking oop in python :v
         commands = [self.item(i).text() if self.item(i).text() != divider else shortDivider for i in range(self.count())] #all strings in current list, but replace long div with short div
         self.config.lscurrentcommands = commands
         

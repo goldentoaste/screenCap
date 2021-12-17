@@ -160,6 +160,14 @@ rightclickOptions = {
     "crop": Snapshot.startCrop,
     #+more, these are place holder for now.
 }
+# rightclickOptions = {
+#     "copy": lambda: print("copy"),
+#     "cut":lambda: print("cut"),
+#     "save": lambda: print("save"), 
+#     "close": lambda: print("close"),
+#     "crop": lambda: print("crop"),
+#     #+more, these are place holder for now.
+# }
 
 defaultVariables = { #if im doing this again, these tuples should be dataclasses instead. but im not doing this again.
     "istartup": (0, "main"),
