@@ -3,6 +3,7 @@ from configparser import ConfigParser
 import os
 from typing import List, Union
 
+
 class ConfigManager:
     """
     dynamic variable addition, deletion, renaming etc not implemented yet.
@@ -11,9 +12,7 @@ class ConfigManager:
 
     loaded = False
 
-    def __init__(
-        self, path, default: dict = None, addMissingVars=True, removeExtraVars=False
-    ):
+    def __init__(self, path, default: dict = None, addMissingVars=True, removeExtraVars=False):
         """
         path is directory to the ini file.(does not need to be an existing file)
         default is a dict with format : 'varName':(val, 'section), varName should have prefix i, f, s for int, float, string.
@@ -66,10 +65,8 @@ class ConfigManager:
 
         self.loaded = True
 
-    def getVarString(self,name, val):
-        return str(val) if name[0] != "l"else (
-                    "|".join([str(item) for item in val]) if len(val) > 0 else ""
-                )
+    def getVarString(self, name, val):
+        return str(val) if name[0] != "l" else ("|".join([str(item) for item in val]) if len(val) > 0 else "")
 
     def newConfig(self):
         self.config.clear()
@@ -93,29 +90,21 @@ class ConfigManager:
     def typeCheck(self, name, val):
         def _raise(e):
             raise e
+
         return {
-            "i": lambda: _raise(TypeError("must be int"))
-            if type(val) is not int
-            else "",
-            "f": lambda: _raise(TypeError("must be float"))
-            if type(val) is not float
-            else "",
-            "s": lambda: _raise(TypeError("must be string"))
-            if type(val) is not str
-            else "",
-            "l": lambda: _raise(TypeError("must be list"))
-            if type(val) is not list
-            else "",
+            "i": lambda: _raise(TypeError("must be int")) if type(val) is not int else "",
+            "f": lambda: _raise(TypeError("must be float")) if type(val) is not float else "",
+            "s": lambda: _raise(TypeError("must be string")) if type(val) is not str else "",
+            "l": lambda: _raise(TypeError("must be list")) if type(val) is not list else "",
         }[name[0]]
 
-    def getSection(self,val):
+    def getSection(self, val):
         return self.secs[val]
 
-
     def __getitem__(self, key) -> Union[str, int, float, List[Union[str, int, float]]]:
-        '''
+        """
         returns a config value based on config key, via the list index operator.
-        '''
+        """
         return self.vals[key]
 
     def __setitem__(self, key, val):
@@ -147,6 +136,7 @@ class ConfigManager:
             try:
                 return self.vals[name]
             except KeyError:
+
                 raise AttributeError(f"The config attribute is not found: {name}")
 
     def save(self):
@@ -156,12 +146,13 @@ class ConfigManager:
             self.config.write(file)
 
     def loadVar(self, sec, opt):
-        '''Load a single variable from config file into
+        """Load a single variable from config file into
 
         Args:
             sec (str): Section of the config file
             opt (str): Option of the given section
-        '''
+        """
+
         def intVar():
             try:
                 self.vals[opt] = self.config.getint(sec, opt)
@@ -176,7 +167,12 @@ class ConfigManager:
 
         def listVar():
             try:
+
                 temp = self.config.get(sec, opt).split("|")
+              
+                if not temp[0]:
+                    self.vals[opt] = []  # if temp is blank, just make it an empty array
+                    return
                 varType = {"i": int, "f": float, "s": str}[opt[1]]
                 self.vals[opt] = [varType(item) for item in temp]
             except:
@@ -205,5 +201,3 @@ if __name__ == "__main__":
         },
     )
     c.inum = 44
-    print(c.inum)
-    

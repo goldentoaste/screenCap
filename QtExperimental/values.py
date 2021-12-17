@@ -150,8 +150,18 @@ conversionTable = {
 
 keycodeTable = {item[1]: item[0] for item in conversionTable.items()}
 
+#!! circular imports
+from snapshot import Snapshot
+rightclickOptions = {
+    "copy": Snapshot.copy,
+    "cut": Snapshot.cut,
+    "save": Snapshot.save, 
+    "close": Snapshot.close,
+    "crop": Snapshot.startCrop,
+    #+more, these are place holder for now.
+}
 
-defaultVariables = {
+defaultVariables = { #if im doing this again, these tuples should be dataclasses instead. but im not doing this again.
     "istartup": (0, "main"),
     "istartmin": (0, "main"),
     "imintray": (0, "main"),
@@ -185,7 +195,10 @@ defaultVariables = {
     ),
     
     #recycler
-    "imaxsize": (10, "reycler")
+    "imaxsize": (10, "reycler"),
+    #right click context menu
+    "lsavailablecommands": (list(rightclickOptions.keys()), "right_menu"),
+    "lscurrentcommands": ([], "right_menu")
 }
 
 hotkeys = {

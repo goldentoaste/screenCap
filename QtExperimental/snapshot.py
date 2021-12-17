@@ -82,9 +82,9 @@ class Snapshot(QWidget):
         self.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
 
         self.scene = QGraphicsScene()
-        print(self.scene.items())
+
         self.displayPix = self.scene.addPixmap(QPixmap.fromImage(self.displayImage))
-        print(self.scene.items())
+
         self.displayPix.setZValue(-100)
         self.displayPix.setPos(0, 0)
         
@@ -243,8 +243,11 @@ class Snapshot(QWidget):
             clipboard.SetClipboardData(clipboard.CF_DIB, bytes.getvalue()[14:])
             clipboard.CloseClipboard()
     
+    def cut(self):
+        self.copy()
+        self.close()
+    
     def save(self):
-        
         filename, _ = QFileDialog.getSaveFileName(self, 'Choose save location', os.getenv('HOME'), 'Image files (*.png *.jpg)')
 
     def startCrop(self, margin=0, useOriginal=False):

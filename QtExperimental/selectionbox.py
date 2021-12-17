@@ -137,34 +137,33 @@ class SizeGrip(QtWidgets.QWidget):
         else:
             painter.drawRect(self.rect())
 
+
+    #seperating on the functions inside of dictionary, redefining these lambda each time is pointless.
     def updatePos(self):
         m = self.master
 
-        # owo!
-        funcs = {
-            topleft: lambda: (),
-            top: lambda: (
-                self.move(self.side, 0),
-                self.resize(m.width() - self.side * 2, self.side),
-            ),
-            topright: lambda: self.move(m.width() - self.side, 0),
-            left: lambda: (
-                self.move(0, self.side),
-                self.resize(self.side, m.height() - self.side * 2),
-            ),
-            right: lambda: (
-                self.move(m.width() - self.side, self.side),
-                self.resize(self.side, m.height() - self.side * 2),
-            ),
-            botleft: lambda: self.move(0, m.height() - self.side),
-            bot: lambda: (
-                self.move(self.side, m.height() - self.side),
-                self.resize(m.width() - self.side * 2, self.side),
-            ),
-            botright: lambda: self.move(m.width() - self.side, m.height() - self.side),
-        }
+   
+        #if else is prob faster than dictionary creation and then lookup.
+        if self.loc == top:
+            self.move(self.side, 0),
+            self.resize(m.width() - self.side * 2, self.side)
+        elif self.loc == topright:
+            self.move(m.width() - self.side, 0)
+        elif self.loc == left:
+            self.move(0, self.side),
+            self.resize(self.side, m.height() - self.side * 2)
+        elif self.loc == right:
+            self.move(m.width() - self.side, self.side),
+            self.resize(self.side, m.height() - self.side * 2)
+        elif self.loc == botleft:
+            self.move(0, m.height() - self.side)
+        elif self.loc == bot:
+            self.move(self.side, m.height() - self.side),
+            self.resize(m.width() - self.side * 2, self.side)
+        elif self.loc == botright:
+            self.move(m.width() - self.side, m.height() - self.side)
 
-        funcs[self.loc]()
+        
 
     def mousePressEvent(self, a0: QtGui.QMouseEvent) -> None:
 
