@@ -9,7 +9,8 @@ from PyQt5.QtWidgets import QApplication, QHBoxLayout, QLabel, QListView, QListW
 from ConfigManager import ConfigManager
 import values
 
-divider = "————————————"
+divider = "——————————"
+shortDivider = "div"
 
 class MenuPage(QtWidgets.QWidget):
     
@@ -26,8 +27,8 @@ class MenuPage(QtWidgets.QWidget):
     
     def initGui(self):
         layout = QHBoxLayout()
-        self.currentList = QListWidget()
-        self.availableList = ListView()
+        self.currentList = CurrentListView(self.config)
+        self.availableList = AvailableListView()
         self.currentList.setDefaultDropAction(Qt.DropAction.MoveAction)
         self.availableList.setDefaultDropAction(Qt.DropAction.MoveAction)
 
@@ -75,19 +76,42 @@ class MenuPage(QtWidgets.QWidget):
             self.availableList.addItems(available)
             
         if current:
-            self.currentList.addItems(current)
+            self.currentList.addItems([item if item != shortDivider else divider for item in current])
         
         self.availableList.setMovement(QListView.Movement.Free)
         self.currentList.setMovement(QListView.Movement.Free)
 
         
-        self.addDividerButton.clicked.connect(lambda: self.currentList.addItem(divider))
+        def onDividerClick():
+            self.currentList.addItem(divider)
+            self.config.lscurrentcommands = self.config.lscurrentcommands+ [shortDivider]
+        self.addDividerButton.clicked.connect(onDividerClick)
 
-class ListView(QListWidget):
+
+class CurrentListView(QListWidget):
+    
+    def __init__(self, config:ConfigManager, *args, **kwargs):
+        
+        self.config = config
+        super().__init__(*args, **kwargs)
+        
+
+    def dropEvent(self, event: QtGui.QDropEvent) -> None:
+        super().dropEvent(event)
+        
+        commands = [self.item(i).text() if self.item(i).text() != divider else shortDivider for i in range(self.count())] #all strings in current list, but replace long div with short div
+        self.config.lscurrentcommands = commands
+        
+        commands = set(commands)
+        self.config.lsavailablecommands = [val for val in values.rightclickOptions.keys() if val not in commands] #puts available options thats not used yet in config. order preservd.
+        
+        
+        
+class AvailableListView(QListWidget):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        
+
     
     def dropEvent(self, event: QtGui.QDropEvent) -> None:
         super().dropEvent(event)
@@ -96,11 +120,6 @@ class ListView(QListWidget):
             if self.item(i).text() == divider:
                 self.takeItem(i)
             
-            
-            
-        
-    
-
 if __name__ == "__main__":
     
     app = QApplication(sys.argv)
