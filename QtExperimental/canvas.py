@@ -121,7 +121,12 @@ class Canvas:
         # dealing with select and erase
 
         if opt == SELECT:
-            self.currentObject = self.view.itemAt(self.iniPos)
+            
+            item = self.view.itemAt(self.iniPos)
+            if item not in self.objects:
+                self.currentObject = None
+                return
+            self.currentObject = item
 
             self.offset = (mapped - self.currentObject.pos()) if self.currentObject is not None else None
             return

@@ -199,11 +199,13 @@ class Snapshot(QWidget):
         self.painting = True
         self.toolbar.show()
         self.canvas.updateCursor()
+        self.grip.hide()
     
     
     def stopPaint(self):
         self.painting = False
         self.view.setCursor(Qt.CursorShape.ArrowCursor)
+        self.grip.show()
     
 
     def fromImage(self, image: Image.Image):
@@ -314,20 +316,16 @@ class Snapshot(QWidget):
         self.currentWidth = self.displayImage.width()
 
     def resizeEvent(self, a0: QtGui.QResizeEvent) -> None:
-        if not self.cropping and not self.mini:
+        if not self.cropping and not self.mini :
             fullwidth = self.displayImage.width() * self.displayPix.scale()
 
             size = QSizeF(*self.currentRect[2:])
             size.scale(QSizeF(a0.size()), Qt.AspectRatioMode.KeepAspectRatio)
-
-            self.displayPix.setScale(
-                (
-                    fullwidth
-                    + ((size.width() - self.currentWidth) / self.currentWidth)
-                    * fullwidth
-                )
-                / self.displayImage.width()
-            )
+            scale = (fullwidth+ ((size.width() - self.currentWidth) / self.currentWidth)* fullwidth)/ self.displayImage.width()
+            
+            print(scale)
+            self.displayPix.setScale(scale)
+            self.canvas.group.setScale(scale) # scales both canvas items and image
 
             displayrect = QRectF(
                 *(i * self.displayPix.scale() for i in self.currentRect)
@@ -386,6 +384,8 @@ class Snapshot(QWidget):
             self.maskingleft.hide()
             self.maskingtop.hide()
             self.maskingbot.hide()
+            
+        self.grip.show()
 
     def wheelEvent(self, a0: QtGui.QWheelEvent) -> None:
         a0.accept()

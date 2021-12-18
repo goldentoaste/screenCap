@@ -14,7 +14,7 @@ user32 = ctypes.windll.user32
 
 
 class HotkeyManager(threading.Thread):
-    def __init__(self):
+    def __init__(self, config = None):
 
         threading.Thread.__init__(self, daemon=True)
 
@@ -32,6 +32,8 @@ class HotkeyManager(threading.Thread):
 
         self.task = []
         self.islocal = False
+        
+        self.config = config
 
     def getModsCode(self, mods) -> int:
         num = 0
@@ -48,6 +50,7 @@ class HotkeyManager(threading.Thread):
         """
 
         self.currentKey = key if type(key) is int else keycodeTable[key]
+        
         self.currentMods = {
             mod if type(mod) is int else keycodeTable[mod] for mod in modifiers
         }
@@ -72,6 +75,7 @@ class HotkeyManager(threading.Thread):
 
             self._stopRecording()
         self.recording = name
+        print("name", name)
         self.keyStringCallback = stringCallback
         self.currentKey = None
         self.currentMods.clear()
@@ -84,11 +88,12 @@ class HotkeyManager(threading.Thread):
 
     def _stopRecording(self):
         def clearFields():
+            print("clearing")
             self.recording = None
             self.currentKey = None
             self.currentMods.clear()
             self.keyStringCallback = None
-
+        print("in stop recording", self.recording)
         if self.recording and self.currentKey is not None:
 
             vals = (self.index, self.currentKey, self.currentMods)
@@ -116,10 +121,12 @@ class HotkeyManager(threading.Thread):
                         self.keyStringCallback("Duplicate")
                         clearFields()
                 else:
+                    #success
                     self.index += 1
                     self.hotkeys[self.recording][1] = self.currentKey
                     self.hotkeys[self.recording][2].update(self.currentMods)
-
+                    print(self.currentKey, self.currentMods, self.recording)
+                    self.config[self.recording] = [self.currentKey] + list(self.currentMods)
                     clearFields()
                     return
 
@@ -166,11 +173,11 @@ class HotkeyManager(threading.Thread):
         return (
             " + ".join(
                 [
-                    conversionTable.get(key, "Unkown") if key is not None else ""
-                    for key in self.getSortedKeys(mods | {key})
+                    conversionTable.get(key, "Unkown") if key else ""
+                    for key in self.getSortedKeys(mods | ({key} if key else set())) #FIXME this is really bad and janky, more clearly define what key & mods is if using in another project
                 ]
             )
-            if key is not None or mods
+            if key or mods
             else "None"
         )
 

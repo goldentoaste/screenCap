@@ -30,6 +30,9 @@ class ConfigManager:
         self.secs = dict()
         self.path = path
         self.default = default if default else dict()
+        
+
+        
         if os.path.isfile(path):
             self.config.read(path)
         else:
@@ -108,10 +111,13 @@ class ConfigManager:
         return self.vals[key]
 
     def __setitem__(self, key, val):
+        print("in config", key, val)
         try:
             self.typeCheck(key, val)
             self.vals[key] = val
+            print(self.secs[key], key, self.getVarString(key, val))
             self.config.set(self.secs[key], key, self.getVarString(key, val))
+            self.save()
         except KeyError:
             raise KeyError()
 

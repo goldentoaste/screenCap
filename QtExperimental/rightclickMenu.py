@@ -87,18 +87,16 @@ class MenuPage(QtWidgets.QWidget):
             values.rightclickOptions[key](target)
         
         self.menu = QMenu(target)
-        funcs = []
         for i in range(self.currentList.count()):
             text = self.currentList.item(i).text()
           
             if text == divider:
                 self.menu.addSeparator()
             else:
+                #. TODO quick recycling view
                 action = self.menu.addAction(text)
                 action.triggered.connect((lambda t: (lambda : callFunc(key = t)))(text) if target is not None else (lambda text = text: print(text, type(text), "hi")))
-        
-        for f in funcs:
-            f()
+
         return self.menu
 
 class CurrentListView(QListWidget):

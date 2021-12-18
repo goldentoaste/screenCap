@@ -1,7 +1,7 @@
 from HotkeyManager import HotkeyManager
 import os
 from ConfigManager import ConfigManager
-from os import path, getenv, remove, mkdir
+from os import path, getenv, remove
 from PyQt5.QtGui import QIntValidator
 from PyQt5.QtWidgets import *
 import sys
@@ -47,13 +47,14 @@ class Main(QWidget):
         self.initGUI()
 
     def initHotkeys(self):
-        self.hotkeysManager = HotkeyManager()
+        self.hotkeysManager = HotkeyManager(self.config)
         self.hotkeysManager.start()
 
     def initConfig(self):
         self.config = ConfigManager(
             "D:\PythonProject\screenCap\QtExperimental\config.ini", defaultVariables
         )
+        
 
     def closeEvent(self, a0) -> None:
         if self.config.iminx:
@@ -202,7 +203,7 @@ class Main(QWidget):
         for key, val in hotkeys.items():
             i = next(r)
             form.titles.append(QLabel(val[1]))
-            form.lines.append(CustomLineEdit())
+            form.lines.append(CustomLineEdit(self.hotkeysManager.getKeyString(None,set(self.config[key])))) #knee deep in jank
 
             form.lines[i].onFocus = makeFunc(
                 lineeditRecord,
