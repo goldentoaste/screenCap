@@ -211,5 +211,9 @@ defaultVariables = { #if im doing this again, these tuples should be dataclasses
 
 hotkeys = {
     "licapture": (lambda: print("capture"), "Capture screen(global)"),
-    "licopy": (lambda: print("copy"), "Copy image"),
+    "licopy": (lambda: print("copy"), "Copy imagewqe"),
+   
 }
+
+for i in hotkeys.keys():
+     defaultVariables[i] = ([], "local")

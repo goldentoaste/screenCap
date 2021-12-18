@@ -53,9 +53,9 @@ class Recycler(QWidget):
         self.resize(self.width(), int(self.maxSize.height() * 3.5))
         self.setFixedWidth(self.width())
 
-    def resizeEvent(self, a0) -> None:
-        print(a0.size())
-
+    
+    
+    
     def loadImages(self):
 
         paths = sorted(

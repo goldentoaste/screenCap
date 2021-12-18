@@ -25,7 +25,9 @@ class MenuPage(QtWidgets.QWidget):
         self.initGui()
         self.initValues()
         self.show()
-        
+    
+    def sizeHint(self):
+        return QSize(300, 300)
     
     def contextMenuEvent(self, a0: QtGui.QContextMenuEvent) -> None:
         

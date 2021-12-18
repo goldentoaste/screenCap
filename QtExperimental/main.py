@@ -10,11 +10,13 @@ configDir = path.join(getenv("appdata"), "screenCap")
 configFile = path.join(configDir, "config.ini")
 
 from values import defaultVariables, hotkeys
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import QSize, Qt
 from win32com.client import Dispatch
 import pythoncom
-import ctypes
 
+from snapshot import Snapshot
+from rightclickMenu import MenuPage
+from paintToolbar import PaintToolbar
 
 def resource_path(relative_path):
     """Get absolute path to resource, works for dev and for PyInstaller"""
@@ -45,6 +47,8 @@ class Main(QWidget):
         self.initConfig()
         self.initHotkeys()
         self.initGUI()
+        
+        self.snapshots = []
 
     def initHotkeys(self):
         self.hotkeysManager = HotkeyManager(self.config)
@@ -75,14 +79,39 @@ class Main(QWidget):
         
         self.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
 
-        self.tabs = QTabWidget(self)
+        self.tabs = SizeAdjustingTabs([3],self)
+        
+        # def resizeToCurrentTab(index):
+            
+        #     for i in range(self.tabs.count()):
+        #         if i != index:
+        #             self.tabs.widget(i).setSizePolicy(QSizePolicy(QSizePolicy.Policy.Ignored,QSizePolicy.Policy.Ignored, QSizePolicy.ControlType.DefaultType))
+            
+        #     self.tabs.widget(index).setSizePolicy(QSizePolicy(QSizePolicy.Policy.Minimum,QSizePolicy.Policy.Minimum, QSizePolicy.ControlType.GroupBox))
+        #     size = self.tabs.widget(index).sizeHint()
+        #     self.tabs.setFixedSize(QSize(size.width(), size.height() + 30))
+        #     print(self.tabs.widget(index).sizeHint())
+        #     self.tabs.adjustSize()
+        #     # self.tabs.widget(index).resize(self.tabs.widget(index).sizeHint())
+        #     # self.tabs.widget(index).adjustSize()
+            
+        #     # print(self.tabs.widget(index).size())
+        #     # self.resize(self.tabs.widget(index).sizeHint())
+        #     # self.adjustSize()
+            
+            
+        # self.tabs.currentChanged.connect(resizeToCurrentTab)
+       # self.tabs.currentChanged.connect(lambda: (QApplication.processEvents(), self.adjustSize()))
+        
         self.generaltab = QWidget()
+        
         self.hotkeystab = QWidget()
+        
         self.generaltab.layout = QVBoxLayout()
 
         self.generaltab.setLayout(self.generaltab.layout)
         self.tabs.addTab(self.generaltab, "General")
-        self.tabs.addTab(self.hotkeystab, "Hotkeys")
+        
 
         # first row
         temphbox = QHBoxLayout()
@@ -138,6 +167,7 @@ class Main(QWidget):
 
         # third row, saving stuff
         savingGroup = QGroupBox("Save Options")
+     
         mainsavingLayout = QVBoxLayout()
         savingGroup.setLayout(mainsavingLayout)
 
@@ -176,11 +206,14 @@ class Main(QWidget):
         self.generaltab.layout.addWidget(self.captureButton)
         self.applyGeneralConfig()
         self.setupGeneralTab()
-
         self.initHotkeysTab()
-    
-        self.setFixedSize(self.tabs.sizeHint())
+        self.setupContextMenuTab()
+        self.setupPaintTool()
         self.show()
+        self.adjustSize()
+       
+      
+        self.tabs.onItemChanged()
 
     def initHotkeysTab(self):
         def lineeditRecord(item, name, func, islocal):
@@ -215,7 +248,11 @@ class Main(QWidget):
         
     
         self.hotkeystab.setLayout(form)
-
+        scroll = QScrollArea()
+        scroll.setWidget(self.hotkeystab)
+        self.tabs.addTab(scroll, "Hotkeys")
+        
+        
     def applyGeneralConfig(self):
 
         self.startUpCheck.setChecked(bool(self.config.istartup))
@@ -240,6 +277,8 @@ class Main(QWidget):
         self.defaultSaveLocation.setDisabled(self.useLastLocationCheck.isChecked())
 
     def setupGeneralTab(self):
+        
+        
         def connectck(check, func):
             check.stateChanged.connect(lambda i: func())
 
@@ -332,6 +371,21 @@ class Main(QWidget):
 
         connectck(self.useLastLocationCheck, useLastLocation)
 
+    def setupContextMenuTab(self):
+        self.contextMenuTab = MenuPage(self.config)
+        self.tabs.addTab(self.contextMenuTab, "Context Menu")
+
+    def setupPaintTool(self):
+        self.paintTool = PaintToolbar(self.config)
+        
+        
+        self.tabs.addTab(self.paintTool, "Paint Tools")
+    
+    
+    def takeSnapshot(self):
+    
+        self.snapshots.append(Snapshot(master= self, image= None, config = self.config)) #call from full screen
+        
 
 class CustomLineEdit(QLineEdit):
     def __init__(self, *args, **kwargs):
@@ -360,6 +414,47 @@ class CustomLineEdit(QLineEdit):
 
     def keyReleaseEvent(self, a0) -> None:
         self.onkeyup(a0)
+
+
+class SizeAdjustingTabs(QTabWidget):
+    
+    def __init__(self, excluded = None, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.excluded = excluded if excluded else []
+
+        
+        self.maxSize = None
+        self.currentChanged.connect(self.onItemChanged)
+    
+    def minimumSizeHint(self):
+        return self.sizeHint()
+    
+    def sizeHint(self):
+        
+        if self.currentIndex() in self.excluded:
+            return QSize(self.currentWidget().sizeHint().width(), self.currentWidget().sizeHint().height() + 30 )
+        
+        
+        try:
+          
+            maxWidth = max([self.widget(i).sizeHint().width() for i in range(self.count()) if i not in self.excluded])
+            maxHeight = max([self.widget(i).sizeHint().height() for i in range(self.count()) if i not in self.excluded]) + 30
+          
+            return  QSize(maxWidth, maxHeight)
+
+        except ValueError as e:
+            
+            return super().sizeHint()
+
+    def onItemChanged(self):
+        
+        self.setFixedSize(self.sizeHint())
+        self.parent().adjustSize()
+
+    
+        
+    
+    
 
 
 if __name__ == "__main__":

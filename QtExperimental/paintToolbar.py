@@ -94,7 +94,9 @@ class PaintToolbar(QWidget):
         )
 
         return o
-
+    
+    
+   
     def initGui(self):
         self.setWindowFlags(Qt.WindowType.CustomizeWindowHint | Qt.WindowType.WindowCloseButtonHint | Qt.WindowType.WindowStaysOnTopHint)
      
