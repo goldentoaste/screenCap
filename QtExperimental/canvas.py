@@ -224,7 +224,6 @@ class Canvas:
         if item is None:
             # no item is found
             return
-        
         try:
             self.objects.remove(item)
             self.scene.removeItem(item)

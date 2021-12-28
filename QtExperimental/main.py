@@ -1,3 +1,6 @@
+from typing import List
+
+from PyQt5 import QtCore
 from HotkeyManager import HotkeyManager
 import os
 from ConfigManager import ConfigManager
@@ -9,8 +12,8 @@ import sys
 configDir = path.join(getenv("appdata"), "screenCap")
 configFile = path.join(configDir, "config.ini")
 
-from values import defaultVariables, hotkeys
-from PyQt5.QtCore import QSize, Qt
+from values import defaultVariables
+from PyQt5.QtCore import QObject, QSize, Qt
 from win32com.client import Dispatch
 import pythoncom
 
@@ -40,7 +43,8 @@ shortCutTarget = path.join(
     resource_path(path.dirname(path.abspath(__file__))), executable
 )
 
-
+class ThreadSignal(QObject):
+    signal = QtCore.pyqtSignal()
 class Main(QWidget):
     def __init__(self):
         super().__init__()
@@ -51,8 +55,18 @@ class Main(QWidget):
         self.snapshots = []
 
     def initHotkeys(self):
+        self.captureSignal =ThreadSignal()
+        self.captureSignal.signal.connect(self.takeSnapshot)
+        self.hotkeys = {
+            "licapture": (self.captureSignal.signal.emit, "Capture Screen(global)"), #configname : ()
+        }
         self.hotkeysManager = HotkeyManager(self.config)
         self.hotkeysManager.start()
+        for key, val in self.hotkeys.items():
+            keys : List[int] = self.hotkeysManager.getSortedKeys(self.config[key])
+            if len(keys) == 0:
+                continue
+            self.hotkeysManager.setHotkey(key, keys[-1], keys[:-1], val[0] )
 
     def initConfig(self):
         self.config = ConfigManager(
@@ -80,28 +94,6 @@ class Main(QWidget):
         self.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
 
         self.tabs = SizeAdjustingTabs([3],self)
-        
-        # def resizeToCurrentTab(index):
-            
-        #     for i in range(self.tabs.count()):
-        #         if i != index:
-        #             self.tabs.widget(i).setSizePolicy(QSizePolicy(QSizePolicy.Policy.Ignored,QSizePolicy.Policy.Ignored, QSizePolicy.ControlType.DefaultType))
-            
-        #     self.tabs.widget(index).setSizePolicy(QSizePolicy(QSizePolicy.Policy.Minimum,QSizePolicy.Policy.Minimum, QSizePolicy.ControlType.GroupBox))
-        #     size = self.tabs.widget(index).sizeHint()
-        #     self.tabs.setFixedSize(QSize(size.width(), size.height() + 30))
-        #     print(self.tabs.widget(index).sizeHint())
-        #     self.tabs.adjustSize()
-        #     # self.tabs.widget(index).resize(self.tabs.widget(index).sizeHint())
-        #     # self.tabs.widget(index).adjustSize()
-            
-        #     # print(self.tabs.widget(index).size())
-        #     # self.resize(self.tabs.widget(index).sizeHint())
-        #     # self.adjustSize()
-            
-            
-        # self.tabs.currentChanged.connect(resizeToCurrentTab)
-       # self.tabs.currentChanged.connect(lambda: (QApplication.processEvents(), self.adjustSize()))
         
         self.generaltab = QWidget()
         
@@ -211,8 +203,6 @@ class Main(QWidget):
         self.setupPaintTool()
         self.show()
         self.adjustSize()
-       
-      
         self.tabs.onItemChanged()
 
     def initHotkeysTab(self):
@@ -232,8 +222,8 @@ class Main(QWidget):
         form.lines = []
         self.hotkeystab.setLayout(form)
 
-        r = iter(range(len(hotkeys)))
-        for key, val in hotkeys.items():
+        r = iter(range(len(self.hotkeys)))
+        for key, val in self.hotkeys.items():
             i = next(r)
             form.titles.append(QLabel(val[1]))
             form.lines.append(CustomLineEdit(self.hotkeysManager.getKeyString(None,set(self.config[key])))) #knee deep in jank
@@ -251,7 +241,6 @@ class Main(QWidget):
         scroll = QScrollArea()
         scroll.setWidget(self.hotkeystab)
         self.tabs.addTab(scroll, "Hotkeys")
-        
         
     def applyGeneralConfig(self):
 
@@ -273,7 +262,7 @@ class Main(QWidget):
         self.showRecycleButton.setEnabled(self.recycleCheck.isChecked())
         self.clearRecycleButton.setEnabled(self.recycleCheck.isChecked())
         self.recycleCapacityEdit.setEnabled(self.recycleCheck.isChecked())
-        self.savingOption.setDisabled(self.savePromptCheck.isChecked())
+       # self.savingOption.setDisabled(self.savePromptCheck.isChecked())
         self.defaultSaveLocation.setDisabled(self.useLastLocationCheck.isChecked())
 
     def setupGeneralTab(self):
@@ -381,11 +370,9 @@ class Main(QWidget):
         
         self.tabs.addTab(self.paintTool, "Paint Tools")
     
-    
-    def takeSnapshot(self):
-    
+    def takeSnapshot(self): 
         self.snapshots.append(Snapshot(master= self, image= None, config = self.config)) #call from full screen
-        
+
 
 class CustomLineEdit(QLineEdit):
     def __init__(self, *args, **kwargs):
@@ -421,8 +408,6 @@ class SizeAdjustingTabs(QTabWidget):
     def __init__(self, excluded = None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.excluded = excluded if excluded else []
-
-        
         self.maxSize = None
         self.currentChanged.connect(self.onItemChanged)
     
@@ -434,27 +419,18 @@ class SizeAdjustingTabs(QTabWidget):
         if self.currentIndex() in self.excluded:
             return QSize(self.currentWidget().sizeHint().width(), self.currentWidget().sizeHint().height() + 30 )
         
-        
         try:
-          
             maxWidth = max([self.widget(i).sizeHint().width() for i in range(self.count()) if i not in self.excluded])
             maxHeight = max([self.widget(i).sizeHint().height() for i in range(self.count()) if i not in self.excluded]) + 30
-          
             return  QSize(maxWidth, maxHeight)
-
         except ValueError as e:
-            
             return super().sizeHint()
 
     def onItemChanged(self):
-        
+        if self.sizeHint().width() < 50 or self.sizeHint().height() < 50:
+            return 
         self.setFixedSize(self.sizeHint())
         self.parent().adjustSize()
-
-    
-        
-    
-    
 
 
 if __name__ == "__main__":

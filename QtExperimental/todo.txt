@@ -1,0 +1,5 @@
+-color picker
+    - hotkey set via normal means
+    - choose formats needed, 
+    - choose if maginfier is needed
+    - a hotkey summoned 

@@ -88,16 +88,14 @@ class HotkeyManager(threading.Thread):
 
     def _stopRecording(self):
         def clearFields():
-            print("clearing")
             self.recording = None
             self.currentKey = None
             self.currentMods.clear()
             self.keyStringCallback = None
-        print("in stop recording", self.recording)
+    
         if self.recording and self.currentKey is not None:
 
             vals = (self.index, self.currentKey, self.currentMods)
-            print(f"registering hotkey {vals[1]}")
 
             if not self.islocal and not user32.RegisterHotKey(
                 None,
@@ -126,7 +124,7 @@ class HotkeyManager(threading.Thread):
                     self.hotkeys[self.recording][1] = self.currentKey
                     self.hotkeys[self.recording][2].update(self.currentMods)
                     print(self.currentKey, self.currentMods, self.recording)
-                    self.config[self.recording] = [self.currentKey] + list(self.currentMods)
+                    self.config[self.recording] =list(self.currentMods)+ [self.currentKey] 
                     clearFields()
                     return
 

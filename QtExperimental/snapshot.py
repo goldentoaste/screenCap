@@ -50,12 +50,12 @@ import values
 #todo implement resizing canvas.
 
 class Snapshot(QWidget):
-    def __init__(self, master = None, image=None, debugConfigPath = None, *args, **kwargs):
+    def __init__(self, master = None, image=None, debugConfigPath = None, config= None, *args, **kwargs):
 
         super().__init__(*args, **kwargs)
         
-        
-        self.config = ConfigManager(debugConfigPath if debugConfigPath else values.defaultConfigPath,values.defaultVariables) 
+    #    self.needrecycle = needrecycle #if the snapshot is spawned from recycler, then no need to recycle again.
+        self.config = ConfigManager(debugConfigPath) if debugConfigPath else config
         #: TODO each snapshould not create their own config! should be given by main, so that every entity shares the same config.
 
         self.master = master
