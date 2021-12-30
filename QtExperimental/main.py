@@ -12,7 +12,7 @@ import sys
 configDir = path.join(getenv("appdata"), "screenCap")
 configFile = path.join(configDir, "config.ini")
 
-from values import defaultVariables
+from values import defaultVariables, debugConfigPath
 from PyQt5.QtCore import QObject, QSize, Qt
 from win32com.client import Dispatch
 import pythoncom
@@ -20,6 +20,8 @@ import pythoncom
 from snapshot import Snapshot
 from rightclickMenu import MenuPage
 from paintToolbar import PaintToolbar
+
+from recycler import Recycler
 
 def resource_path(relative_path):
     """Get absolute path to resource, works for dev and for PyInstaller"""
@@ -45,14 +47,18 @@ shortCutTarget = path.join(
 
 class ThreadSignal(QObject):
     signal = QtCore.pyqtSignal()
+    
 class Main(QWidget):
     def __init__(self):
         super().__init__()
         self.initConfig()
         self.initHotkeys()
         self.initGUI()
-        
         self.snapshots = []
+        self.currentPainting : Snapshot = None
+
+    def initRecycling(self):
+        self.recycling = Recycler(debugConfigPath, self.config)
 
     def initHotkeys(self):
         self.captureSignal =ThreadSignal()
@@ -371,9 +377,34 @@ class Main(QWidget):
         self.tabs.addTab(self.paintTool, "Paint Tools")
     
     def takeSnapshot(self): 
-        self.snapshots.append(Snapshot(master= self, image= None, config = self.config)) #call from full screen
+        self.snapshots.append(Snapshot(master= self, image= None, config = self.config, contextMenu=self.contextMenuTab, paintTool= self.paintTool)) #call from full screen
 
-
+    def snapshotCloseEvent(self, snap: Snapshot):
+        try:
+            self.snapshots.remove(snap)
+        except ValueError as e:
+            print(e, "oh no! trying to delete a snap that doesnt exist")
+        if not self.snapshots or snap is self.currentPainting:
+            #if the last snap is closed, then painttool is no longer needed
+            #or if the snap closed is the one currently painting
+            self.paintToolJoin()
+    
+    def snapshotPaintEvent(self, snap : Snapshot):
+        if self.currentPainting: # current is not none
+            self.currentPainting = snap # by passing stoppaint event
+            self.currentPainting.stopPaint()
+        self.currentPainting = snap
+        
+    def snapshotStopPaintEvent(self, snap : Snapshot):
+        if snap is self.currentPainting:
+            self.paintToolJoin()
+            
+    def paintToolPop(self):
+        self.paintTool.setParent(None)
+    
+    def paintToolJoin(self):
+        self.paintTool.setParent(self)
+    
 class CustomLineEdit(QLineEdit):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

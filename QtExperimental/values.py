@@ -4,8 +4,9 @@ modCode = {16: 0x0004, 17: 0x0002, 18: 0x0001, 91: 0x0008}
 
 NOREPEAT = 0x4000
 
-debugConfigPath = 'D:\PythonProject\screenCap\QtExperimental\config.ini'
+debugConfigPath = "D:\PythonProject\screenCap\QtExperimental\config.ini"
 import os
+
 defaultConfigPath = os.path.join(os.getenv("appdata"), "screenCap")
 
 
@@ -152,24 +153,23 @@ keycodeTable = {item[1]: item[0] for item in conversionTable.items()}
 
 #!! circular imports
 from snapshot import Snapshot
-rightclickOptions = {
-    "copy": Snapshot.copy,
-    "cut": Snapshot.cut,
-    "save": Snapshot.save, 
-    "close": Snapshot.close,
-    "crop": Snapshot.startCrop,
-    #+more, these are place holder for now.
-}
-# rightclickOptions = {
-#     "copy": lambda: print("copy"),
-#     "cut":lambda: print("cut"),
-#     "save": lambda: print("save"), 
-#     "close": lambda: print("close"),
-#     "crop": lambda: print("crop"),
-#     #+more, these are place holder for now.
-# }
 
-defaultVariables = { #if im doing this again, these tuples should be dataclasses instead. but im not doing this again.
+rightclickOptions = {
+    "Copy": Snapshot.copy,
+    "Cut": Snapshot.cut,
+    "Save": Snapshot.save,
+    "Close": Snapshot.close,
+    "Crop": Snapshot.startCrop,
+    # size options +-20%, reset
+    # show recycling
+    # show color picker
+    # transparency options
+    # advanced saving options
+    # +more, these are place holder for now.
+}
+
+
+defaultVariables = {  # if im doing this again, these tuples should be dataclasses instead. but im not doing this again.
     "istartup": (0, "main"),
     "istartmin": (0, "main"),
     "imintray": (0, "main"),
@@ -195,17 +195,15 @@ defaultVariables = { #if im doing this again, these tuples should be dataclasses
             "#fd6500",
             "#ffd600",
             "#a52a2a",
-            "#32cd32",
+            "#32ee66",
             "#4169E1",
             "#8A2BE2",
         ],
         "painter",
     ),
-    
-    #recycler
+    # recycler
     "imaxsize": (10, "reycler"),
-    #right click context menu
+    # right click context menu
     "lsavailablecommands": (list(rightclickOptions.keys()), "right_menu"),
-    "lscurrentcommands": ([], "right_menu")
+    "lscurrentcommands": ([], "right_menu"),
 }
-
