@@ -75,7 +75,7 @@ class HotkeyManager(threading.Thread):
 
             self._stopRecording()
         self.recording = name
-        print("name", name)
+     
         self.keyStringCallback = stringCallback
         self.currentKey = None
         self.currentMods.clear()
@@ -103,13 +103,7 @@ class HotkeyManager(threading.Thread):
                 self.getModsCode(vals[2]),
                 vals[1],
             ):
-                print(
-                    f"registering hotkey {vals[1]} failed!",
-                    "params:",
-                    vals[0],
-                    vals[1],
-                    self.getModsCode(vals[2]),
-                )
+            
                 self.keyStringCallback("None")
                 clearFields()
 
@@ -123,7 +117,6 @@ class HotkeyManager(threading.Thread):
                     self.index += 1
                     self.hotkeys[self.recording][1] = self.currentKey
                     self.hotkeys[self.recording][2].update(self.currentMods)
-                    print(self.currentKey, self.currentMods, self.recording)
                     self.config[self.recording] =list(self.currentMods)+ [self.currentKey] 
                     clearFields()
                     return

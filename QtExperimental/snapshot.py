@@ -17,6 +17,7 @@ from PyQt5.QtGui import (
     QBrush,
     QColor,
     QCursor,
+    QPainter,
     QPen,
     QPixmap,
     QImage,
@@ -29,6 +30,7 @@ from PyQt5.QtWidgets import (
     QGraphicsView,
     QHBoxLayout,
     QSizeGrip,
+    QStyleOptionGraphicsItem,
     QWidget,
 )
 import io
@@ -61,15 +63,16 @@ class Snapshot(QWidget):
         *args,
         **kwargs
     ):
-        
+
         from main import Main
+
         super().__init__(*args, **kwargs)
 
         #    self.needrecycle = needrecycle #if the snapshot is spawned from recycler, then no need to recycle again.
         self.config = ConfigManager(debugConfigPath) if debugConfigPath else config
         #: TODO each snapshould not create their own config! should be given by main, so that every entity shares the same config.
 
-        self.master : Main = master
+        self.master: Main = master
 
         self.contextMenu = contextMenu
         self.paintTool = paintTool
@@ -241,10 +244,99 @@ class Snapshot(QWidget):
         self.copy()
         self.close()
 
-    def save(self):
+    formatTable = {"P": "PNG", "J": "JPG", "B": "BMP"}
 
-        print("heyheyehy")
-        filename, _ = QFileDialog.getSaveFileName(self, "Choose save location", os.getenv("HOME"), "Image files (*.png *.jpg)")
+    def getSaveName(self):
+
+        output = QFileDialog.getSaveFileName(
+            self, "Choose save location", self.config.ssavelocation, "PNG Image (*.png);;JPEG Image (*.jpg *.jpeg);;Bitmap (*.bmp)"
+        )
+        if output:  # file dialog reutrns none if user cancels
+            filename, format = output
+            format = Snapshot.formatTable[format[0]]
+            return (filename, format)
+        return None  # -> file selection canceled
+
+    def getImage(self) -> QImage:
+        region = QRect(
+            (self.view.sceneRect().topLeft() / self.displayPix.scale()).toPoint(), (self.view.sceneRect().size() / self.displayPix.scale()).toSize()
+        )
+        # the region of the original image which the current scene rect is covering.
+        return self.displayImage.copy(region)
+
+    def getCanvasImage(self) -> QImage:
+        """
+        yoink
+        https://stackoverflow.com/a/50358905/12471420
+
+        drawing canvas onto given image
+        """
+
+        rect = self.displayPix.boundingRect()
+
+        if len(self.canvas.group.childItems()) and (rect.isNull() or not rect.isValid()):
+            return None
+
+        pixmap = QPixmap(self.displayPix.boundingRect().size().toSize())
+        pixmap.fill(Qt.GlobalColor.transparent)
+        painter = QPainter(pixmap)
+        painter.setRenderHint(QPainter.RenderHint.HighQualityAntialiasing)
+
+        for item in self.canvas.group.childItems():
+            item.paint(painter, QStyleOptionGraphicsItem())
+        painter.end()
+
+        return pixmap.toImage().copy(self.view.sceneRect().toRect())  # danger!!! scale is current scale!! #also, only keeping the visible region
+
+    def saveImage(self):
+        filename, format = self.getSaveName()
+        format = [format[0]]
+
+        self.getImage().save(filename, format, self.config.iquality)
+
+    def saveImageScaled(self):
+        filename, format = self.getSaveName()
+        img = self.getImage()
+        img.scaled(
+            img.width() * self.displayPix.scale(),
+            img.height() * self.displayPix.scale(),
+            Qt.AspectRatioMode.IgnoreAspectRatio,
+            Qt.TransformationMode.SmoothTransformation,
+        ).save(filename, format, self.config.iquality)
+
+    def saveImageWithCanvas(self, scaled: bool = False):
+        filename, format = self.getSaveName()
+
+        image = self.getImage()
+        canvasImg = self.getCanvasImage()
+
+        if canvasImg:  # if canvasimg is null, then no need to scale and layer the image on top.
+
+            if scaled:
+
+                image = image.scaled(
+                    image.width() * self.displayPix.scale(),
+                    image.height() * self.displayPix.scale(),
+                    Qt.AspectRatioMode.IgnoreAspectRatio,
+                    Qt.TransformationMode.SmoothTransformation,
+                )
+
+                scale = self.displayPix.scale()
+                canvasImg = canvasImg.scaled(
+                    canvasImg.width() * scale,
+                    canvasImg.height() * scale,
+                    Qt.AspectRatioMode.IgnoreAspectRatio,
+                    Qt.TransformationMode.SmoothTransformation,
+                )
+                canvasImg.save(filename, format, self.config.iquality)
+            painter = QPainter(image)
+            painter.setRenderHint(QPainter.RenderHint.HighQualityAntialiasing)
+            painter.drawImage(image.rect(), canvasImg)
+            painter.end()
+        image.save(filename, format, self.config.iquality)
+
+    def saveImageWithCanvasScaled(self):
+        self.saveImageWithCanvas(True)
 
     def startCrop(self, margin=50, useOriginal=False):
         if self.cropping:
@@ -286,7 +378,6 @@ class Snapshot(QWidget):
             size.scale(QSizeF(a0.size()), Qt.AspectRatioMode.KeepAspectRatio)
             scale = (fullwidth + ((size.width() - self.currentWidth) / self.currentWidth) * fullwidth) / self.displayImage.width()
 
-            print(scale)
             self.displayPix.setScale(scale)
             self.canvas.group.setScale(scale)  # scales both canvas items and image
 
@@ -450,8 +541,8 @@ class Snapshot(QWidget):
                 self.stopCrop(canceling=True)
 
         if a0.key() == Qt.Key.Key_Space:
-            # self.startCrop(50, False)
-            self.copy()
+            self.startCrop(50, False)
+            # self.copy()
 
     def getBoundBox(self):
         bounds = desktopmagic.screengrab_win32.getDisplayRects()
@@ -480,11 +571,20 @@ class Snapshot(QWidget):
 
     def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
         super().closeEvent(a0)
-        self.master.snapshotCloseEvent(self) #notify controller
-        
+        self.master.snapshotCloseEvent(self)  # notify controller
+
 
 if __name__ == "__main__":
 
     app = QApplication(sys.argv)
-    ex = Snapshot(None, None, debugConfigPath=values.debugConfigPath)
+    from paintToolbar import PaintToolbar
+    from rightclickMenu import MenuPage
+
+    config = ConfigManager(values.debugConfigPath, values.defaultVariables)
+
+    painttool = PaintToolbar(config, None)
+    contextMenu = MenuPage(config)
+    contextMenu.hide()
+
+    ex = Snapshot(None, None, None, config, contextMenu, painttool)
     sys.exit(app.exec_())

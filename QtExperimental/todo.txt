@@ -3,3 +3,17 @@
     - choose formats needed, 
     - choose if maginfier is needed
     - a hotkey summoned 
+
+-write a function for postioning window
+    - for any two abitrary boxes, try to fit box 2 next to box 1
+    - try multiple postions, if none are possible, overlap is okay.
+
+-snapshot options:
+    -margin on crop
+    -margin on paint? maybe?
+    -always use original image on crop?
+    -ui color?
+    -saving compression level
+
+-drawing stuff:
+    - render raster line instead of vector line

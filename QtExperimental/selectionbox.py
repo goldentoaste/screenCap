@@ -141,8 +141,6 @@ class SizeGrip(QtWidgets.QWidget):
     #seperating on the functions inside of dictionary, redefining these lambda each time is pointless.
     def updatePos(self):
         m = self.master
-
-   
         #if else is prob faster than dictionary creation and then lookup.
         if self.loc == top:
             self.move(self.side, 0),

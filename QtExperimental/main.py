@@ -371,10 +371,12 @@ class Main(QWidget):
         self.tabs.addTab(self.contextMenuTab, "Context Menu")
 
     def setupPaintTool(self):
-        self.paintTool = PaintToolbar(self.config)
-        
-        
-        self.tabs.addTab(self.paintTool, "Paint Tools")
+        self.paintTool = PaintToolbar(self.config, self)
+        self.paintToolContainer = QWidget()
+        self.paintToolContainer.setLayout(QHBoxLayout())
+        self.paintToolContainer.layout().addWidget(self.paintTool)
+        self.paintToolContainer.layout().setContentsMargins(0,0,0,0)
+        self.tabs.addTab(self.paintToolContainer, "Paint Tools")
     
     def takeSnapshot(self): 
         self.snapshots.append(Snapshot(master= self, image= None, config = self.config, contextMenu=self.contextMenuTab, paintTool= self.paintTool)) #call from full screen
@@ -391,9 +393,9 @@ class Main(QWidget):
     
     def snapshotPaintEvent(self, snap : Snapshot):
         if self.currentPainting: # current is not none
-            self.currentPainting = snap # by passing stoppaint event
             self.currentPainting.stopPaint()
         self.currentPainting = snap
+        self.paintToolPop()
         
     def snapshotStopPaintEvent(self, snap : Snapshot):
         if snap is self.currentPainting:
@@ -401,9 +403,11 @@ class Main(QWidget):
             
     def paintToolPop(self):
         self.paintTool.setParent(None)
+        self.paintTool.show()
     
     def paintToolJoin(self):
-        self.paintTool.setParent(self)
+        self.paintToolContainer.layout().addWidget(self.paintTool)
+        
     
 class CustomLineEdit(QLineEdit):
     def __init__(self, *args, **kwargs):

@@ -23,9 +23,9 @@ from paintToolbar import CIRCLE, ERASE, LINE, PATH, RECT, SELECT, DrawOptions, P
 
 
 def smoothStep(p1: QPointF, p2: QPointF, amount: float):
-    # return p1 + amount * (p2 - p1)
-    amount = (amount ** 2) * (3 - 2 * amount)
-    return QPointF((1 - amount) * p1.x() + p2.x() * amount, (1 - amount) * p1.y() + p2.y() * amount)
+    return p1 + amount * (p2 - p1)
+    # amount = (amount ** 2) * (3 - 2 * amount)
+    # return QPointF((1 - amount) * p1.x() + p2.x() * amount, (1 - amount) * p1.y() + p2.y() * amount)
 
 
 class Canvas:

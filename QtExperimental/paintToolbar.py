@@ -32,12 +32,13 @@ def loadImage(path, x, y):
 
 
 class PaintToolbar(QWidget):
-    def __init__(self, config: ConfigManager, *args, **kwargs):
+    def __init__(self, config: ConfigManager, main, *args, **kwargs):
 
         super().__init__(*args, **kwargs)
         self.config = config
         self.currentSelection = 0
         self.currentColor: QColor = QColor()
+        self.main = main
         self.initGui()
         self.initCursors()
         self.initVals()
@@ -95,8 +96,6 @@ class PaintToolbar(QWidget):
 
         return o
     
-    
-   
     def initGui(self):
         self.setWindowFlags(Qt.WindowType.CustomizeWindowHint | Qt.WindowType.WindowCloseButtonHint | Qt.WindowType.WindowStaysOnTopHint)
      
@@ -219,7 +218,9 @@ class PaintToolbar(QWidget):
 
         self.show()
 
-
+    def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
+        if self.main:
+            self.main.paintToolJoin()
 class NumEditTemp(QLineEdit):
     def __init__(self, format: str, blankChar: str, min: int, max: int, *args, **kwargs):
         super().__init__(*args, **kwargs)

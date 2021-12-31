@@ -157,9 +157,13 @@ from snapshot import Snapshot
 rightclickOptions = {
     "Copy": Snapshot.copy,
     "Cut": Snapshot.cut,
-    "Save": Snapshot.save,
+    "Save": Snapshot.saveImage,
+    "Save (scaled)": Snapshot.saveImageScaled,
+    "Save (w/Canvas)": Snapshot.saveImageWithCanvas,
+    "Save (scaled w/Canvas)": Snapshot.saveImageWithCanvasScaled,
     "Close": Snapshot.close,
     "Crop": Snapshot.startCrop,
+    
     # size options +-20%, reset
     # show recycling
     # show color picker
@@ -178,8 +182,10 @@ defaultVariables = {  # if im doing this again, these tuples should be dataclass
     "irecyclecapacity": (1, "main"),
     "isaveoption": (0, "main"),
     "ishowsaveprompt": (0, "main"),
-    "ssavelocation": ("", "main"),
+    "ssavelocation": (os.getenv("HOME"), "main"),
     "iuselastsave": (0, "main"),
+    #snapshot
+    "iquality": (100, "snapshot"),
     # hotkeys
     "licapture": ([17, 49], "global"),
     "licopy": ([17, 50], "local"),
