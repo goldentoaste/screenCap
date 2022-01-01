@@ -23,6 +23,8 @@ from paintToolbar import PaintToolbar
 
 from recycler import Recycler
 
+
+
 def resource_path(relative_path):
     """Get absolute path to resource, works for dev and for PyInstaller"""
     try:
@@ -109,7 +111,6 @@ class Main(QWidget):
 
         self.generaltab.setLayout(self.generaltab.layout)
         self.tabs.addTab(self.generaltab, "General")
-        
 
         # first row
         temphbox = QHBoxLayout()
@@ -165,7 +166,7 @@ class Main(QWidget):
 
         # third row, saving stuff
         savingGroup = QGroupBox("Save Options")
-     
+
         mainsavingLayout = QVBoxLayout()
         savingGroup.setLayout(mainsavingLayout)
 

@@ -47,6 +47,7 @@ from paintToolbar import PaintToolbar
 from canvas import Canvas, RectItem
 import values
 from rightclickMenu import MenuPage
+import time
 
 # todo implement resizing canvas.
 
@@ -90,9 +91,11 @@ class Snapshot(QWidget):
 
     def initialize(self):
         self.setWindowFlags(Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.FramelessWindowHint | Qt.WindowType.SubWindow)
-
         self.setMinimumSize(QSize(20, 20))
         self.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
+        
+        self.maxHeight = QApplication.primaryScreen().size().height()
+        self.maxWidth = QApplication.primaryScreen().size().width()
 
         self.scene = QGraphicsScene()
 
@@ -290,9 +293,9 @@ class Snapshot(QWidget):
 
     def saveImage(self):
         filename, format = self.getSaveName()
-        format = [format[0]]
+        
 
-        self.getImage().save(filename, format, self.config.iquality)
+        self.getImage().save(filename, format, 100)
 
     def saveImageScaled(self):
         filename, format = self.getSaveName()
@@ -371,6 +374,10 @@ class Snapshot(QWidget):
         self.currentWidth = self.displayImage.width()
 
     def resizeEvent(self, a0: QtGui.QResizeEvent) -> None:
+
+        if a0.size().width() > self.maxWidth or a0.size().height() > self.maxHeight:
+            return
+
         if not self.cropping and not self.mini:
             fullwidth = self.displayImage.width() * self.displayPix.scale()
 
@@ -388,6 +395,7 @@ class Snapshot(QWidget):
             self.resize(size.toSize())
 
         self.grip.move(self.rect().bottomRight() - QPoint(16, 16))
+    
 
     def stopCrop(self, canceling=False):
 
@@ -489,13 +497,12 @@ class Snapshot(QWidget):
 
     def mouseMoveEvent(self, a0: QtGui.QMouseEvent) -> None:
 
-        if self.painting:
+        if self.painting and a0.buttons() == Qt.MouseButton.LeftButton:
             self.canvas.onMove(a0)
             return
 
-        if a0.buttons() == Qt.MouseButton.LeftButton:
+        if a0.buttons() == Qt.MouseButton.LeftButton or a0.buttons() == Qt.MouseButton.RightButton:
             if self.cropping:
-
                 rect = QRect(self.inipos, a0.pos()).normalized()
                 self.selectionBox.setGeometry(rect)
 

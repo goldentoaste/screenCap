@@ -1,5 +1,6 @@
 import sys
 from typing import List, Union
+import typing
 
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtCore import QLineF, QPoint, QPointF, QRectF, QSizeF, Qt
@@ -15,6 +16,7 @@ from PyQt5.QtWidgets import (
     QGraphicsScene,
     QGraphicsView,
     QHBoxLayout,
+    QStyleOptionGraphicsItem,
     QWidget,
 )
 
@@ -331,7 +333,7 @@ class CanvasTesting(QWidget):
         self.view.resize(self.size())
         self.view.setSceneRect(QRectF(0, 0, 500, 500))
 
-        self.toolbar = PaintToolbar(ConfigManager("d:/PythonProject/screenCap/QtExperimental/config.ini"))
+        self.toolbar = PaintToolbar(ConfigManager("d:/PythonProject/screenCap/QtExperimental/config.ini"), None)
         self.toolbar.show()
         self.canvas = Canvas(self.scene, self.view, self.toolbar)
 
@@ -364,7 +366,6 @@ class CanvasTesting(QWidget):
 
     def keyReleaseEvent(self, a0: QtGui.QKeyEvent) -> None:
         self.canvas.keyUp(a0)
-        
         
 
 
@@ -424,6 +425,11 @@ class PathItem(QGraphicsPathItem):
         p.setWidth(self.pen().width())
         self.lineShape = p.createStroke(self.path())
 
+    
+
+    def paint(self, painter: QtGui.QPainter, option: 'QStyleOptionGraphicsItem', widget: typing.Optional[QWidget] = ...) -> None:
+        return super().paint(painter, option, widget=widget)
+
     def shape(self) -> QtGui.QPainterPath:
         if self.filled or self.lineShape is None:
             return super().shape()
@@ -433,6 +439,5 @@ class PathItem(QGraphicsPathItem):
 if __name__ == "__main__":
 
     app = QApplication(sys.argv)
-
     ex = CanvasTesting()
     sys.exit(app.exec_())
