@@ -1,10 +1,10 @@
 import sys
+from types import MappingProxyType
 from typing import List, Union
-import typing
 
 from PyQt5 import QtCore, QtGui
-from PyQt5.QtCore import QLineF, QPoint, QPointF, QRectF, QSizeF, Qt
-from PyQt5.QtGui import QCursor, QKeyEvent, QMouseEvent, QPainterPath, QPainterPathStroker, QPen
+from PyQt5.QtCore import QLineF, QMarginsF, QPoint, QPointF, QRectF, QSize, QSizeF, Qt
+from PyQt5.QtGui import QCursor, QKeyEvent, QMouseEvent, QPainter, QPainterPath, QPainterPathStroker, QPen, QPixmap
 from PyQt5.QtWidgets import (
     QApplication,
     QGraphicsEllipseItem, 
@@ -16,7 +16,6 @@ from PyQt5.QtWidgets import (
     QGraphicsScene,
     QGraphicsView,
     QHBoxLayout,
-    QStyle,
     QStyleOptionGraphicsItem,
     QWidget,
 )
@@ -30,13 +29,20 @@ def smoothStep(p1: QPointF, p2: QPointF, amount: float):
     # amount = (amount ** 2) * (3 - 2 * amount)
     # return QPointF((1 - amount) * p1.x() + p2.x() * amount, (1 - amount) * p1.y() + p2.y() * amount)
 
+'''
+while drawing paint like normal
+after done drawing, paint() should do nothing
+
+
+'''
+
 
 class Canvas:
-    def __init__(self, scene: QGraphicsScene, view: QGraphicsView, toolbar: PaintToolbar):
+    def __init__(self, scene: QGraphicsScene, view: QGraphicsView, toolbar: PaintToolbar, canvasSize: QSize = QSize(500,500) ):
         self.scene = scene
         self.view = view
         self.toolbar = toolbar
-
+        self.canvaSize = canvasSize
         self.view.setRenderHints(QtGui.QPainter.HighQualityAntialiasing | QtGui.QPainter.SmoothPixmapTransform)
 
         self.drawOption: DrawOptions = toolbar.getDrawOptions()
@@ -49,6 +55,11 @@ class Canvas:
         self.objects: List[QGraphicsItem] = []
         self.currentObject = None
         self.currentLerpPos = QPointF()
+        map = QPixmap(self.canvaSize)
+        map.fill(Qt.GlobalColor.transparent)
+        
+        self.canvas = self.scene.addPixmap(map)
+        self.canvas.setZValue(-50)
 
         self.tempLine: QGraphicsLineItem = self.scene.addLine(QLineF(), QPen())
         self.tempLine.hide()
@@ -184,6 +195,7 @@ class Canvas:
         item.setPos(QPointF(0, 0))
 
         opacityEffect = QGraphicsOpacityEffect()
+        
         opacityEffect.setOpacity(self.drawOption.opacity)
         item.setGraphicsEffect(opacityEffect)
 
@@ -213,6 +225,25 @@ class Canvas:
         if len(self.objects) > 0:
             self.deleteObj(self.objects[-1])
 
+
+    def redraw(self):
+       
+        newPix = self.canvas.pixmap()
+        painter = QPainter(newPix)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_Source)
+        painter.fillRect(self.canvas.boundingRect(), Qt.GlobalColor.transparent)
+        painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceOver)
+        for item in self.group.childItems():
+        
+            item.painting = True
+            painter.setOpacity(item.graphicsEffect().opacity())
+            item.paint(painter, QStyleOptionGraphicsItem())
+            item.painting = False
+        
+        painter.end()
+        self.canvas.setPixmap(newPix)
+
     def deleteObj(self, object: Union[QGraphicsItem, QPointF]):
         """Deletes a given object, or try to find the item at a given position then deletes it.
 
@@ -223,6 +254,7 @@ class Canvas:
             item = object
         else:
             item = self.view.itemAt(object)
+         
             
         if item is None:
             # no item is found
@@ -230,6 +262,7 @@ class Canvas:
         try:
             self.objects.remove(item)
             self.scene.removeItem(item)
+            self.redraw()
         except ValueError:
             # value error when the item is found, should isn't in this canvas.
             # prob the item selected is the background image.
@@ -239,6 +272,17 @@ class Canvas:
         if self.currentObject is None:
             return
         self.currentObject.finalize()
+        
+        pixmap = self.canvas.pixmap()
+        painter = QPainter(pixmap)
+        painter.setRenderHints(QPainter.RenderHint.Antialiasing )
+        painter.setOpacity(self.drawOption.opacity)
+        
+        self.currentObject.paint(painter, QStyleOptionGraphicsItem())
+        self.canvas.setPixmap(pixmap)
+        painter.end()
+        self.currentObject.painting = False
+        self.currentObject.update()
 
     def onMove(self, a0: QMouseEvent):
         mappedCurPos = self.view.mapToScene(a0.pos())
@@ -371,11 +415,11 @@ class CanvasTesting(QWidget):
 
 
 class CircleItem(QGraphicsEllipseItem):
-    def __init__(self, filled=False, *args, **kwargs):
+    def __init__(self, filled=False, painting:bool = True, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.filled = filled
-
         self.lineShape = None
+        self.painting = painting
 
     def finalize(self):
 
@@ -385,6 +429,21 @@ class CircleItem(QGraphicsEllipseItem):
 
         p.setWidth(self.pen().width())
         self.lineShape = p.createStroke(path)
+    
+    def paintProxy(self, painter: QtGui.QPainter, option : QStyleOptionGraphicsItem, widget = None)->None:
+        '''
+        this paint function always available, the default one will be replaced.
+        '''
+        return super().paint(painter, option, widget)
+    
+    
+    
+    def paint(self, painter: QtGui.QPainter, option: QStyleOptionGraphicsItem, widget = None) -> None:
+        
+        if self.painting:
+            super().paint(painter, option, widget)
+            return None
+
 
     def shape(self) -> QtGui.QPainterPath:
         if self.filled or self.lineShape is None:
@@ -393,11 +452,11 @@ class CircleItem(QGraphicsEllipseItem):
 
 
 class RectItem(QGraphicsRectItem):
-    def __init__(self, filled=False, *args, **kwargs):
+    def __init__(self, filled=False, painting:bool = True, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.filled = filled
-
         self.lineShape = None
+        self.painting = painting
 
     def finalize(self):
         path = QPainterPath()
@@ -407,6 +466,17 @@ class RectItem(QGraphicsRectItem):
         p.setWidth(self.pen().width())
         self.lineShape = p.createStroke(path)
 
+    def paintProxy(self, painter: QtGui.QPainter, option : QStyleOptionGraphicsItem, widget = None)->None:
+        '''
+        this paint function always available, the default one will be replaced.
+        '''
+        return super().paint(painter, option, widget)
+    
+    def paint(self, painter: QtGui.QPainter, option: QStyleOptionGraphicsItem, widget = None) -> None:
+        if self.painting:
+            super().paint(painter, option, widget)
+        
+    
     def shape(self) -> QtGui.QPainterPath:
         if self.filled or self.lineShape is None:
             return super().shape()
@@ -415,25 +485,36 @@ class RectItem(QGraphicsRectItem):
 
 
 class PathItem(QGraphicsPathItem):
-    def __init__(self, filled=False, *args, **kwargs):
+    def __init__(self, filled=False, paintiing =True, *args, **kwargs):
 
         super().__init__(*args, **kwargs)
         self.filled = filled
         self.lineShape = None
+        self.painting = paintiing
 
     def finalize(self):
+        self.finalized = True
         p = QPainterPathStroker()
         p.setWidth(self.pen().width())
         self.lineShape = p.createStroke(self.path())
         
-    def paintProxy(self, painter: QtGui.QPainter, option : QStyleOptionGraphicsItem)->None:
+        
+    def paintProxy(self, painter: QtGui.QPainter, option : QStyleOptionGraphicsItem, widget = None)->None:
         '''
         this paint function always available, the default one will be replaced.
         '''
-        return super().paint(painter, option)
-        
-    # def paint(self, painter: QtGui.QPainter, option: 'QStyleOptionGraphicsItem', widget: typing.Optional[QWidget] = ...) -> None:
-    #     return super().paint(painter, option, widget=widget)
+        return super().paint(painter, option, widget)
+    
+    def paint(self, painter: QtGui.QPainter, option: QStyleOptionGraphicsItem, widget = None) -> None:
+     
+        if self.painting :
+            super().paint(painter, option, widget)
+            
+        # print(self)
+        # if not self.finalized:
+        #     super().paint(painter, option, widget)
+        # else:
+        #     print("paint event called")
 
     def shape(self) -> QtGui.QPainterPath:
         if self.filled or self.lineShape is None:

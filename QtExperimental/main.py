@@ -23,6 +23,8 @@ from paintToolbar import PaintToolbar
 
 from recycler import Recycler
 
+import gc
+
 
 
 def resource_path(relative_path):
@@ -60,7 +62,8 @@ class Main(QWidget):
         self.currentPainting : Snapshot = None
 
     def initRecycling(self):
-        self.recycling = Recycler(debugConfigPath, self.config)
+        pass
+        #self.recycling = Recycler(debugConfigPath, self.config)
 
     def initHotkeys(self):
         self.captureSignal =ThreadSignal()
@@ -391,6 +394,8 @@ class Main(QWidget):
             #if the last snap is closed, then painttool is no longer needed
             #or if the snap closed is the one currently painting
             self.paintToolJoin()
+        gc.collect()
+        
     
     def snapshotPaintEvent(self, snap : Snapshot):
         if self.currentPainting: # current is not none

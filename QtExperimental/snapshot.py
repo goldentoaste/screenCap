@@ -48,7 +48,6 @@ import values
 from rightclickMenu import MenuPage
 
 
-# todo implement resizing canvas.
 
 
 class Snapshot(QWidget):
@@ -90,11 +89,15 @@ class Snapshot(QWidget):
 
     def initialize(self):
         self.setWindowFlags(Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.FramelessWindowHint | Qt.WindowType.SubWindow)
+        self.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
         self.setMinimumSize(QSize(20, 20))
         self.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
         
-        self.maxHeight = QApplication.primaryScreen().size().height()
-        self.maxWidth = QApplication.primaryScreen().size().width()
+        # self.maxHeight = QApplication.primaryScreen().size().height()
+        # self.maxWidth = QApplication.primaryScreen().size().width()
+        
+        self.setMaximumHeight(QApplication.primaryScreen().size().height())
+        self.setMaximumWidth(QApplication.primaryScreen().size().width())
 
         self.scene = QGraphicsScene()
 
@@ -103,10 +106,7 @@ class Snapshot(QWidget):
         self.displayPix.setZValue(-100)
         self.displayPix.setPos(0, 0)
 
-        # self.borderRect = self.scene.addRect(
-        #     QRectF(), QPen(QColor(200, 200, 200), 2), QBrush(Qt.BrushStyle.NoBrush)
-        # )
-        self.borderRect = RectItem(False, QRectF())
+        self.borderRect = RectItem(False,True, QRectF())
         self.borderRect.setPen(QPen(QColor(200, 200, 200), 2))
         self.borderRect.setBrush(QBrush(Qt.BrushStyle.NoBrush))
         self.borderRect.finalize()
@@ -124,13 +124,14 @@ class Snapshot(QWidget):
 
         self.view.resizeEvent = resizeView
         self.view.setSceneRect = setRect
-        self.view.setStyleSheet("background-color: rgba(40, 40, 40, 0.5); border: 0px")
+        self.view.setStyleSheet("background-color: rgba(40, 40, 40, 0.4); border: 0px")
 
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self.view.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.view.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.view.resize(self.displayPix.boundingRect().size().toSize())
 
+        print("help", self.view.size())
         self.resize(self.view.size())
 
         self.selectionBox = SelectionBox(1, self)
@@ -151,17 +152,19 @@ class Snapshot(QWidget):
         def press(a):
             QSizeGrip.mousePressEvent(self.grip, a)
             self.moveLock = True
+            self.displayPix.setTransformationMode(Qt.TransformationMode.FastTransformation)
 
         def release(a):
             QSizeGrip.mouseReleaseEvent(self.grip, a)
             self.moveLock = False
+            self.displayPix.setTransformationMode(Qt.TransformationMode.SmoothTransformation)
 
         self.grip.mousePressEvent = press
         self.grip.mouseReleaseEvent = release
 
         self.currentRect = (0, 0, 0, 0)
         self.currentWidth = self.displayImage.width()
-        self.canvas = Canvas(self.scene, self.view, self.paintTool)
+        self.canvas = Canvas(self.scene, self.view, self.paintTool, self.displayPix.pixmap().size())
 
         self.painting = False
 
@@ -211,7 +214,7 @@ class Snapshot(QWidget):
         curScreen = self.getCurrentScreen()
         self.displayImage : QPixmap = curScreen.grabWindow(0)
         self.fullscreenCrop = True
-
+        print(curScreen.geometry().topLeft())
         self.move(curScreen.geometry().topLeft())
         self.initialize()
         self.startCrop(margin=2, useOriginal=True)
@@ -270,9 +273,7 @@ class Snapshot(QWidget):
 
         drawing canvas onto given image
         """
-
         rect = self.displayPix.boundingRect()
-
         if len(self.canvas.group.childItems()) and (rect.isNull() or not rect.isValid()):
             return None
 
@@ -337,6 +338,10 @@ class Snapshot(QWidget):
     def saveImageWithCanvasScaled(self):
         self.saveImageWithCanvas(True)
 
+    def moveEvent(self, a0: QtGui.QMoveEvent) -> None:
+        print(a0.pos(), a0.oldPos())
+        return super().moveEvent(a0)
+    
     def startCrop(self, margin=50, useOriginal=False):
         if self.cropping:
             return
@@ -346,12 +351,14 @@ class Snapshot(QWidget):
         self.usingOriginal = useOriginal
 
         if useOriginal:
+            print("use original ", self.pos() - QPoint(margin, margin) - (self.view.sceneRect().topLeft() - self.displayPix.pos()).toPoint())
             self.move(self.pos() - QPoint(margin, margin) - (self.view.sceneRect().topLeft() - self.displayPix.pos()).toPoint())
             self.view.setSceneRect(self.displayPix.sceneBoundingRect().marginsAdded(QMarginsF(margin, margin, margin, margin)))
         else:
             self.originalOffset = self.view.sceneRect().topLeft()
             self.displayPix.setPixmap(QPixmap.fromImage(self.displayImage.copy(QRectF(*self.currentRect).toRect())))
             self.view.setSceneRect(self.displayPix.sceneBoundingRect().marginsAdded(QMarginsF(margin, margin, margin, margin)))
+            print("else", self.pos() - QPoint(margin, margin))
             self.move(self.pos() - QPoint(margin, margin))
 
         self.resize(self.view.sceneRect().size().toSize())
@@ -370,10 +377,11 @@ class Snapshot(QWidget):
         self.currentWidth = self.displayImage.width()
 
     def resizeEvent(self, a0: QtGui.QResizeEvent) -> None:
-
-        if a0.size().width() > self.maxWidth or a0.size().height() > self.maxHeight:
-            return
-
+        
+        # if a0.size().width() > self.maxWidth or a0.size().height() > self.maxHeight:
+        #     a0.accept()
+        #     return
+        # print(a0.size())
         if not self.cropping and not self.mini:
             fullwidth = self.displayImage.width() * self.displayPix.scale()
 
@@ -493,9 +501,10 @@ class Snapshot(QWidget):
 
     def mouseMoveEvent(self, a0: QtGui.QMouseEvent) -> None:
 
-        if self.painting and a0.buttons() == Qt.MouseButton.LeftButton:
+        if self.painting:
             self.canvas.onMove(a0)
-            return
+            if a0.buttons() == 0 or a0.buttons() == a0.buttons() == Qt.MouseButton.LeftButton:
+                return
 
         if a0.buttons() == Qt.MouseButton.LeftButton or a0.buttons() == Qt.MouseButton.RightButton:
             if self.cropping:
