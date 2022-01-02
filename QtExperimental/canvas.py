@@ -16,6 +16,7 @@ from PyQt5.QtWidgets import (
     QGraphicsScene,
     QGraphicsView,
     QHBoxLayout,
+    QStyle,
     QStyleOptionGraphicsItem,
     QWidget,
 )
@@ -424,11 +425,15 @@ class PathItem(QGraphicsPathItem):
         p = QPainterPathStroker()
         p.setWidth(self.pen().width())
         self.lineShape = p.createStroke(self.path())
-
-    
-
-    def paint(self, painter: QtGui.QPainter, option: 'QStyleOptionGraphicsItem', widget: typing.Optional[QWidget] = ...) -> None:
-        return super().paint(painter, option, widget=widget)
+        
+    def paintProxy(self, painter: QtGui.QPainter, option : QStyleOptionGraphicsItem)->None:
+        '''
+        this paint function always available, the default one will be replaced.
+        '''
+        return super().paint(painter, option)
+        
+    # def paint(self, painter: QtGui.QPainter, option: 'QStyleOptionGraphicsItem', widget: typing.Optional[QWidget] = ...) -> None:
+    #     return super().paint(painter, option, widget=widget)
 
     def shape(self) -> QtGui.QPainterPath:
         if self.filled or self.lineShape is None:

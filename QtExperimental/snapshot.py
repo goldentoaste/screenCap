@@ -21,6 +21,7 @@ from PyQt5.QtGui import (
     QPen,
     QPixmap,
     QImage,
+    QScreen,
 )
 from PyQt5.QtWidgets import (
     QApplication,
@@ -35,19 +36,17 @@ from PyQt5.QtWidgets import (
 )
 import io
 
-import desktopmagic.screengrab_win32
-from PIL import Image
-from PIL.ImageQt import ImageQt
+
+
 import sys
 from selectionbox import SelectionBox
 import win32clipboard as clipboard
-import os
 
 from paintToolbar import PaintToolbar
 from canvas import Canvas, RectItem
 import values
 from rightclickMenu import MenuPage
-import time
+
 
 # todo implement resizing canvas.
 
@@ -99,7 +98,7 @@ class Snapshot(QWidget):
 
         self.scene = QGraphicsScene()
 
-        self.displayPix = self.scene.addPixmap(QPixmap.fromImage(self.displayImage))
+        self.displayPix = self.scene.addPixmap(self.displayImage)
 
         self.displayPix.setZValue(-100)
         self.displayPix.setPos(0, 0)
@@ -199,10 +198,9 @@ class Snapshot(QWidget):
         self.view.setCursor(Qt.CursorShape.ArrowCursor)
         self.grip.show()
 
-    def fromImage(self, image: Image.Image):
-        image.putalpha(255)
-        self.originalImage = image
-        self.displayImage: QImage = ImageQt(image)
+    def fromImage(self, image: QPixmap):
+
+        self.displayImage: QPixmap = image
         self.fullscreenCrop = False
         self.move(QCursor.pos())
         self.initialize()
@@ -210,22 +208,20 @@ class Snapshot(QWidget):
         self.showNormal()
 
     def fromFullscreen(self):
-        image = desktopmagic.screengrab_win32.getRectAsImage(self.getBoundBox())
-        image.putalpha(255)
-
-        self.originalImage = ImageQt(image)
-        self.displayImage = self.originalImage
+        curScreen = self.getCurrentScreen()
+        self.displayImage : QPixmap = curScreen.grabWindow(0)
         self.fullscreenCrop = True
 
-        self.move(*(x for x in self.getBoundBox()[:2]))
+        self.move(curScreen.geometry().topLeft())
         self.initialize()
         self.startCrop(margin=2, useOriginal=True)
         self.showNormal()
 
-    def getNonScaledImage(self):
+    def getNonScaledImage(self) -> QPixmap:
         return self.displayImage.copy(QRectF(*self.currentRect).toRect())
 
     def getScaledImage(self):
+        
         return self.displayImage.copy(QRectF(*self.currentRect).toRect()).scaled(
             self.displayPix.scale() * self.displayImage.size(),
             Qt.AspectRatioMode.KeepAspectRatio,
@@ -260,14 +256,14 @@ class Snapshot(QWidget):
             return (filename, format)
         return None  # -> file selection canceled
 
-    def getImage(self) -> QImage:
+    def getImage(self) -> QPixmap:
         region = QRect(
             (self.view.sceneRect().topLeft() / self.displayPix.scale()).toPoint(), (self.view.sceneRect().size() / self.displayPix.scale()).toSize()
         )
         # the region of the original image which the current scene rect is covering.
         return self.displayImage.copy(region)
 
-    def getCanvasImage(self) -> QImage:
+    def getCanvasImage(self) -> QPixmap:
         """
         yoink
         https://stackoverflow.com/a/50358905/12471420
@@ -365,7 +361,7 @@ class Snapshot(QWidget):
 
         self.displayImage = self.displayImage.copy(self.view.sceneRect().toRect())
 
-        self.displayPix.setPixmap(QPixmap.fromImage(self.displayImage))
+        self.displayPix.setPixmap(self.displayImage)
         self.displayPix.setPos(QPoint())
         self.view.setSceneRect(self.displayPix.boundingRect())
 
@@ -418,7 +414,7 @@ class Snapshot(QWidget):
 
         if not self.usingOriginal:
             rect.moveTopLeft(rect.topLeft() + self.originalOffset)
-            self.displayPix.setPixmap(QPixmap.fromImage(self.displayImage))
+            self.displayPix.setPixmap(self.displayImage)
 
         self.view.setSceneRect(rect)
 
@@ -551,15 +547,25 @@ class Snapshot(QWidget):
             self.startCrop(50, False)
             # self.copy()
 
-    def getBoundBox(self):
-        bounds = desktopmagic.screengrab_win32.getDisplayRects()
+    def getCurrentScreen(self) -> QScreen:
+        '''
+        Get the screen which is the cursor is currently in.
+        '''
+        screens = [screen for screen in QApplication.screens()]
         pos = QCursor.pos()
-        x = pos.x()
-        y = pos.y()
-        for bound in bounds:
-            if x >= bound[0] and y >= bound[1] and x <= bound[2] and y <= bound[3]:
-                return bound
-        return bounds[0]
+        for screen in screens:
+            if screen.geometry().contains(pos, False):
+                return screen
+        return screen[0]
+        
+        # bounds = desktopmagic.screengrab_win32.getDisplayRects()
+        # pos = QCursor.pos()
+        # x = pos.x()
+        # y = pos.y()
+        # for bound in bounds:
+        #     if x >= bound[0] and y >= bound[1] and x <= bound[2] and y <= bound[3]:
+        #         return bound
+        # return bounds[0]
 
     def enterEvent(self, a0) -> None:
         if self.painting:
@@ -579,6 +585,8 @@ class Snapshot(QWidget):
     def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
         super().closeEvent(a0)
         self.master.snapshotCloseEvent(self)  # notify controller
+        
+        
 
 
 if __name__ == "__main__":
