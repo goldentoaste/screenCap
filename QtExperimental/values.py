@@ -163,6 +163,8 @@ rightclickOptions = {
     "Save (scaled w/Canvas)": Snapshot.saveImageWithCanvasScaled,
     "Close": Snapshot.close,
     "Crop": Snapshot.startCrop,
+    "Toggle Painting": Snapshot.togglePaint,
+    "Clear Canvas": Snapshot.clearCanvas
     
     # size options +-20%, reset
     # show recycling

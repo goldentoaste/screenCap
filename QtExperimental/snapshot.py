@@ -131,7 +131,7 @@ class Snapshot(QWidget):
         self.view.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.view.resize(self.displayPix.boundingRect().size().toSize())
 
-        print("help", self.view.size())
+
         self.resize(self.view.size())
 
         self.selectionBox = SelectionBox(1, self)
@@ -191,6 +191,15 @@ class Snapshot(QWidget):
     def contextMenuEvent(self, a0: QtGui.QContextMenuEvent) -> None:
         self.contextMenu.buildMenu(target=self).popup(a0.globalPos())
 
+    def clearCanvas(self):
+        self.canvas.clear()
+
+    def togglePaint(self):
+        if self.painting:
+            self.stopPaint()
+        else:
+            self.startPaint()
+
     def startPaint(self):
         self.painting = True
         self.master.snapshotPaintEvent(self)
@@ -216,7 +225,6 @@ class Snapshot(QWidget):
         curScreen = self.getCurrentScreen()
         self.displayImage : QPixmap = curScreen.grabWindow(0)
         self.fullscreenCrop = True
-        print(curScreen.geometry().topLeft())
         self.move(curScreen.geometry().topLeft())
         self.initialize()
         self.startCrop(margin=0, useOriginal=True)
@@ -346,7 +354,6 @@ class Snapshot(QWidget):
     def startCrop(self, margin=50, useOriginal=False):
         if self.cropping:
             return
-        print("before",self.view.mapFromScene(self.displayPix.scenePos()), self.displayPix.scenePos(), self.view.sceneRect())
         self.cropping = True
         self.cropMargin = margin
         self.usingOriginal = useOriginal
@@ -361,7 +368,6 @@ class Snapshot(QWidget):
         self.view.setSceneRect(self.displayPix.sceneBoundingRect().marginsAdded(QMarginsF(margin, margin, margin, margin)))
         self.resize(self.view.sceneRect().size().toSize())
         self.displayPix.setTransformationMode(Qt.TransformationMode.SmoothTransformation)
-        print("after", self.view.mapFromScene(self.displayPix.scenePos()),self.displayPix.scenePos(), self.view.sceneRect())
 
     def replaceOriginal(self):
 

@@ -1,3 +1,4 @@
+from os import times
 import sys
 from types import MappingProxyType
 from typing import List, Union
@@ -7,7 +8,7 @@ from PyQt5.QtCore import QLineF, QMarginsF, QPoint, QPointF, QRectF, QSize, QSiz
 from PyQt5.QtGui import QCursor, QImage, QKeyEvent, QMouseEvent, QPainter, QPainterPath, QPainterPathStroker, QPen, QPixmap
 from PyQt5.QtWidgets import (
     QApplication,
-    QGraphicsEllipseItem, 
+    QGraphicsEllipseItem,
     QGraphicsItem,
     QGraphicsLineItem,
     QGraphicsOpacityEffect,
@@ -29,16 +30,17 @@ def smoothStep(p1: QPointF, p2: QPointF, amount: float):
     # amount = (amount ** 2) * (3 - 2 * amount)
     # return QPointF((1 - amount) * p1.x() + p2.x() * amount, (1 - amount) * p1.y() + p2.y() * amount)
 
-'''
+
+"""
 while drawing paint like normal
 after done drawing, paint() should do nothing
 
 
-'''
+"""
 
 
 class Canvas:
-    def __init__(self, scene: QGraphicsScene, view: QGraphicsView, toolbar: PaintToolbar, canvasSize: QSize = QSize(500,500) ):
+    def __init__(self, scene: QGraphicsScene, view: QGraphicsView, toolbar: PaintToolbar, canvasSize: QSize = QSize(500, 500)):
         self.scene = scene
         self.view = view
         self.toolbar = toolbar
@@ -57,14 +59,14 @@ class Canvas:
         self.currentLerpPos = QPointF()
         map = QPixmap(self.canvaSize)
         map.fill(Qt.GlobalColor.transparent)
-        
+
         self.canvas = self.scene.addPixmap(map)
         self.canvas.setZValue(-50)
 
         self.tempLine: QGraphicsLineItem = self.scene.addLine(QLineF(), QPen())
         self.tempLine.hide()
 
-        self.cursurDot = self.scene.addEllipse(QRectF(0,0,self.drawOption.pen.widthF(),self.drawOption.pen.widthF()), self.drawOption.pen)
+        self.cursurDot = self.scene.addEllipse(QRectF(0, 0, self.drawOption.pen.widthF(), self.drawOption.pen.widthF()), self.drawOption.pen)
         self.cursurDot.hide()
         self.drawingLine = False
         self.view.setMouseTracking(True)
@@ -91,25 +93,25 @@ class Canvas:
         self.group.setScale(scale)
         self.canvas.setScale(scale)
 
-    def onExit(self, a0:QMouseEvent):
+    def onExit(self, a0: QMouseEvent):
         self.cursurDot.hide()
-    
+
     def onEnter(self, a0: QMouseEvent):
 
         self.drawOption = self.toolbar.getDrawOptions()
-        
+
         if self.drawOption.shape == ERASE or self.drawOption.shape == SELECT:
             self.cursurDot.hide()
         else:
             self.cursurDot.setPen(self.drawOption.pen)
             self.cursurDot.setBrush(self.drawOption.pen.color())
-            size = QSizeF(self.drawOption.pen.widthF(),self.drawOption.pen.widthF())
-            self.cursurDot.setRect(QRectF(QPointF(-size.width()/2, -size.height()/2), size))
+            size = QSizeF(self.drawOption.pen.widthF(), self.drawOption.pen.widthF())
+            self.cursurDot.setRect(QRectF(QPointF(-size.width() / 2, -size.height() / 2), size))
             self.cursurDot.show()
         self.updateCursor()
 
     def onClick(self, a0: QMouseEvent):
-        
+
         self.toolbar.raise_()
 
         self.iniPos = self.view.mapFromParent(a0.pos())
@@ -136,12 +138,15 @@ class Canvas:
         # dealing with select and erase
 
         if opt == SELECT:
-            
             item = self.view.itemAt(self.iniPos)
             if item not in self.objects:
                 self.currentObject = None
                 return
+
             self.currentObject = item
+            self.currentObject.painting = True
+            self.group.removeFromGroup(self.currentObject)
+            self.redraw()
 
             self.offset = (mapped - self.currentObject.pos()) if self.currentObject is not None else None
             return
@@ -196,7 +201,7 @@ class Canvas:
         item.setPos(QPointF(0, 0))
 
         opacityEffect = QGraphicsOpacityEffect()
-        
+
         opacityEffect.setOpacity(self.drawOption.opacity)
         item.setGraphicsEffect(opacityEffect)
 
@@ -219,16 +224,24 @@ class Canvas:
                     return
 
         s = self.drawOption.shape
-        if s == PATH or s == CIRCLE or s == RECT:
+        if s == PATH or s == CIRCLE or s == RECT or s == SELECT:
+
+            if s == SELECT and self.currentObject is not None:
+                self.group.addToGroup(self.currentObject)
             self.finalizeCurrentShape()
 
     def undo(self):
         if len(self.objects) > 0:
             self.deleteObj(self.objects[-1])
 
+    def clear(self):
+        for item in self.group.childItems():
+            self.scene.removeItem(item)
+        pixmap = QPixmap(self.canvas.pixmap().size())
+        pixmap.fill(Qt.GlobalColor.transparent)
+        self.canvas.setPixmap(pixmap)
 
     def redraw(self):
-       
         newPix = self.canvas.pixmap()
         painter = QPainter(newPix)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
@@ -236,12 +249,12 @@ class Canvas:
         painter.fillRect(self.canvas.boundingRect(), Qt.GlobalColor.transparent)
         painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceOver)
         for item in self.group.childItems():
-        
+
             item.painting = True
             painter.setOpacity(item.graphicsEffect().opacity())
             item.paint(painter, QStyleOptionGraphicsItem())
             item.painting = False
-        
+
         painter.end()
         self.canvas.setPixmap(newPix)
 
@@ -255,8 +268,7 @@ class Canvas:
             item = object
         else:
             item = self.view.itemAt(object)
-         
-            
+
         if item is None:
             # no item is found
             return
@@ -273,20 +285,22 @@ class Canvas:
         if self.currentObject is None:
             return
         self.currentObject.finalize()
-        
         pixmap = self.canvas.pixmap()
         painter1 = QPainter(pixmap)
-        painter1.setRenderHints(QPainter.RenderHint.Antialiasing )
-        
-        tempimage=  QImage(pixmap.size(), QImage.Format.Format_RGBA8888)
+        painter1.setRenderHints(QPainter.RenderHint.Antialiasing)
+
+        tempimage = QImage(pixmap.size(), QImage.Format.Format_RGBA8888)
         tempimage.fill(Qt.GlobalColor.transparent)
         painter2 = QPainter(tempimage)
-        painter2.setRenderHints(QPainter.RenderHint.Antialiasing )
+        painter2.setRenderHints(QPainter.RenderHint.Antialiasing)
         painter2.setCompositionMode(QPainter.CompositionMode.CompositionMode_Source)
-        painter2.setOpacity(self.drawOption.opacity)
+        painter2.setOpacity(self.currentObject.graphicsEffect().opacity())
+
         self.currentObject.paint(painter2, QStyleOptionGraphicsItem())
-        
-        painter1.drawImage(pixmap.rect(), tempimage)
+
+        painter1.drawImage(
+            pixmap.rect().translated(self.currentObject.pos().toPoint()), tempimage
+        )  # jank ass fix, it kept drawing the boundbox.pos image, when pos has been updated. prob some coord conversion madness again.
         self.canvas.setPixmap(pixmap)
         painter1.end()
         painter2.end()
@@ -296,12 +310,12 @@ class Canvas:
     def onMove(self, a0: QMouseEvent):
         mappedCurPos = self.view.mapToScene(a0.pos())
         self.cursurDot.setPos(mappedCurPos)
-        
+
         opt = self.drawOption.shape
 
         if a0.buttons() == Qt.MouseButton.LeftButton:
             mappedIniPos = self.view.mapToScene(self.iniPos)
-            
+
             if opt == PATH:
 
                 if self.lockMode == "v":
@@ -410,7 +424,7 @@ class CanvasTesting(QWidget):
     def mouseReleaseEvent(self, a0: QtGui.QMouseEvent) -> None:
 
         self.canvas.onRelease(a0)
-    
+
     def leaveEvent(self, a0: QtCore.QEvent) -> None:
         self.canvas.onExit(a0)
 
@@ -420,11 +434,10 @@ class CanvasTesting(QWidget):
 
     def keyReleaseEvent(self, a0: QtGui.QKeyEvent) -> None:
         self.canvas.keyUp(a0)
-        
 
 
 class CircleItem(QGraphicsEllipseItem):
-    def __init__(self, filled=False, painting:bool = True, *args, **kwargs):
+    def __init__(self, filled=False, painting: bool = True, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.filled = filled
         self.lineShape = None
@@ -438,21 +451,18 @@ class CircleItem(QGraphicsEllipseItem):
 
         p.setWidth(self.pen().width())
         self.lineShape = p.createStroke(path)
-    
-    def paintProxy(self, painter: QtGui.QPainter, option : QStyleOptionGraphicsItem, widget = None)->None:
-        '''
+
+    def paintProxy(self, painter: QtGui.QPainter, option: QStyleOptionGraphicsItem, widget=None) -> None:
+        """
         this paint function always available, the default one will be replaced.
-        '''
+        """
         return super().paint(painter, option, widget)
-    
-    
-    
-    def paint(self, painter: QtGui.QPainter, option: QStyleOptionGraphicsItem, widget = None) -> None:
-        
+
+    def paint(self, painter: QtGui.QPainter, option: QStyleOptionGraphicsItem, widget=None) -> None:
+
         if self.painting:
             super().paint(painter, option, widget)
             return None
-
 
     def shape(self) -> QtGui.QPainterPath:
         if self.filled or self.lineShape is None:
@@ -461,7 +471,7 @@ class CircleItem(QGraphicsEllipseItem):
 
 
 class RectItem(QGraphicsRectItem):
-    def __init__(self, filled=False, painting:bool = True, *args, **kwargs):
+    def __init__(self, filled=False, painting: bool = True, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.filled = filled
         self.lineShape = None
@@ -475,17 +485,16 @@ class RectItem(QGraphicsRectItem):
         p.setWidth(self.pen().width())
         self.lineShape = p.createStroke(path)
 
-    def paintProxy(self, painter: QtGui.QPainter, option : QStyleOptionGraphicsItem, widget = None)->None:
-        '''
+    def paintProxy(self, painter: QtGui.QPainter, option: QStyleOptionGraphicsItem, widget=None) -> None:
+        """
         this paint function always available, the default one will be replaced.
-        '''
+        """
         return super().paint(painter, option, widget)
-    
-    def paint(self, painter: QtGui.QPainter, option: QStyleOptionGraphicsItem, widget = None) -> None:
+
+    def paint(self, painter: QtGui.QPainter, option: QStyleOptionGraphicsItem, widget=None) -> None:
         if self.painting:
             super().paint(painter, option, widget)
-        
-    
+
     def shape(self) -> QtGui.QPainterPath:
         if self.filled or self.lineShape is None:
             return super().shape()
@@ -494,31 +503,29 @@ class RectItem(QGraphicsRectItem):
 
 
 class PathItem(QGraphicsPathItem):
-    def __init__(self, filled=False, paintiing =True, *args, **kwargs):
+    def __init__(self, filled=False, painting=True, *args, **kwargs):
 
         super().__init__(*args, **kwargs)
         self.filled = filled
         self.lineShape = None
-        self.painting = paintiing
+        self.painting = painting
 
     def finalize(self):
         self.finalized = True
         p = QPainterPathStroker()
         p.setWidth(self.pen().width())
         self.lineShape = p.createStroke(self.path())
-        
-        
-    def paintProxy(self, painter: QtGui.QPainter, option : QStyleOptionGraphicsItem, widget = None)->None:
-        '''
+
+    def paintProxy(self, painter: QtGui.QPainter, option: QStyleOptionGraphicsItem, widget=None) -> None:
+        """
         this paint function always available, the default one will be replaced.
-        '''
+        """
         return super().paint(painter, option, widget)
-    
-    def paint(self, painter: QtGui.QPainter, option: QStyleOptionGraphicsItem, widget = None) -> None:
-     
-        if self.painting :
+
+    def paint(self, painter: QtGui.QPainter, option: QStyleOptionGraphicsItem, widget=None) -> None:
+        if self.painting:
             super().paint(painter, option, widget)
-            
+
         # print(self)
         # if not self.finalized:
         #     super().paint(painter, option, widget)
