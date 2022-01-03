@@ -4,7 +4,7 @@ from typing import List, Union
 
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtCore import QLineF, QMarginsF, QPoint, QPointF, QRectF, QSize, QSizeF, Qt
-from PyQt5.QtGui import QCursor, QKeyEvent, QMouseEvent, QPainter, QPainterPath, QPainterPathStroker, QPen, QPixmap
+from PyQt5.QtGui import QCursor, QImage, QKeyEvent, QMouseEvent, QPainter, QPainterPath, QPainterPathStroker, QPen, QPixmap
 from PyQt5.QtWidgets import (
     QApplication,
     QGraphicsEllipseItem, 
@@ -89,6 +89,7 @@ class Canvas:
 
     def setScale(self, scale: float):
         self.group.setScale(scale)
+        self.canvas.setScale(scale)
 
     def onExit(self, a0:QMouseEvent):
         self.cursurDot.hide()
@@ -274,13 +275,21 @@ class Canvas:
         self.currentObject.finalize()
         
         pixmap = self.canvas.pixmap()
-        painter = QPainter(pixmap)
-        painter.setRenderHints(QPainter.RenderHint.Antialiasing )
-        painter.setOpacity(self.drawOption.opacity)
+        painter1 = QPainter(pixmap)
+        painter1.setRenderHints(QPainter.RenderHint.Antialiasing )
         
-        self.currentObject.paint(painter, QStyleOptionGraphicsItem())
+        tempimage=  QImage(pixmap.size(), QImage.Format.Format_RGBA8888)
+        tempimage.fill(Qt.GlobalColor.transparent)
+        painter2 = QPainter(tempimage)
+        painter2.setRenderHints(QPainter.RenderHint.Antialiasing )
+        painter2.setCompositionMode(QPainter.CompositionMode.CompositionMode_Source)
+        painter2.setOpacity(self.drawOption.opacity)
+        self.currentObject.paint(painter2, QStyleOptionGraphicsItem())
+        
+        painter1.drawImage(pixmap.rect(), tempimage)
         self.canvas.setPixmap(pixmap)
-        painter.end()
+        painter1.end()
+        painter2.end()
         self.currentObject.painting = False
         self.currentObject.update()
 

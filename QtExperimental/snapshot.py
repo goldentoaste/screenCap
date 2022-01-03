@@ -153,11 +153,13 @@ class Snapshot(QWidget):
             QSizeGrip.mousePressEvent(self.grip, a)
             self.moveLock = True
             self.displayPix.setTransformationMode(Qt.TransformationMode.FastTransformation)
+            self.canvas.canvas.setTransformationMode(Qt.TransformationMode.FastTransformation)
 
         def release(a):
             QSizeGrip.mouseReleaseEvent(self.grip, a)
             self.moveLock = False
             self.displayPix.setTransformationMode(Qt.TransformationMode.SmoothTransformation)
+            self.canvas.canvas.setTransformationMode(Qt.TransformationMode.SmoothTransformation)
 
         self.grip.mousePressEvent = press
         self.grip.mouseReleaseEvent = release
@@ -217,14 +219,13 @@ class Snapshot(QWidget):
         print(curScreen.geometry().topLeft())
         self.move(curScreen.geometry().topLeft())
         self.initialize()
-        self.startCrop(margin=2, useOriginal=True)
+        self.startCrop(margin=0, useOriginal=True)
         self.showNormal()
 
     def getNonScaledImage(self) -> QPixmap:
         return self.displayImage.copy(QRectF(*self.currentRect).toRect())
 
     def getScaledImage(self):
-        
         return self.displayImage.copy(QRectF(*self.currentRect).toRect()).scaled(
             self.displayPix.scale() * self.displayImage.size(),
             Qt.AspectRatioMode.KeepAspectRatio,
@@ -273,6 +274,7 @@ class Snapshot(QWidget):
 
         drawing canvas onto given image
         """
+        return self.canvas.canvas.pixmap()
         rect = self.displayPix.boundingRect()
         if len(self.canvas.group.childItems()) and (rect.isNull() or not rect.isValid()):
             return None
@@ -339,30 +341,27 @@ class Snapshot(QWidget):
         self.saveImageWithCanvas(True)
 
     def moveEvent(self, a0: QtGui.QMoveEvent) -> None:
-        print(a0.pos(), a0.oldPos())
         return super().moveEvent(a0)
     
     def startCrop(self, margin=50, useOriginal=False):
         if self.cropping:
             return
-
+        print("before",self.view.mapFromScene(self.displayPix.scenePos()), self.displayPix.scenePos(), self.view.sceneRect())
         self.cropping = True
         self.cropMargin = margin
         self.usingOriginal = useOriginal
 
         if useOriginal:
-            print("use original ", self.pos() - QPoint(margin, margin) - (self.view.sceneRect().topLeft() - self.displayPix.pos()).toPoint())
             self.move(self.pos() - QPoint(margin, margin) - (self.view.sceneRect().topLeft() - self.displayPix.pos()).toPoint())
-            self.view.setSceneRect(self.displayPix.sceneBoundingRect().marginsAdded(QMarginsF(margin, margin, margin, margin)))
         else:
             self.originalOffset = self.view.sceneRect().topLeft()
-            self.displayPix.setPixmap(QPixmap.fromImage(self.displayImage.copy(QRectF(*self.currentRect).toRect())))
-            self.view.setSceneRect(self.displayPix.sceneBoundingRect().marginsAdded(QMarginsF(margin, margin, margin, margin)))
-            print("else", self.pos() - QPoint(margin, margin))
+            self.displayPix.setPixmap(self.displayImage.copy(QRectF(*self.currentRect).toRect()))
             self.move(self.pos() - QPoint(margin, margin))
-
+            
+        self.view.setSceneRect(self.displayPix.sceneBoundingRect().marginsAdded(QMarginsF(margin, margin, margin, margin)))
         self.resize(self.view.sceneRect().size().toSize())
         self.displayPix.setTransformationMode(Qt.TransformationMode.SmoothTransformation)
+        print("after", self.view.mapFromScene(self.displayPix.scenePos()),self.displayPix.scenePos(), self.view.sceneRect())
 
     def replaceOriginal(self):
 
@@ -390,7 +389,7 @@ class Snapshot(QWidget):
             scale = (fullwidth + ((size.width() - self.currentWidth) / self.currentWidth) * fullwidth) / self.displayImage.width()
 
             self.displayPix.setScale(scale)
-            self.canvas.group.setScale(scale)  # scales both canvas items and image
+            self.canvas.setScale(scale)  # scales both canvas items and image
 
             displayrect = QRectF(*(i * self.displayPix.scale() for i in self.currentRect))
 
@@ -400,7 +399,6 @@ class Snapshot(QWidget):
 
         self.grip.move(self.rect().bottomRight() - QPoint(16, 16))
     
-
     def stopCrop(self, canceling=False):
 
         if not canceling:
@@ -553,7 +551,7 @@ class Snapshot(QWidget):
                 self.stopCrop(canceling=True)
 
         if a0.key() == Qt.Key.Key_Space:
-            self.startCrop(50, False)
+            self.startCrop(20, True)
             # self.copy()
 
     def getCurrentScreen(self) -> QScreen:
