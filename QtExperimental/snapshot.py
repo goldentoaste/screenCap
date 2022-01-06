@@ -20,7 +20,6 @@ from PyQt5.QtGui import (
     QPainter,
     QPen,
     QPixmap,
-    QImage,
     QScreen,
 )
 from PyQt5.QtWidgets import (
@@ -35,9 +34,6 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 import io
-
-
-
 import sys
 from selectionbox import SelectionBox
 import win32clipboard as clipboard
@@ -195,16 +191,20 @@ class Snapshot(QWidget):
         self.canvas.clear()
 
     def togglePaint(self):
+        print(self.painting)
         if self.painting:
             self.stopPaint()
         else:
+            print("in else")
             self.startPaint()
 
     def startPaint(self):
+        print("in srtart paint")
         self.painting = True
         self.master.snapshotPaintEvent(self)
         self.canvas.updateCursor()
         self.grip.hide()
+        
 
     def stopPaint(self):
         self.painting = False
@@ -461,12 +461,8 @@ class Snapshot(QWidget):
         if self.painting:
             self.canvas.onRelease(a0)
 
-        if self.cropping:
+        if self.cropping and self.config.bfastcrop:
             self.stopCrop()
-
-    def enterEvent(self, a0) -> None:
-        if self.painting:
-            self.canvas.onEnter(a0)
 
     def mouseDoubleClickEvent(self, a0: QtGui.QMouseEvent) -> None:
 
@@ -507,10 +503,10 @@ class Snapshot(QWidget):
 
         if self.painting:
             self.canvas.onMove(a0)
-            if a0.buttons() == 0 or a0.buttons() == a0.buttons() == Qt.MouseButton.LeftButton:
+            if a0.buttons() == 0 or a0.buttons() == Qt.MouseButton.LeftButton:
                 return
 
-        if a0.buttons() == Qt.MouseButton.LeftButton or a0.buttons() == Qt.MouseButton.RightButton:
+        if a0.buttons() == Qt.MouseButton.LeftButton or a0.buttons() == Qt.MouseButton.MiddleButton:
             if self.cropping:
                 rect = QRect(self.inipos, a0.pos()).normalized()
                 self.selectionBox.setGeometry(rect)
@@ -542,6 +538,10 @@ class Snapshot(QWidget):
             self.canvas.keyUp(a0)
 
     def keyPressEvent(self, a0: QtGui.QKeyEvent) -> None:
+        
+        if a0.key() == Qt.Key.Key_S:
+            if self.cropping and not self.config.bfastcrop:
+                self.stopCrop()
 
         if a0.key() == Qt.Key.Key_P:
             self.startPaint()
@@ -583,6 +583,7 @@ class Snapshot(QWidget):
     def enterEvent(self, a0) -> None:
         if self.painting:
             self.canvas.onEnter(a0)
+            return
 
         if self.fullscreenCrop or self.cropping or self.mini:
             self.grip.hide()

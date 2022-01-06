@@ -95,10 +95,11 @@ class ConfigManager:
             raise e
 
         return {
-            "i": lambda: _raise(TypeError("must be int")) if type(val) is not int else "",
-            "f": lambda: _raise(TypeError("must be float")) if type(val) is not float else "",
-            "s": lambda: _raise(TypeError("must be string")) if type(val) is not str else "",
-            "l": lambda: _raise(TypeError("must be list")) if type(val) is not list else "",
+            "i": lambda: _raise(TypeError("must be int")) if type(val) is not int else (),
+            "f": lambda: _raise(TypeError("must be float")) if type(val) is not float else (),
+            "s": lambda: _raise(TypeError("must be string")) if type(val) is not str else (),
+            "b":lambda: _raise(TypeError("must be string")) if type(val) is not str else (),
+            "l": lambda: _raise(TypeError("must be list")) if type(val) is not list else ()
         }[name[0]]
 
     def getSection(self, val):
@@ -158,6 +159,12 @@ class ConfigManager:
             sec (str): Section of the config file
             opt (str): Option of the given section
         """
+        
+        def boolVar():
+            try: 
+                self.vals[opt] = self.config.getboolean(sec, opt)
+            except:
+                self.vals[opt] = self.default.get(opt, (0,))[0]
 
         def intVar():
             try:
@@ -178,7 +185,7 @@ class ConfigManager:
                 if not temp[0]:
                     self.vals[opt] = []  # if temp is blank, just make it an empty array
                     return
-                varType = {"i": int, "f": float, "s": str}[opt[1]]
+                varType = {"i": int, "f": float, "s": str, "b": bool}[opt[1]]
                 self.vals[opt] = [varType(item) for item in temp]
             except:
                 self.vals[opt] = self.default.get(opt, ([],))[0]
@@ -191,7 +198,7 @@ class ConfigManager:
 
         t = opt[0]
 
-        {"i": intVar, "f": floatVar, "s": strVar, "l": listVar}[t]()
+        {"i": intVar, "f": floatVar, "s": strVar, "l": listVar, "b": boolVar}[t]()
         self.secs[opt] = sec
 
 

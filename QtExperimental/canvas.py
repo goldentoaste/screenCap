@@ -1,10 +1,7 @@
-from os import times
 import sys
-from types import MappingProxyType
 from typing import List, Union
-
 from PyQt5 import QtCore, QtGui
-from PyQt5.QtCore import QLineF, QMarginsF, QPoint, QPointF, QRectF, QSize, QSizeF, Qt
+from PyQt5.QtCore import QLineF, QPoint, QPointF, QRectF, QSize, QSizeF, Qt
 from PyQt5.QtGui import QCursor, QImage, QKeyEvent, QMouseEvent, QPainter, QPainterPath, QPainterPathStroker, QPen, QPixmap
 from PyQt5.QtWidgets import (
     QApplication,
@@ -26,16 +23,13 @@ from paintToolbar import CIRCLE, ERASE, LINE, PATH, RECT, SELECT, DrawOptions, P
 
 
 def smoothStep(p1: QPointF, p2: QPointF, amount: float):
-    return p1 + amount * (p2 - p1)
-    # amount = (amount ** 2) * (3 - 2 * amount)
-    # return QPointF((1 - amount) * p1.x() + p2.x() * amount, (1 - amount) * p1.y() + p2.y() * amount)
-
+    # return p1 + amount * (p2 - p1)
+    amount = (amount ** 2) * (3 - 2 * amount)
+    return QPointF((1 - amount) * p1.x() + p2.x() * amount, (1 - amount) * p1.y() + p2.y() * amount)
 
 """
 while drawing paint like normal
 after done drawing, paint() should do nothing
-
-
 """
 
 
@@ -47,7 +41,7 @@ class Canvas:
         self.canvaSize = canvasSize
         self.view.setRenderHints(QtGui.QPainter.HighQualityAntialiasing | QtGui.QPainter.SmoothPixmapTransform)
 
-        self.drawOption: DrawOptions = toolbar.getDrawOptions()
+        self.drawOption: DrawOptions = toolbar.getDrawOptions(1)
 
         self.alt = False
         self.ctrl = False
@@ -71,6 +65,7 @@ class Canvas:
         self.drawingLine = False
         self.view.setMouseTracking(True)
 
+
     def updateCursor(self):
         self.view.setCursor(
             QCursor(
@@ -92,20 +87,23 @@ class Canvas:
     def setScale(self, scale: float):
         self.group.setScale(scale)
         self.canvas.setScale(scale)
+        
 
     def onExit(self, a0: QMouseEvent):
         self.cursurDot.hide()
 
     def onEnter(self, a0: QMouseEvent):
 
-        self.drawOption = self.toolbar.getDrawOptions()
+        self.drawOption = self.toolbar.getDrawOptions(self.scale())
 
         if self.drawOption.shape == ERASE or self.drawOption.shape == SELECT:
             self.cursurDot.hide()
         else:
-            self.cursurDot.setPen(self.drawOption.pen)
+            self.cursurDot.setPen(Qt.GlobalColor.transparent)
             self.cursurDot.setBrush(self.drawOption.pen.color())
-            size = QSizeF(self.drawOption.pen.widthF(), self.drawOption.pen.widthF())
+            
+            size = QSizeF(self.drawOption.pen.widthF() , self.drawOption.pen.widthF() ) * self.scale()
+       
             self.cursurDot.setRect(QRectF(QPointF(-size.width() / 2, -size.height() / 2), size))
             self.cursurDot.show()
         self.updateCursor()
@@ -115,7 +113,7 @@ class Canvas:
         self.toolbar.raise_()
 
         self.iniPos = self.view.mapFromParent(a0.pos())
-        mapped = self.view.mapToScene(self.iniPos)
+        mapped = self.view.mapToScene(self.iniPos) / self.scale()
         opt = self.drawOption.shape
         self.lastPos = mapped
 
@@ -148,7 +146,7 @@ class Canvas:
             self.group.removeFromGroup(self.currentObject)
             self.redraw()
 
-            self.offset = (mapped - self.currentObject.pos()) if self.currentObject is not None else None
+            self.offset = mapped * self.scale() - self.currentObject.pos() 
             return
         elif opt == ERASE:
             item = self.view.itemAt(self.iniPos)
@@ -199,7 +197,7 @@ class Canvas:
         item.setPen(self.drawOption.pen)
         item.setBrush(self.drawOption.brush)
         item.setPos(QPointF(0, 0))
-
+        item.setScale(self.scale())
         opacityEffect = QGraphicsOpacityEffect()
 
         opacityEffect.setOpacity(self.drawOption.opacity)
@@ -229,7 +227,62 @@ class Canvas:
             if s == SELECT and self.currentObject is not None:
                 self.group.addToGroup(self.currentObject)
             self.finalizeCurrentShape()
+            
+            
+    def onMove(self, a0: QMouseEvent):
+        mappedCurPos = self.view.mapToScene(a0.pos()) / self.scale()
+        self.cursurDot.setPos( self.view.mapToScene(a0.pos()))
 
+        opt = self.drawOption.shape
+
+        if a0.buttons() == Qt.MouseButton.LeftButton:
+            mappedIniPos = self.view.mapToScene(self.iniPos) /self.scale()
+            if opt == PATH:
+                if self.lockMode == "v":
+                    self.path.lineTo(self.view.mapToScene(QPoint(int(a0.x()), self.lockVal)) / self.scale())
+                elif self.lockMode == "h":
+                    self.path.lineTo(self.view.mapToScene(QPoint(self.lockVal, int(a0.y()))) / self.scale())
+                else:
+                    self.currentLerpPos = smoothStep(self.currentLerpPos, mappedCurPos, 0.2)
+                    self.path.lineTo(self.currentLerpPos.toPoint())
+
+                self.currentObject.setPath(self.path)
+
+            elif opt == CIRCLE or opt == RECT:
+                dx = mappedCurPos.x() - mappedIniPos.x()
+                dy = mappedCurPos.y() - mappedIniPos.y()
+
+                size = QSizeF(dx, dy)
+
+                if self.lockMode == "b":
+                    size = QSizeF(1, 1).scaled(size, Qt.AspectRatioMode.KeepAspectRatio)
+                    if dy > 0 and dx < 0:
+                        size.setHeight(size.height() * -1)
+                    elif dx > 0 and dy < 0:
+                        size.setWidth(size.width() * -1)
+
+                if opt == CIRCLE:
+                    self.currentObject.setRect(
+                        QRectF(
+                            mappedIniPos.x() - size.width(),
+                            mappedIniPos.y() - size.height(),
+                            size.width() * 2,
+                            size.height() * 2,
+                        ).normalized()
+                    )
+                elif opt == RECT:
+                    self.currentObject.setRect(QRectF(mappedIniPos, size).normalized())
+
+            elif opt == SELECT and self.currentObject is not None:
+                self.currentObject.setPos(mappedCurPos * self.scale() - self.offset)
+            elif opt == ERASE:
+                self.deleteObj(a0.pos())
+
+        if opt == LINE and self.drawingLine:
+            # self.tempLine.show()
+            self.tempLine.setLine(QLineF(self.lastPos, mappedCurPos))
+            
+            
     def undo(self):
         if len(self.objects) > 0:
             self.deleteObj(self.objects[-1])
@@ -248,14 +301,22 @@ class Canvas:
         painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_Source)
         painter.fillRect(self.canvas.boundingRect(), Qt.GlobalColor.transparent)
         painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceOver)
+        
+        tempimage = QImage(self.canvas.pixmap().size(), QImage.Format.Format_RGBA8888)
+        tempimage.fill(Qt.GlobalColor.transparent)
+        painter2 = QPainter(tempimage)
+        painter2.setCompositionMode(QPainter.CompositionMode.CompositionMode_Source)
         for item in self.group.childItems():
-
             item.painting = True
-            painter.setOpacity(item.graphicsEffect().opacity())
-            item.paint(painter, QStyleOptionGraphicsItem())
+            painter2.setOpacity(item.graphicsEffect().opacity())
+            item.paintProxy(painter2, QStyleOptionGraphicsItem())
             item.painting = False
+            painter.drawImage(tempimage.rect().translated(item.pos().toPoint()), tempimage)
+            painter2.fillRect(tempimage.rect(), Qt.GlobalColor.transparent)
+            
 
         painter.end()
+        painter2.end()
         self.canvas.setPixmap(newPix)
 
     def deleteObj(self, object: Union[QGraphicsItem, QPointF]):
@@ -296,72 +357,18 @@ class Canvas:
         painter2.setCompositionMode(QPainter.CompositionMode.CompositionMode_Source)
         painter2.setOpacity(self.currentObject.graphicsEffect().opacity())
 
-        self.currentObject.paint(painter2, QStyleOptionGraphicsItem())
+        self.currentObject.paintProxy(painter2, QStyleOptionGraphicsItem())
 
         painter1.drawImage(
             pixmap.rect().translated(self.currentObject.pos().toPoint()), tempimage
         )  # jank ass fix, it kept drawing the boundbox.pos image, when pos has been updated. prob some coord conversion madness again.
+        
+
         self.canvas.setPixmap(pixmap)
         painter1.end()
         painter2.end()
         self.currentObject.painting = False
         self.currentObject.update()
-
-    def onMove(self, a0: QMouseEvent):
-        mappedCurPos = self.view.mapToScene(a0.pos())
-        self.cursurDot.setPos(mappedCurPos)
-
-        opt = self.drawOption.shape
-
-        if a0.buttons() == Qt.MouseButton.LeftButton:
-            mappedIniPos = self.view.mapToScene(self.iniPos)
-
-            if opt == PATH:
-
-                if self.lockMode == "v":
-                    self.path.lineTo(self.view.mapToScene(QPoint(int(a0.x()), self.lockVal)))
-                elif self.lockMode == "h":
-                    self.path.lineTo(self.view.mapToScene(QPoint(self.lockVal, int(a0.y()))))
-                else:
-                    self.currentLerpPos = smoothStep(self.currentLerpPos, mappedCurPos, 0.2)
-                    self.path.lineTo(self.currentLerpPos.toPoint())
-
-                self.currentObject.setPath(self.path)
-
-            elif opt == CIRCLE or opt == RECT:
-                dx = mappedCurPos.x() - mappedIniPos.x()
-                dy = mappedCurPos.y() - mappedIniPos.y()
-
-                size = QSizeF(dx, dy)
-
-                if self.lockMode == "b":
-                    size = QSizeF(1, 1).scaled(size, Qt.AspectRatioMode.KeepAspectRatio)
-                    if dy > 0 and dx < 0:
-                        size.setHeight(size.height() * -1)
-                    elif dx > 0 and dy < 0:
-                        size.setWidth(size.width() * -1)
-
-                if opt == CIRCLE:
-                    self.currentObject.setRect(
-                        QRectF(
-                            mappedIniPos.x() - size.width(),
-                            mappedIniPos.y() - size.height(),
-                            size.width() * 2,
-                            size.height() * 2,
-                        ).normalized()
-                    )
-                elif opt == RECT:
-                    self.currentObject.setRect(QRectF(mappedIniPos, size).normalized())
-
-            elif opt == SELECT and self.currentObject is not None:
-                self.currentObject.setPos(self.view.mapToScene(a0.pos()) - self.offset)
-            elif opt == ERASE:
-                self.deleteObj(a0.pos())
-
-        if opt == LINE and self.drawingLine:
-            # self.tempLine.show()
-            mapped = self.view.mapToScene(a0.pos())
-            self.tempLine.setLine(QLineF(self.lastPos, mapped))
 
     def keyDown(self, a0: QKeyEvent):
 
@@ -524,7 +531,11 @@ class PathItem(QGraphicsPathItem):
 
     def paint(self, painter: QtGui.QPainter, option: QStyleOptionGraphicsItem, widget=None) -> None:
         if self.painting:
+            # #debug
+            # temp = self.pen()
+            # self.setPen(QPen(QColor(0,0, 0, 128), self.pen().width()))
             super().paint(painter, option, widget)
+            # self.setPen(temp)
 
         # print(self)
         # if not self.finalized:

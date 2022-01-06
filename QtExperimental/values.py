@@ -188,6 +188,7 @@ defaultVariables = {  # if im doing this again, these tuples should be dataclass
     "iuselastsave": (0, "main"),
     #snapshot
     "iquality": (100, "snapshot"),
+     "bfastcrop":(False, "snapshot"),
     # hotkeys
     "licapture": ([17, 49], "global"),
     "licopy": ([17, 50], "local"),

@@ -4,8 +4,8 @@ from dataclasses import dataclass
 from typing import List
 
 from PyQt5 import QtCore, QtGui
-from PyQt5.QtCore import QSize, Qt
-from PyQt5.QtGui import QBrush, QColor, QFont, QFontMetrics, QIcon, QPainter, QPen, QPixmap
+from PyQt5.QtCore import QPoint, QPointF, QSize, Qt
+from PyQt5.QtGui import QBrush, QColor, QFont, QFontMetrics, QIcon, QPainter, QPen, QPixmap, QRadialGradient
 from PyQt5.QtWidgets import QApplication, QCheckBox, QColorDialog, QGridLayout, QHBoxLayout, QLineEdit, QPushButton, QSlider, QVBoxLayout, QWidget
 
 from ConfigManager import ConfigManager
@@ -75,20 +75,36 @@ class PaintToolbar(QWidget):
         for i in range(len(colors)):
             self.colorButtons[i].setColor(QColor(colors[i]))
 
-    def getDrawOptions(self):
+    def getDrawOptions(self, scale : float):
+        
+        '''
+        https://stackoverflow.com/a/59659424/12471420
+        yoink, using graidents to smooth lines
+        '''
+        
         o = DrawOptions()
         o.shape = self.currentSelection
         color = self.currentColor
         color.setAlpha(255)
         o.opacity = self.alphaSlider.value() / 100
+        radius = self.radiusSlider.value()
 
+        # grad = QRadialGradient(QPointF(0, 0), radius)
+        # grad.setColorAt(0, color)
+        # grad.setColorAt(0.85, color)
+        # grad.setColorAt(1, Qt.GlobalColor.transparent)
+        
+        # pen.setBrush(grad)
+    
+    
         o.pen = QPen(
             color,
-            self.radiusSlider.value(),
+            radius,
             Qt.PenStyle.SolidLine,
             Qt.PenCapStyle.RoundCap,
-            Qt.PenJoinStyle.RoundJoin,
+            Qt.PenJoinStyle.RoundJoin
         )
+        # o.pen.setBrush(QBrush(grad))
         o.brush = QBrush(
             color,
             Qt.BrushStyle.NoBrush if not self.fillCheck.isChecked() else Qt.BrushStyle.SolidPattern,

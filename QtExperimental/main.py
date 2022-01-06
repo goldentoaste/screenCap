@@ -21,8 +21,6 @@ from snapshot import Snapshot
 from rightclickMenu import MenuPage
 from paintToolbar import PaintToolbar
 
-from recycler import Recycler
-
 import gc
 
 
@@ -398,7 +396,7 @@ class Main(QWidget):
         
     
     def snapshotPaintEvent(self, snap : Snapshot):
-        if self.currentPainting: # current is not none
+        if self.currentPainting and self.currentPainting is not snap: # current is not none
             self.currentPainting.stopPaint()
         self.currentPainting = snap
         self.paintToolPop()
