@@ -23,6 +23,7 @@ from paintToolbar import CIRCLE, ERASE, LINE, PATH, RECT, SELECT, DrawOptions, P
 
 
 def smoothStep(p1: QPointF, p2: QPointF, amount: float):
+    # return p2
     # return p1 + amount * (p2 - p1)
     amount = (amount ** 2) * (3 - 2 * amount)
     return QPointF((1 - amount) * p1.x() + p2.x() * amount, (1 - amount) * p1.y() + p2.y() * amount)
@@ -40,7 +41,7 @@ class Canvas:
         self.toolbar = toolbar
         self.canvaSize = canvasSize
         self.view.setRenderHints(QtGui.QPainter.HighQualityAntialiasing | QtGui.QPainter.SmoothPixmapTransform)
-
+    
         self.drawOption: DrawOptions = toolbar.getDrawOptions(1)
 
         self.alt = False
@@ -101,11 +102,10 @@ class Canvas:
         else:
             self.cursurDot.setPen(Qt.GlobalColor.transparent)
             self.cursurDot.setBrush(self.drawOption.pen.color())
-            
             size = QSizeF(self.drawOption.pen.widthF() , self.drawOption.pen.widthF() ) * self.scale()
-       
             self.cursurDot.setRect(QRectF(QPointF(-size.width() / 2, -size.height() / 2), size))
             self.cursurDot.show()
+            
         self.updateCursor()
 
     def onClick(self, a0: QMouseEvent):
@@ -198,6 +198,10 @@ class Canvas:
         item.setBrush(self.drawOption.brush)
         item.setPos(QPointF(0, 0))
         item.setScale(self.scale())
+        
+        
+        
+        
         opacityEffect = QGraphicsOpacityEffect()
 
         opacityEffect.setOpacity(self.drawOption.opacity)
@@ -243,8 +247,8 @@ class Canvas:
                 elif self.lockMode == "h":
                     self.path.lineTo(self.view.mapToScene(QPoint(self.lockVal, int(a0.y()))) / self.scale())
                 else:
-                    self.currentLerpPos = smoothStep(self.currentLerpPos, mappedCurPos, 0.2)
-                    self.path.lineTo(self.currentLerpPos.toPoint())
+                    self.currentLerpPos = smoothStep(self.currentLerpPos, mappedCurPos, 0.19)
+                    self.path.lineTo(self.currentLerpPos)
 
                 self.currentObject.setPath(self.path)
 
