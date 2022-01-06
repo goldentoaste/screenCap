@@ -109,6 +109,7 @@ class Snapshot(QWidget):
         self.scene.addItem(self.borderRect)
 
         self.view = QGraphicsView(self.scene)
+        self.view.setRenderHint(QPainter.RenderHint.Antialiasing, True)
 
         def resizeView(a0):
             QGraphicsView.resizeEvent(self.view, a0)
@@ -150,12 +151,14 @@ class Snapshot(QWidget):
             self.moveLock = True
             self.displayPix.setTransformationMode(Qt.TransformationMode.FastTransformation)
             self.canvas.canvas.setTransformationMode(Qt.TransformationMode.FastTransformation)
+            self.view.setRenderHint(QPainter.RenderHint.Antialiasing, False)
 
         def release(a):
             QSizeGrip.mouseReleaseEvent(self.grip, a)
             self.moveLock = False
             self.displayPix.setTransformationMode(Qt.TransformationMode.SmoothTransformation)
             self.canvas.canvas.setTransformationMode(Qt.TransformationMode.SmoothTransformation)
+            self.view.setRenderHint(QPainter.RenderHint.Antialiasing, True)
 
         self.grip.mousePressEvent = press
         self.grip.mouseReleaseEvent = release

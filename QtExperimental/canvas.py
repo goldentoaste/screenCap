@@ -40,8 +40,6 @@ class Canvas:
         self.view = view
         self.toolbar = toolbar
         self.canvaSize = canvasSize
-        self.view.setRenderHints(QtGui.QPainter.HighQualityAntialiasing | QtGui.QPainter.SmoothPixmapTransform)
-    
         self.drawOption: DrawOptions = toolbar.getDrawOptions(1)
 
         self.alt = False
@@ -117,10 +115,13 @@ class Canvas:
         opt = self.drawOption.shape
         self.lastPos = mapped
 
-        if a0.buttons() == Qt.MouseButton.RightButton and self.drawingLine:
+        if a0.buttons() != Qt.MouseButton.LeftButton:
+            if self.drawingLine:
             # cancel the current line, in case there is a unfinished/hovering line
-            self.drawingLine = False
-            self.tempLine.hide()
+                self.drawingLine = False
+                self.tempLine.hide()
+                self.finalizeCurrentShape()
+            return
 
         if self.drawingLine:
             self.path.lineTo(mapped)
@@ -198,10 +199,6 @@ class Canvas:
         item.setBrush(self.drawOption.brush)
         item.setPos(QPointF(0, 0))
         item.setScale(self.scale())
-        
-        
-        
-        
         opacityEffect = QGraphicsOpacityEffect()
 
         opacityEffect.setOpacity(self.drawOption.opacity)
@@ -227,9 +224,9 @@ class Canvas:
 
         s = self.drawOption.shape
         if s == PATH or s == CIRCLE or s == RECT or s == SELECT:
-
             if s == SELECT and self.currentObject is not None:
                 self.group.addToGroup(self.currentObject)
+                
             self.finalizeCurrentShape()
             
             
@@ -309,6 +306,7 @@ class Canvas:
         tempimage = QImage(self.canvas.pixmap().size(), QImage.Format.Format_RGBA8888)
         tempimage.fill(Qt.GlobalColor.transparent)
         painter2 = QPainter(tempimage)
+        painter2.setRenderHint(QPainter.RenderHint.Antialiasing)
         painter2.setCompositionMode(QPainter.CompositionMode.CompositionMode_Source)
         for item in self.group.childItems():
             item.painting = True
@@ -340,7 +338,8 @@ class Canvas:
         try:
             self.objects.remove(item)
             self.scene.removeItem(item)
-            self.redraw()
+            if not item.boundingRect().isNull():
+                self.redraw()
         except ValueError:
             # value error when the item is found, should isn't in this canvas.
             # prob the item selected is the background image.
@@ -373,6 +372,7 @@ class Canvas:
         painter2.end()
         self.currentObject.painting = False
         self.currentObject.update()
+        self.currentObject = None
 
     def keyDown(self, a0: QKeyEvent):
 
@@ -472,8 +472,9 @@ class CircleItem(QGraphicsEllipseItem):
     def paint(self, painter: QtGui.QPainter, option: QStyleOptionGraphicsItem, widget=None) -> None:
 
         if self.painting:
+            painter.setRenderHint(QPainter.RenderHint.Antialiasing, False)
             super().paint(painter, option, widget)
-            return None
+            
 
     def shape(self) -> QtGui.QPainterPath:
         if self.filled or self.lineShape is None:
@@ -504,6 +505,7 @@ class RectItem(QGraphicsRectItem):
 
     def paint(self, painter: QtGui.QPainter, option: QStyleOptionGraphicsItem, widget=None) -> None:
         if self.painting:
+            painter.setRenderHint(QPainter.RenderHint.Antialiasing, False)
             super().paint(painter, option, widget)
 
     def shape(self) -> QtGui.QPainterPath:
@@ -535,6 +537,7 @@ class PathItem(QGraphicsPathItem):
 
     def paint(self, painter: QtGui.QPainter, option: QStyleOptionGraphicsItem, widget=None) -> None:
         if self.painting:
+            painter.setRenderHint(QPainter.RenderHint.Antialiasing, False)
             # #debug
             # temp = self.pen()
             # self.setPen(QPen(QColor(0,0, 0, 128), self.pen().width()))
