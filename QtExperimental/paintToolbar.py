@@ -75,13 +75,13 @@ class PaintToolbar(QWidget):
         for i in range(len(colors)):
             self.colorButtons[i].setColor(QColor(colors[i]))
 
-    def getDrawOptions(self, scale : float):
-        
-        '''
+    def getDrawOptions(self, scale: float):
+
+        """
         https://stackoverflow.com/a/59659424/12471420
         yoink, using graidents to smooth lines
-        '''
-        
+        """
+
         o = DrawOptions()
         o.shape = self.currentSelection
         color = self.currentColor
@@ -93,17 +93,10 @@ class PaintToolbar(QWidget):
         # grad.setColorAt(0, color)
         # grad.setColorAt(0.85, color)
         # grad.setColorAt(1, Qt.GlobalColor.transparent)
-        
+
         # pen.setBrush(grad)
-    
-    
-        o.pen = QPen(
-            color,
-            radius,
-            Qt.PenStyle.SolidLine,
-            Qt.PenCapStyle.RoundCap,
-            Qt.PenJoinStyle.RoundJoin
-        )
+
+        o.pen = QPen(color, radius, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
         # o.pen.setBrush(QBrush(grad))
         o.brush = QBrush(
             color,
@@ -111,13 +104,13 @@ class PaintToolbar(QWidget):
         )
 
         return o
-    
+
     def initGui(self):
         self.setWindowFlags(Qt.WindowType.CustomizeWindowHint | Qt.WindowType.WindowCloseButtonHint | Qt.WindowType.WindowStaysOnTopHint)
-     
+
         self.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
         metric = QFontMetrics(QFont())
-        mainlayout = QHBoxLayout()
+        mainlayout = QVBoxLayout()
 
         def setConfig(name, val):
             self.config.__setattr__(name, val)
@@ -190,13 +183,13 @@ class PaintToolbar(QWidget):
             # self.currentColor = color
             self.currentColor = button.color
 
-        for i in range(10):
-            c = ColorButton(QSize(58, 58), i)
+        for i in range(14):
+            c = ColorButton(QSize(40, 40), i)
             c.setColor(QColor(i * 10, i * 20, i * 10))
             c.onleftclick = lambda x, c=c: updateConfigColor(c)
             self.colorButtons.append(c)
 
-            colorGroup.addWidget(c, i // 5, i % 5)
+            colorGroup.addWidget(c, i // 7, i % 7)
 
         upperGroup = QGridLayout()
 
@@ -237,6 +230,8 @@ class PaintToolbar(QWidget):
     def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
         if self.main:
             self.main.paintToolJoin()
+
+
 class NumEditTemp(QLineEdit):
     def __init__(self, format: str, blankChar: str, min: int, max: int, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -330,5 +325,5 @@ if __name__ == "__main__":
     import values
 
     app = QApplication(sys.argv)
-    ex = PaintToolbar(ConfigManager("D:\PythonProject\screenCap\QtExperimental\config.ini", values.defaultVariables))
+    ex = PaintToolbar(ConfigManager("D:\PythonProject\screenCap\QtExperimental\config.ini", values.defaultVariables), None)
     sys.exit(app.exec_())

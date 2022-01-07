@@ -1,3 +1,4 @@
+from typing import Union
 from ConfigManager import ConfigManager
 from PyQt5 import QtGui
 from PyQt5 import QtWidgets
@@ -29,7 +30,9 @@ from PyQt5.QtWidgets import (
     QGraphicsScene,
     QGraphicsView,
     QHBoxLayout,
+    QLabel,
     QSizeGrip,
+    QSizePolicy,
     QStyleOptionGraphicsItem,
     QWidget,
 )
@@ -43,7 +46,119 @@ from canvas import Canvas, RectItem
 import values
 from rightclickMenu import MenuPage
 
+LEFTTOP = 0
+LEFTBOT = 1
+BOTLEFT = 2
+BOTRIGHT = 3
+RIGHTBOT = 4
+RIGHTTOP = 5
+TOPRIGHT = 6
+TOPLEFT = 9
 
+
+def postionRects(r1: Union[QRectF, QRect], r2: Union[QRectF, QRect], maxRect: Union[QRectF, QRect], prefs: list[int] = None) -> Union[QRectF, QRect]:
+    """
+    return postion to put r2 relative to r1, while trying to not collide with maxRect, trying in order of preference.
+    if none works, return first interior corner. This assumes r2 is (much) smaller than r1
+    """
+
+    def lefttop():
+        r = QRect(r2)
+        r.moveTopRight(r1.topLeft())
+        return r
+
+    def leftbot():
+        r = QRect(r2)
+        r.moveBottomRight(r1.bottomLeft())
+        return r
+
+    def botleft():
+        r = QRect(r2)
+        r.moveTopLeft(r1.bottomLeft())
+        return r
+
+    def botright():
+        r = QRect(r2)
+        r.moveTopRight(r1.bottomRight())
+        return r
+
+    def rightbot():
+        r = QRect(r2)
+        r.moveBottomLeft(r1.bottomRight())
+        return r
+
+    def righttop():
+        r = QRect(r2)
+        r.moveTopLeft(r1.topRight())
+        return r
+
+    def topright():
+        r = QRect(r2)
+        r.moveBottomLeft(r1.topRight())
+        return r
+
+    def topleft():
+        r = QRect(r2)
+        r.moveBottomLeft(r1.topLeft())
+        return r
+
+    def innertopleft():
+        r = QRect(r2)
+        r.moveTopLeft(r1.topLeft())
+        return r
+
+    def innerbotleft():
+        r = QRect(r2)
+        r.moveBottomLeft(r1.bottomLeft())
+        return r
+
+    def innertopright():
+        r = QRect(r2)
+        r.moveTopRight(r1.topRight())
+        return r
+
+    def innerbotright():
+        r = QRect(r2)
+        r.moveBottomRight(r1.bottomRight())
+        return r
+
+    def conflict(rect: Union[QRectF, QRect]):
+        return maxRect.intersects(rect) and not maxRect.contains(rect)
+
+    if not prefs:
+        prefs = [LEFTTOP]
+
+    choices = {
+        LEFTTOP: lefttop,
+        LEFTBOT: leftbot,
+        BOTLEFT: botleft,
+        BOTRIGHT: botright,
+        RIGHTBOT: rightbot,
+        RIGHTTOP: righttop,
+        TOPRIGHT: topright,
+        TOPLEFT: topleft,
+    }
+
+    output = None
+    for pref in prefs:
+        rect = choices[pref]()
+        if not conflict(rect):
+            output = rect
+            break
+    else:
+        # no good result found
+        choices = {
+            LEFTTOP: innertopleft,
+            LEFTBOT: innerbotleft,
+            BOTLEFT: innerbotleft,
+            BOTRIGHT: innerbotright,
+            RIGHTBOT: innerbotright,
+            RIGHTTOP: innertopright,
+            TOPRIGHT: innertopright,
+            TOPLEFT: innertopleft,
+        }
+        output = choices[prefs[0]]()
+    return output
 
 
 class Snapshot(QWidget):
@@ -56,7 +171,7 @@ class Snapshot(QWidget):
         contextMenu: MenuPage = None,
         paintTool: PaintToolbar = None,
         *args,
-        **kwargs
+        **kwargs,
     ):
 
         from main import Main
@@ -88,10 +203,10 @@ class Snapshot(QWidget):
         self.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
         self.setMinimumSize(QSize(20, 20))
         self.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
-        
+
         # self.maxHeight = QApplication.primaryScreen().size().height()
         # self.maxWidth = QApplication.primaryScreen().size().width()
-        
+
         self.setMaximumHeight(QApplication.primaryScreen().size().height())
         self.setMaximumWidth(QApplication.primaryScreen().size().width())
 
@@ -102,7 +217,7 @@ class Snapshot(QWidget):
         self.displayPix.setZValue(-100)
         self.displayPix.setPos(0, 0)
 
-        self.borderRect = RectItem(False,True, QRectF())
+        self.borderRect = RectItem(False, True, QRectF())
         self.borderRect.setPen(QPen(QColor(200, 200, 200), 2))
         self.borderRect.setBrush(QBrush(Qt.BrushStyle.NoBrush))
         self.borderRect.finalize()
@@ -128,10 +243,9 @@ class Snapshot(QWidget):
         self.view.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.view.resize(self.displayPix.boundingRect().size().toSize())
 
-
         self.resize(self.view.size())
 
-        self.selectionBox = SelectionBox(1, self)
+        self.selectionBox = SelectionBox(1, self, self.updateMask)
         self.selectionBox.hide()
 
         self.layout = QHBoxLayout()
@@ -187,6 +301,27 @@ class Snapshot(QWidget):
         self.maskingright.setZValue(-10)
         self.maskingbot.setZValue(-10)
 
+        # label for current crop size
+
+        self.sizeLabel = QLabel(self)
+        self.sizeLabel.hide()
+        self.sizeLabel.setText("1000 x 1000")
+        self.sizeLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        self.setStyleSheet(
+            """
+                           QLabel{
+                               border-radius: 5px; 
+                               background: #646496; 
+                               color: #fffef2;
+                               font-size: 14px;
+                               padding: 5px;
+                               }
+                           """
+        )
+        # self.sizeLabel.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Ignored)
+        self.sizeLabel.adjustSize()
+
     def contextMenuEvent(self, a0: QtGui.QContextMenuEvent) -> None:
         self.contextMenu.buildMenu(target=self).popup(a0.globalPos())
 
@@ -207,7 +342,6 @@ class Snapshot(QWidget):
         self.master.snapshotPaintEvent(self)
         self.canvas.updateCursor()
         self.grip.hide()
-        
 
     def stopPaint(self):
         self.painting = False
@@ -226,7 +360,7 @@ class Snapshot(QWidget):
 
     def fromFullscreen(self):
         curScreen = self.getCurrentScreen()
-        self.displayImage : QPixmap = curScreen.grabWindow(0)
+        self.displayImage: QPixmap = curScreen.grabWindow(0)
         self.fullscreenCrop = True
         self.move(curScreen.geometry().topLeft())
         self.initialize()
@@ -303,7 +437,6 @@ class Snapshot(QWidget):
 
     def saveImage(self):
         filename, format = self.getSaveName()
-        
 
         self.getImage().save(filename, format, 100)
 
@@ -353,7 +486,7 @@ class Snapshot(QWidget):
 
     def moveEvent(self, a0: QtGui.QMoveEvent) -> None:
         return super().moveEvent(a0)
-    
+
     def startCrop(self, margin=50, useOriginal=False):
         if self.cropping:
             return
@@ -367,7 +500,7 @@ class Snapshot(QWidget):
             self.originalOffset = self.view.sceneRect().topLeft()
             self.displayPix.setPixmap(self.displayImage.copy(QRectF(*self.currentRect).toRect()))
             self.move(self.pos() - QPoint(margin, margin))
-            
+
         self.view.setSceneRect(self.displayPix.sceneBoundingRect().marginsAdded(QMarginsF(margin, margin, margin, margin)))
         self.resize(self.view.sceneRect().size().toSize())
         self.displayPix.setTransformationMode(Qt.TransformationMode.SmoothTransformation)
@@ -385,7 +518,7 @@ class Snapshot(QWidget):
         self.currentWidth = self.displayImage.width()
 
     def resizeEvent(self, a0: QtGui.QResizeEvent) -> None:
-        
+
         # if a0.size().width() > self.maxWidth or a0.size().height() > self.maxHeight:
         #     a0.accept()
         #     return
@@ -407,7 +540,7 @@ class Snapshot(QWidget):
             self.resize(size.toSize())
 
         self.grip.move(self.rect().bottomRight() - QPoint(16, 16))
-    
+
     def stopCrop(self, canceling=False):
 
         if not canceling:
@@ -502,6 +635,11 @@ class Snapshot(QWidget):
             self.selectionBox.raise_()
             self.selectionBox.move(a0.pos())
 
+            self.sizeLabel.show()
+            rect = postionRects(self.selectionBox.rect().translated(self.selectionBox.pos()), self.sizeLabel.rect(), self.rect(), [TOPLEFT, LEFTTOP])
+            self.sizeLabel.move(rect.topLeft())
+            self.sizeLabel.setText(f"{self.selectionBox.width()} x {self.selectionBox.height()}")
+
     def mouseMoveEvent(self, a0: QtGui.QMouseEvent) -> None:
 
         if self.painting:
@@ -514,34 +652,43 @@ class Snapshot(QWidget):
                 rect = QRect(self.inipos, a0.pos()).normalized()
                 self.selectionBox.setGeometry(rect)
 
-                vrect = self.view.sceneRect()
-
-                self.maskingtop.setRect(QRectF(QPointF(0, 0), QSizeF(vrect.width(), rect.top())))
-                self.maskingleft.setRect(QRectF(QPointF(0, rect.top()), QSizeF(rect.left(), rect.height())))
-                self.maskingbot.setRect(
-                    QRectF(
-                        QPointF(0, rect.bottom()),
-                        QSizeF(vrect.width(), vrect.height() - rect.bottom()),
-                    )
-                )
-                self.maskingright.setRect(
-                    QRectF(
-                        QPointF(rect.right(), rect.top()),
-                        QSizeF(vrect.width() - rect.right(), rect.height()),
-                    )
-                )
             elif not self.moveLock:
                 delta = a0.globalPos() - self.lastpos
                 self.move(self.pos() + delta)
 
                 self.lastpos = a0.globalPos()
 
+    def updateMask(self, rect: QRect):
+        vrect = self.view.sceneRect()
+
+        self.maskingtop.setRect(QRectF(QPointF(0, 0), QSizeF(vrect.width(), rect.top())))
+        self.maskingleft.setRect(QRectF(QPointF(0, rect.top()), QSizeF(rect.left(), rect.height())))
+        self.maskingbot.setRect(
+            QRectF(
+                QPointF(0, rect.bottom() + 1),  # idk why plus 1 :x
+                QSizeF(vrect.width(), vrect.height() - rect.bottom()),
+            )
+        )
+        self.maskingright.setRect(
+            QRectF(
+                QPointF(rect.right(), rect.top()),
+                QSizeF(vrect.width() - rect.right(), rect.height()),
+            )
+        )
+
+        self.sizeLabel.setText(f"{rect.width()} x {rect.height()}")
+        self.sizeLabel.move(
+            postionRects(
+                self.selectionBox.rect().translated(self.selectionBox.pos()), self.sizeLabel.rect(), self.rect(), [TOPLEFT, LEFTTOP]
+            ).topLeft()
+        )
+
     def keyReleaseEvent(self, a0: QtGui.QKeyEvent) -> None:
         if self.painting:
             self.canvas.keyUp(a0)
 
     def keyPressEvent(self, a0: QtGui.QKeyEvent) -> None:
-        
+
         if a0.key() == Qt.Key.Key_S:
             if self.cropping and not self.config.bfastcrop:
                 self.stopCrop()
@@ -564,16 +711,16 @@ class Snapshot(QWidget):
             # self.copy()
 
     def getCurrentScreen(self) -> QScreen:
-        '''
+        """
         Get the screen which is the cursor is currently in.
-        '''
+        """
         screens = [screen for screen in QApplication.screens()]
         pos = QCursor.pos()
         for screen in screens:
             if screen.geometry().contains(pos, False):
                 return screen
         return screen[0]
-        
+
         # bounds = desktopmagic.screengrab_win32.getDisplayRects()
         # pos = QCursor.pos()
         # x = pos.x()
@@ -602,8 +749,6 @@ class Snapshot(QWidget):
     def closeEvent(self, a0: QtGui.QCloseEvent) -> None:
         super().closeEvent(a0)
         self.master.snapshotCloseEvent(self)  # notify controller
-        
-        
 
 
 if __name__ == "__main__":

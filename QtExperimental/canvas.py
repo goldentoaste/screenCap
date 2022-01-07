@@ -395,7 +395,7 @@ class CanvasTesting(QWidget):
 
         super().__init__(*args, **kwargs)
 
-        self.resize(500, 500)
+        self.resize(1280, 720)
 
         self.scene = QGraphicsScene(self)
 
@@ -410,7 +410,7 @@ class CanvasTesting(QWidget):
         self.setLayout(layout)
 
         self.view.resize(self.size())
-        self.view.setSceneRect(QRectF(0, 0, 500, 500))
+        self.view.setSceneRect(QRectF(0, 0, 1280, 720))
 
         self.toolbar = PaintToolbar(ConfigManager("d:/PythonProject/screenCap/QtExperimental/config.ini"), None)
         self.toolbar.show()
