@@ -2,18 +2,7 @@ from typing import Union
 from ConfigManager import ConfigManager
 from PyQt5 import QtGui
 from PyQt5 import QtWidgets
-from PyQt5.QtCore import (
-    QBuffer,
-    QMargins,
-    QMarginsF,
-    QPoint,
-    QPointF,
-    QRect,
-    QRectF,
-    QSize,
-    QSizeF,
-    Qt,
-)
+from PyQt5.QtCore import QBuffer, QMargins, QMarginsF, QPoint, QPointF, QRect, QRectF, QSize, QSizeF, Qt
 from PyQt5.QtGui import (
     QBrush,
     QColor,
@@ -32,7 +21,6 @@ from PyQt5.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QSizeGrip,
-    QSizePolicy,
     QStyleOptionGraphicsItem,
     QWidget,
 )
@@ -43,6 +31,7 @@ import win32clipboard as clipboard
 
 from paintToolbar import PaintToolbar
 from canvas import Canvas, RectItem
+
 import values
 from rightclickMenu import MenuPage
 
@@ -310,18 +299,24 @@ class Snapshot(QWidget):
 
         self.setStyleSheet(
             """
-                           QLabel{
-                               border-radius: 5px; 
-                               background: #646496; 
-                               color: #fffef2;
-                               font-size: 14px;
-                               padding: 5px;
-                               }
-                           """
+QLabel{
+    border-radius: 5px; 
+    background: #646496; 
+    color: #fffef2;
+    font-size: 14px;
+    padding: 5px;
+    }
+"""
         )
         # self.sizeLabel.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Ignored)
         self.sizeLabel.adjustSize()
-
+        from snapshotMenu import SnapshotMenu
+        self.cropTools = SnapshotMenu(self)
+        self.cropTools.setFixedSize(self.cropTools.sizeHint())
+        self.cropTools.hide()
+        
+        
+        
     def contextMenuEvent(self, a0: QtGui.QContextMenuEvent) -> None:
         self.contextMenu.buildMenu(target=self).popup(a0.globalPos())
 
@@ -586,7 +581,8 @@ class Snapshot(QWidget):
             self.maskingleft.hide()
             self.maskingtop.hide()
             self.maskingbot.hide()
-
+        self.sizeLabel.hide()
+        self.cropTools.hide()
         self.grip.show()
 
     def wheelEvent(self, a0: QtGui.QWheelEvent) -> None:
@@ -622,7 +618,6 @@ class Snapshot(QWidget):
             self.borderRect.setPen(QPen(QColor(200, 200, 200), 2))
 
     def mousePressEvent(self, a0: QtGui.QMouseEvent) -> None:
-
         if self.painting:
             self.canvas.onClick(a0)
             return
@@ -651,16 +646,13 @@ class Snapshot(QWidget):
             if self.cropping:
                 rect = QRect(self.inipos, a0.pos()).normalized()
                 self.selectionBox.setGeometry(rect)
-
             elif not self.moveLock:
                 delta = a0.globalPos() - self.lastpos
                 self.move(self.pos() + delta)
-
                 self.lastpos = a0.globalPos()
 
     def updateMask(self, rect: QRect):
         vrect = self.view.sceneRect()
-
         self.maskingtop.setRect(QRectF(QPointF(0, 0), QSizeF(vrect.width(), rect.top())))
         self.maskingleft.setRect(QRectF(QPointF(0, rect.top()), QSizeF(rect.left(), rect.height())))
         self.maskingbot.setRect(
@@ -675,13 +667,16 @@ class Snapshot(QWidget):
                 QSizeF(vrect.width() - rect.right(), rect.height()),
             )
         )
-
+        rect = rect.intersected(self.view.mapFromScene(self.displayPix.boundingRect()).boundingRect())
+        selectionrect = self.selectionBox.rect().translated(self.selectionBox.pos())
         self.sizeLabel.setText(f"{rect.width()} x {rect.height()}")
         self.sizeLabel.move(
             postionRects(
-                self.selectionBox.rect().translated(self.selectionBox.pos()), self.sizeLabel.rect(), self.rect(), [TOPLEFT, LEFTTOP]
+                selectionrect, self.sizeLabel.rect(), self.rect(), [TOPLEFT, LEFTTOP]
             ).topLeft()
         )
+        self.cropTools.move(postionRects(selectionrect, self.cropTools.rect(), self.rect(), prefs=[BOTRIGHT]).topLeft())
+        self.cropTools.show()
 
     def keyReleaseEvent(self, a0: QtGui.QKeyEvent) -> None:
         if self.painting:

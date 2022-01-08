@@ -14,6 +14,3 @@
     -always use original image on crop?
     -ui color?
     -saving compression level
-
--drawing stuff:
-    - render raster line instead of vector line

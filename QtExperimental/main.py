@@ -12,7 +12,7 @@ import sys
 configDir = path.join(getenv("appdata"), "screenCap")
 configFile = path.join(configDir, "config.ini")
 
-from values import defaultVariables, debugConfigPath
+from values import defaultVariables, resource_path
 from PyQt5.QtCore import QObject, QSize, Qt
 from win32com.client import Dispatch
 import pythoncom
@@ -25,13 +25,7 @@ import gc
 
 
 
-def resource_path(relative_path):
-    """Get absolute path to resource, works for dev and for PyInstaller"""
-    try:
-        base_path = sys._MEIPASS
-    except Exception:
-        base_path = path.abspath(".")
-    return path.join(base_path, relative_path)
+
 
 
 executable = "screenCap.exe"
@@ -43,9 +37,9 @@ shortCutDest = path.join(
     getenv("appdata"), "Microsoft\Windows\Start Menu\Programs\Startup"
 )
 shortCutFile = path.join(shortCutDest, "screenCap.lnk")
-shortCutTarget = path.join(
-    resource_path(path.dirname(path.abspath(__file__))), executable
-)
+# shortCutTarget = path.join(
+#     resource_path(path.dirname(path.abspath(__file__))), executable
+# )
 
 class ThreadSignal(QObject):
     signal = QtCore.pyqtSignal()
@@ -81,7 +75,6 @@ class Main(QWidget):
         self.config = ConfigManager(
             "D:\PythonProject\screenCap\QtExperimental\config.ini", defaultVariables
         )
-        
 
     def closeEvent(self, a0) -> None:
         if self.config.iminx:
