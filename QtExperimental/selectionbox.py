@@ -40,7 +40,7 @@ class SelectionBox(QtWidgets.QRubberBand):
         for i in range(8):
             self.grips.append(SizeGrip(self, i))
 
-        self.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
+        # self.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
 
         self.show()
 

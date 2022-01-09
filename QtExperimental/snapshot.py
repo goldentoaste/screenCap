@@ -234,8 +234,7 @@ class Snapshot(QWidget):
 
         self.resize(self.view.size())
 
-        self.selectionBox = SelectionBox(1, self, self.updateMask)
-        self.selectionBox.hide()
+        
 
         self.layout = QHBoxLayout()
         self.setLayout(self.layout)
@@ -299,14 +298,14 @@ class Snapshot(QWidget):
 
         self.setStyleSheet(
             """
-QLabel{
-    border-radius: 5px; 
-    background: #646496; 
-    color: #fffef2;
-    font-size: 14px;
-    padding: 5px;
-    }
-"""
+            QLabel{
+                border-radius: 5px; 
+                background: #646496; 
+                color: #fffef2;
+                font-size: 14px;
+                padding: 5px;
+                }
+            """
         )
         # self.sizeLabel.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Ignored)
         self.sizeLabel.adjustSize()
@@ -315,7 +314,10 @@ QLabel{
         self.cropTools.setFixedSize(self.cropTools.sizeHint())
         self.cropTools.hide()
         
+        self.selectionBox = SelectionBox(1, self, self.updateMask)
+        self.selectionBox.hide()
         
+        print(self.selectionBox, self.cropTools, self.sizeLabel)
         
     def contextMenuEvent(self, a0: QtGui.QContextMenuEvent) -> None:
         self.contextMenu.buildMenu(target=self).popup(a0.globalPos())
@@ -328,7 +330,6 @@ QLabel{
         if self.painting:
             self.stopPaint()
         else:
-            print("in else")
             self.startPaint()
 
     def startPaint(self):
@@ -595,6 +596,8 @@ QLabel{
 
         if self.cropping and self.config.bfastcrop:
             self.stopCrop()
+        
+        self.cropTools.raise_() # incase the button group has to cover selection box.
 
     def mouseDoubleClickEvent(self, a0: QtGui.QMouseEvent) -> None:
 
@@ -627,7 +630,6 @@ QLabel{
 
         if self.cropping:
             self.selectionBox.show()
-            self.selectionBox.raise_()
             self.selectionBox.move(a0.pos())
 
             self.sizeLabel.show()
@@ -675,8 +677,12 @@ QLabel{
                 selectionrect, self.sizeLabel.rect(), self.rect(), [TOPLEFT, LEFTTOP]
             ).topLeft()
         )
-        self.cropTools.move(postionRects(selectionrect, self.cropTools.rect(), self.rect(), prefs=[BOTRIGHT]).topLeft())
-        self.cropTools.show()
+        
+        if not self.config.bfastcrop:
+            self.cropTools.move(postionRects(selectionrect, self.cropTools.rect(), self.rect(), prefs=[BOTRIGHT]).topLeft())
+            self.cropTools.show()
+        
+        
 
     def keyReleaseEvent(self, a0: QtGui.QKeyEvent) -> None:
         if self.painting:

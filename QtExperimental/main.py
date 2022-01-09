@@ -23,7 +23,7 @@ from paintToolbar import PaintToolbar
 
 import gc
 
-
+from values import ThreadSignal
 
 
 
@@ -41,8 +41,7 @@ shortCutFile = path.join(shortCutDest, "screenCap.lnk")
 #     resource_path(path.dirname(path.abspath(__file__))), executable
 # )
 
-class ThreadSignal(QObject):
-    signal = QtCore.pyqtSignal()
+
     
 class Main(QWidget):
     def __init__(self):
@@ -280,7 +279,7 @@ class Main(QWidget):
                 pythoncom.CoInitialize()
                 shell = Dispatch("WScript.Shell")
                 st = shell.CreateShortCut(shortCutFile)
-                st.Targetpath = shortCutTarget
+                # st.Targetpath = shortCutTarget
                 st.save()
             else:
                 if path.isfile(shortCutFile):

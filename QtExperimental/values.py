@@ -6,6 +6,9 @@ NOREPEAT = 0x4000
 
 debugConfigPath = "D:\PythonProject\screenCap\QtExperimental\config.ini"
 import os
+from PyQt5 import QtCore
+
+from PyQt5.QtCore import QObject
 
 defaultConfigPath = os.path.join(os.getenv("appdata"), "screenCap")
 
@@ -190,9 +193,19 @@ defaultVariables = {  # if im doing this again, these tuples should be dataclass
     "iquality": (100, "snapshot"),
      "bfastcrop":(False, "snapshot"),
     # hotkeys
-    "licapture": ([17, 49], "global"),
+    "licapture": ([17, 49], "global"), #windows global key codes
     "licopy": ([17, 50], "local"),
-    # painter
+    "licut": ([17, 88], "local"), 
+    "liclose": ([27], "local"),
+    "lipaint": ([80], "local"),
+    "lisave": ([17, 83], "local"),
+    "lizoom10": ([], "local"),
+    "lishrink10": ([], "local"),
+    "lizoom20": ([], "local"),
+    "lishrink20":([] ,"local"),
+    "lirecycle": ([], "global"),
+    
+    # painter   
     "isize": (5, "painter"),
     "ialpha": (100, "painter"),
     "lscolors": (
@@ -226,3 +239,6 @@ def resource_path(relative_path):
     except Exception:
         base_path = path.abspath(".")
     return path.join(base_path, relative_path)
+
+class ThreadSignal(QObject):
+    signal = QtCore.pyqtSignal()

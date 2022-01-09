@@ -21,32 +21,40 @@ class SnapshotMenu(QWidget):
     def initGui(self):
 
         self.setLayout(QHBoxLayout())
+        self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, False)
+        self.paintButton = QPushButton(QIcon(resource_path("icons/draw.svg")), "")
+        self.paintButton.setToolTip("Start painting")
+        self.paintButton.setIconSize(QSize(24, 24))
+        self.paintButton.clicked.connect(lambda: (self.master.stopCrop(), self.master.startPaint()))
+        
 
         self.saveButton = QPushButton(QIcon(resource_path("icons/save.svg")), "")
-        self.saveButton.setWhatsThis("Save button")
+        self.saveButton.setToolTip("Save button")
         self.saveButton.setIconSize(QSize(24, 24))
         self.saveButton.clicked.connect(lambda: (self.master.stopCrop(), self.master.saveImage()))
 
         self.copyButton = QPushButton(QIcon(resource_path("icons/copy.svg")), "")
-        self.copyButton.setWhatsThis("Copy image into clipboard")
+        self.copyButton.setToolTip("Copy image into clipboard")
         self.copyButton.setIconSize(QSize(24, 24))
         self.copyButton.clicked.connect(lambda: (self.master.stopCrop(), self.master.copy()))
 
         self.cutButton = QPushButton(QIcon(resource_path("icons/cut.svg")), "")
-        self.cutButton.setWhatsThis("Cut: copy and close")
+        self.cutButton.setToolTip("Cut: copy and close")
         self.cutButton.setIconSize(QSize(24, 24))
         self.cutButton.clicked.connect(lambda: (self.master.stopCrop(), self.master.cut()))
 
         self.closeButton = QPushButton(QIcon(resource_path("icons/cross.svg")), "")
-        self.closeButton.setWhatsThis("Cancel and close")
+        self.closeButton.setToolTip("Cancel and close")
         self.closeButton.setIconSize(QSize(24, 24))
         self.closeButton.clicked.connect(lambda: (self.master.close()))
 
         self.doneButton = QPushButton(QIcon(resource_path("icons/check.svg")), "")
-        self.doneButton.setWhatsThis("Finish cropping")
+        self.doneButton.setToolTip("Finish cropping")
         self.doneButton.setIconSize(QSize(24, 24))
         self.doneButton.clicked.connect(lambda: self.master.stopCrop())
 
+
+        self.layout().addWidget(self.paintButton)
         self.layout().addWidget(self.saveButton)
         self.layout().addWidget(self.copyButton)
         self.layout().addWidget(self.cutButton)

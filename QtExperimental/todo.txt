@@ -11,6 +11,12 @@
 -snapshot options:
     -margin on crop
     -margin on paint? maybe?
+    -margin color
     -always use original image on crop?
     -ui color?
     -saving compression level
+    -use slow cropping?
+    -default saving behaviour
+
+
+    -hotkey for copy, cut, close, cancel, paint, default, zoom  10/20 percent
