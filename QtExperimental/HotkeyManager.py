@@ -41,7 +41,14 @@ class HotkeyManager(threading.Thread):
             num |= modCode[mod]
         return num
 
-    def setHotkey(self, name, key: str, modifiers: Iterable, callback):
+    def setHotkey(self, name, keys :Iterable, callback):
+        keys = self.getSortedKeys(keys)
+        if not keys:
+            key = None
+            modifiers = None
+        else:
+            key = keys[-1]
+            modifiers = keys[:-1]
         self.task.append((self._setHotkey, [name, key, modifiers, callback], {}))
 
     def _setHotkey(self, name, key: str, modifiers: Iterable, callback):
@@ -69,7 +76,6 @@ class HotkeyManager(threading.Thread):
         )
 
     def _recordNewHotKey(self, name, hotkeyCallback, stringCallback, islocal):
-        self.islocal = islocal
 
         if self.recording:
 

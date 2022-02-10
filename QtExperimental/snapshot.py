@@ -186,6 +186,12 @@ class Snapshot(QWidget):
             self.fromImage(image)
         else:
             self.fromFullscreen()
+            
+    def initHotkeys(self,):
+        
+        hotkeys = {
+            "licopy" : (self.copy),
+        }
 
     def initialize(self):
         self.setWindowFlags(Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.FramelessWindowHint | Qt.WindowType.SubWindow)
