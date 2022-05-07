@@ -89,7 +89,6 @@ class HotkeyManager(threading.Thread):
         self.callbacks[self.index] = hotkeyCallback
 
     def stopRecording(self):
-
         self.task.append((self._stopRecording, [], {}))
 
     def _stopRecording(self):
@@ -171,7 +170,7 @@ class HotkeyManager(threading.Thread):
             " + ".join(
                 [
                     conversionTable.get(key, "Unkown") if key else ""
-                    for key in self.getSortedKeys(mods | ({key} if key else set())) #FIXME this is really bad and janky, more clearly define what key & mods is if using in another project
+                    for key in self.getSortedKeys(mods | ({key} if key else set())) #FIXME this is really bad and janky, more clearly define what key & mods is if using in another object
                 ]
             )
             if key or mods

@@ -1,3 +1,4 @@
+import gc
 import os
 import pathlib
 import time
@@ -51,7 +52,7 @@ class Recycler(QWidget):
 
         self.show()
         self.resize(self.width(), int(self.maxSize.height() * 3.5))
-        self.setFixedWidth(self.width())
+        #self.setFixedWidth(self.width())
 
     
     
@@ -63,22 +64,22 @@ class Recycler(QWidget):
         )
 
         if len(paths) > self.config.imaxsize:
-
             for i in range(len(paths) - 1, self.config.imaxsize - 1, -1):
                 os.remove(paths[i])
                 paths.pop(i)
 
         for path in paths:
-            img = QPixmap(str(path), "PNG", Qt.ImageConversionFlag.NoFormatConversion)
+            img = QPixmap(str(path), "PNG", Qt.ImageConversionFlag.AutoColor)
             self.containers.append(ImageContainer(img, path, self.maxSize))
             self.listLayout.addWidget(self.containers[-1])
+            
+       
 
 
 class ImageContainer(QWidget):
     def __init__(self, image: QPixmap, path, maxSize: QSize, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.image = image
         self.path = path
 
         layout = QHBoxLayout()
@@ -92,7 +93,7 @@ class ImageContainer(QWidget):
         )
         text = QLabel(
             text=f"""{time.strftime('%b.%d.%Y %I:%M|%p', time.localtime(os.path.getmtime(self.path)))}
-            {self.image.width()}x{self.image.height()}
+            {image.width()}x{image.height()}
             {'%.2f' % (os.path.getsize(self.path)/kbCons)}kb"""
         )
         

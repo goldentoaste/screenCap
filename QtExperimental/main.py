@@ -8,6 +8,7 @@ from os import path, getenv, remove
 from PyQt5.QtGui import QIntValidator
 from PyQt5.QtWidgets import *
 import sys
+from recycler import Recycler
 
 configDir = path.join(getenv("appdata"), "screenCap")
 configFile = path.join(configDir, "config.ini")
@@ -47,28 +48,32 @@ class Main(QWidget):
     def __init__(self):
         super().__init__()
         self.initConfig()
+        self.initRecycling()
         self.initHotkeys()
         self.initGUI()
         self.snapshots = []
         self.currentPainting : Snapshot = None
 
     def initRecycling(self):
-        pass
-        #self.recycling = Recycler(debugConfigPath, self.config)
+        self.recycling = Recycler(configDir, self.config)
+        self.recycling.hide()
 
     def initHotkeys(self):
         self.captureSignal =ThreadSignal()
         self.captureSignal.signal.connect(self.takeSnapshot)
+        self.recycleSignal = ThreadSignal()
+        self.recycleSignal.signal.connect(self.showRecycler)
         self.hotkeys = {
             "licapture": (self.captureSignal.signal.emit, "Capture Screen(global)"), #configname : ()
+            "lirecycle" : (self.recycleSignal.signal.emit, "Toggle Recycler(global)")
         }
         self.hotkeysManager = HotkeyManager(self.config)
         self.hotkeysManager.start()
         for key, val in self.hotkeys.items():
-            keys : List[int] = self.hotkeysManager.getSortedKeys(self.config[key])
+            keys = self.config[key]
             if len(keys) == 0:
                 continue
-            self.hotkeysManager.setHotkey(key, keys[-1], keys[:-1], val[0] )
+            self.hotkeysManager.setHotkey(key, keys, val[0] )
 
     def initConfig(self):
         self.config = ConfigManager(
@@ -374,7 +379,13 @@ class Main(QWidget):
     
     def takeSnapshot(self): 
         self.snapshots.append(Snapshot(master= self, image= None, config = self.config, contextMenu=self.contextMenuTab, paintTool= self.paintTool)) #call from full screen
-
+    
+    def showRecycler(self):
+        self.recycling.show()
+    
+    def hideRecycler(self):
+        self.recycling.hide()
+    
     def snapshotCloseEvent(self, snap: Snapshot):
         try:
             self.snapshots.remove(snap)
