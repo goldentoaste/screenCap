@@ -2,6 +2,7 @@ import gc
 import os
 import pathlib
 import time
+from typing import List
 from PyQt5.QtCore import QSize, Qt
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtWidgets import (
@@ -31,7 +32,7 @@ class Recycler(QWidget):
         deskSize = QDesktopWidget().screenGeometry().size()
         self.maxSize = QSize(int(deskSize.width() / 6.5), int(deskSize.height() / 5))
 
-        self.containers = []
+        self.containers : List[QWidget] = []
 
         listholder = QWidget()
         self.listLayout = QVBoxLayout()
@@ -52,8 +53,9 @@ class Recycler(QWidget):
 
         self.show()
         self.resize(self.width(), int(self.maxSize.height() * 3.5))
-        #self.setFixedWidth(self.width())
-
+        temp = ImageContainer(maxSize=self.maxSize)
+        self.setFixedWidth(int(temp.width()))
+       
     
     
     
@@ -77,25 +79,25 @@ class Recycler(QWidget):
 
 
 class ImageContainer(QWidget):
-    def __init__(self, image: QPixmap, path, maxSize: QSize, *args, **kwargs):
+    def __init__(self, image: QPixmap = None, path = "", maxSize: QSize = None, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
         self.path = path
-
+        
         layout = QHBoxLayout()
-
-        scale = min(maxSize.width() / image.width(), maxSize.height() / image.height())
-
         img = QLabel()
         img.setFixedWidth(maxSize.width())
-        img.setPixmap(
-            image.scaled(int(image.width() * scale), int(image.height() * scale))
-        )
-        text = QLabel(
-            text=f"""{time.strftime('%b.%d.%Y %I:%M|%p', time.localtime(os.path.getmtime(self.path)))}
-            {image.width()}x{image.height()}
-            {'%.2f' % (os.path.getsize(self.path)/kbCons)}kb"""
-        )
+        if image is not None:
+            scale = min(maxSize.width() / image.width(), maxSize.height() / image.height())
+            img.setPixmap(
+                image.scaled(int(image.width() * scale), int(image.height() * scale))
+            )
+            text = QLabel(
+                text=f"""{time.strftime('%b.%d.%Y %I:%M|%p', time.localtime(os.path.getmtime(self.path)))}
+                {image.width()}x{image.height()}
+                {'%.2f' % (os.path.getsize(self.path)/kbCons)}kb"""
+            )
+        else:
+            text = QLabel('%b.%d.%Y %I:%M|%p')
         
         text.setMargin(15)
 
