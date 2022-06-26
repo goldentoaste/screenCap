@@ -233,9 +233,9 @@ class HotKeyTestWindow(QDialog):
         self.manager = HotkeyManager()
 
         self.manager.start()
-        self.manager.setHotkey("testing 1", "a", {"ctrl"}, lambda: print("nice one!"))
-        self.manager.setHotkey("testing 2", "b", {"ctrl"}, lambda: print("nice 2!"))
-        self.manager.setHotkey("testing 3", "num_*", {}, lambda: print("nice b!"))
+        self.manager.setHotkey("testing 1",  {"ctrl", "a",}, lambda: print("nice one!"))
+        self.manager.setHotkey("testing 2",  {"ctrl","b",}, lambda: print("nice 2!"))
+        self.manager.setHotkey("testing 3", {"num_*"}, lambda: print("nice b!"))
 
         self.show()
 

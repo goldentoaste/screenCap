@@ -71,8 +71,9 @@ class PaintToolbar(QWidget):
 
         colors = self.config.lscolors
         self.currentColor = QColor(colors[0])
-
-        for i in range(len(colors)):
+  
+        for i in range(len(self.colorButtons)):
+            
             self.colorButtons[i].setColor(QColor(colors[i]))
 
     def getDrawOptions(self, scale: float):

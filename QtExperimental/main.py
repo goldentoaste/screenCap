@@ -77,7 +77,7 @@ class Main(QWidget):
 
     def initConfig(self):
         self.config = ConfigManager(
-            "D:\PythonProject\screenCap\QtExperimental\config.ini", defaultVariables
+            r"D:\PythonProject\screenCap\QtExperimental\config.ini", defaultVariables, 
         )
 
     def closeEvent(self, a0) -> None:

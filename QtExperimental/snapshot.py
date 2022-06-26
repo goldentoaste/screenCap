@@ -326,6 +326,9 @@ class Snapshot(QWidget):
         print(self.selectionBox, self.cropTools, self.sizeLabel)
         
     def contextMenuEvent(self, a0: QtGui.QContextMenuEvent) -> None:
+        if self.painting or self.cropping:
+            print("skipped context")
+            return # ignore context menu / right click while painting
         self.contextMenu.buildMenu(target=self).popup(a0.globalPos())
 
     def clearCanvas(self):
@@ -384,10 +387,10 @@ class Snapshot(QWidget):
         buffer = QBuffer()
         buffer.open(QBuffer.OpenModeFlag.ReadWrite)
         im.save(buffer, "BMP")
-        with io.BytesIO(buffer.data()) as bytes:
+        with io.BytesIO(buffer.data()) as b:
             clipboard.OpenClipboard()
             clipboard.EmptyClipboard()
-            clipboard.SetClipboardData(clipboard.CF_DIB, bytes.getvalue()[14:])
+            clipboard.SetClipboardData(clipboard.CF_DIB, b.getvalue()[14:])
             clipboard.CloseClipboard()
 
     def cut(self):
@@ -402,9 +405,12 @@ class Snapshot(QWidget):
             self, "Choose save location", self.config.ssavelocation, "PNG Image (*.png);;JPEG Image (*.jpg *.jpeg);;Bitmap (*.bmp)"
         )
         if output:  # file dialog reutrns none if user cancels
-            filename, format = output
-            format = Snapshot.formatTable[format[0]]
-            return (filename, format)
+            print(output)
+            filename, ext = output
+            if filename and ext:
+                ext = Snapshot.formatTable[ext[0].upper()]
+                return (filename, ext)
+            return None
         return None  # -> file selection canceled
 
     def getImage(self) -> QPixmap:
@@ -421,7 +427,7 @@ class Snapshot(QWidget):
 
         drawing canvas onto given image
         """
-        return self.canvas.canvas.pixmap()
+        # return self.canvas.canvas.pixmap()
         rect = self.displayPix.boundingRect()
         if len(self.canvas.group.childItems()) and (rect.isNull() or not rect.isValid()):
             return None
@@ -486,8 +492,7 @@ class Snapshot(QWidget):
     def saveImageWithCanvasScaled(self):
         self.saveImageWithCanvas(True)
 
-    def moveEvent(self, a0: QtGui.QMoveEvent) -> None:
-        return super().moveEvent(a0)
+
 
     def startCrop(self, margin=50, useOriginal=False):
         if self.cropping:
@@ -607,7 +612,7 @@ class Snapshot(QWidget):
 
     def mouseDoubleClickEvent(self, a0: QtGui.QMouseEvent) -> None:
 
-        if self.cropping:
+        if self.cropping or self.painting:
             return
 
         if not self.mini:
@@ -627,6 +632,7 @@ class Snapshot(QWidget):
             self.borderRect.setPen(QPen(QColor(200, 200, 200), 2))
 
     def mousePressEvent(self, a0: QtGui.QMouseEvent) -> None:
+        print("clikc event")
         if self.painting:
             self.canvas.onClick(a0)
             return
@@ -634,7 +640,7 @@ class Snapshot(QWidget):
         self.inipos = a0.pos()
         self.lastpos = a0.globalPos()
 
-        if self.cropping:
+        if self.cropping and a0.buttons() == Qt.MouseButton.LeftButton:
             self.selectionBox.show()
             self.selectionBox.move(a0.pos())
 
@@ -726,16 +732,8 @@ class Snapshot(QWidget):
         for screen in screens:
             if screen.geometry().contains(pos, False):
                 return screen
-        return screen[0]
+        return screens[0]
 
-        # bounds = desktopmagic.screengrab_win32.getDisplayRects()
-        # pos = QCursor.pos()
-        # x = pos.x()
-        # y = pos.y()
-        # for bound in bounds:
-        #     if x >= bound[0] and y >= bound[1] and x <= bound[2] and y <= bound[3]:
-        #         return bound
-        # return bounds[0]
 
     def enterEvent(self, a0) -> None:
         if self.painting:

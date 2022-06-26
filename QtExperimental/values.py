@@ -219,6 +219,12 @@ defaultVariables = {  # if im doing this again, these tuples should be dataclass
             "#32ee66",
             "#4169E1",
             "#8A2BE2",
+            "#8A2BE2",
+            "#8A2BE2",
+            "#8A2BE2",
+            "#8A2BE2",
+            "#8A2BE2",
+            
         ],
         "painter",
     ),
