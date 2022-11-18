@@ -43,12 +43,14 @@ class HotkeyManager(threading.Thread):
 
     def setHotkey(self, name, keys :Iterable, callback):
         keys = self.getSortedKeys(keys)
+        print(keys)
         if not keys:
             key = None
             modifiers = None
         else:
             key = keys[-1]
             modifiers = keys[:-1]
+  
         self.task.append((self._setHotkey, [name, key, modifiers, callback], {}))
 
     def _setHotkey(self, name, key: str, modifiers: Iterable, callback):
@@ -101,7 +103,7 @@ class HotkeyManager(threading.Thread):
         if self.recording and self.currentKey is not None:
 
             vals = (self.index, self.currentKey, self.currentMods)
-
+            print(vals)
             if not self.islocal and not user32.RegisterHotKey(
                 None,
                 vals[0],
@@ -180,8 +182,8 @@ class HotkeyManager(threading.Thread):
     def getSortedKeys(self, keys):
         def modKey(key):
             if key in modifiers:
-                return modifiers.index(key)
-            return 10
+                return modifiers.index(key)+1
+            return 0
 
         return sorted(keys, key=modKey)
 
