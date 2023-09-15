@@ -24,6 +24,7 @@ from os import path, getenv, mkdir, remove
 from infi.systray import SysTrayIcon
 import infi.systray.win32_adapter as win32
 from recycle import RecycleBin
+from elevate import elevate
 
 
 """
@@ -209,21 +210,36 @@ class MainWindow:
             if self.admin.get() == 1:
                 if not is_admin():
                     print("entering admin restart stuff")
-                    selfPath = (
-                        ""
-                        if hasattr(sys, "_MEIPASS")
-                        else '"' + os.getcwd() + "\\screenCap.py" + '"'
-                    )
+                    print(os.getcwd(), sys.executable,  " ".join(sys.argv))
+                    
+                    # for nuitka
                     ctypes.windll.shell32.ShellExecuteW(
                         None,
                         "runas",
                         # execute with console since, in editor, console would not be captured otherwise
-                        '"' + sys.executable + '"',
-                        selfPath,  # leave empty for deployment
+                        "".join(sys.argv),
+                        "",  # leave empty for deployment
                         None,
-                        1,
+                        None,
                     )
+                    
+                    # for pyinstaller
+                    # selfPath = (
+                    #     ""
+                    #     if hasattr(sys, "_MEIPASS")
+                    #     else '"' + os.getcwd() + "\\screenCap.py" + '"'
+                    # )
+                    # ctypes.windll.shell32.ShellExecuteW(
+                    #     None,
+                    #     "runas",
+                    #     # execute with console since, in editor, console would not be captured otherwise
+                    #     '"' + sys.executable + '"',
+                    #     selfPath,  # leave empty for deployment
+                    #     None,
+                    #     1,
+                    # )
                     self.main.destroy()
+                    
                     os._exit(0)
 
         def lastPath():

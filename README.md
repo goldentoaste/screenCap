@@ -46,7 +46,8 @@ Here is a [modernized](https://github.com/tylearymf/SETUNA2) version of SETUNA, 
 - (new!) While cropping, hold ctrl or shift to make the selection area is a square
 
 # Dependencies
-
+- nuitka:
+  + for compiling: `python -m nuitka screenCap.py --standalone --onefile --enable-plugin=tk-inter --disable-console --windows-icon-from-ico=icon.ico`
 - Pillow, for image processing
 - desktopmagic, for advance screen capturing
 - pywin32, for interaction with Windows

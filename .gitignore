@@ -6,3 +6,6 @@ build.bat
 tempCodeRunnerFile.py
 temp.py
 testing.py
+screenCap.build
+screenCap.dist
+screenCap.onefile-build
