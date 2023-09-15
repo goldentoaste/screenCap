@@ -36,12 +36,12 @@ seperator = "(*)"
 # replace with screenCap.exe if compiling to exe!
 executable = "screenCap.exe"
 iconName = "icon.ico"
-configDir = path.join(getenv("appdata"), "screenCap")
+configDir = path.join(getenv("appdata",""), "screenCap")
 configFile = path.join(configDir, "config.ini")
 singletonFile = path.join(configDir, "singleton.lock")
 
 shortCutDest = path.join(
-    getenv("appdata"), "Microsoft\Windows\Start Menu\Programs\Startup"
+    getenv("appdata", ""), "Microsoft\Windows\Start Menu\Programs\Startup"
 )
 shortCutFile = path.join(shortCutDest, "screenCap.lnk")
 
@@ -78,7 +78,7 @@ class MainWindow:
         self.main.iconbitmap(path.join(self.resource_path(iconName)))
 
         # reading config file
-        self.main.resizable(0, 0)
+        self.main.resizable(False, False)
         self.makeUI()
         self.config.read(configFile, encoding="utf-8-sig")
 
@@ -109,7 +109,7 @@ class MainWindow:
 
         # load recycle size into variable and entry field
 
-        self.recycleSize.set(getIntConfig("recycleSize"))
+        self.recycleSize.set(str(getIntConfig("recycleSize")))
         self.recycleEntry.delete(0, END)
         self.recycleEntry.insert(0, str(self.recycleSize.get()))
         self.recycleEntry.configure(state="disabled")
@@ -140,7 +140,7 @@ class MainWindow:
         # starting keyboard event listener
         self.listrener = keyboard.Listener(
             on_press=self.on_press,
-            on_release=self.on_release,
+            on_release=self.on_release, # type: ignore
             win32_event_filter=self.event_filter,
             suppress=False,
         )
@@ -232,15 +232,15 @@ class MainWindow:
         def recycle():
             badEntry = False
             try:
-                self.recycleSize.set(int(self.recycleEntry.get()))
+                self.recycleSize.set(self.recycleEntry.get())
                 self.config.set("screenCap", "recyclesize", self.recycleEntry.get())
             except Exception:
                 badEntry = True
 
             # ignore input/no update if input is not number/has issues
             if not badEntry and int(self.recycleEntry.get()) >= 0:
-                self.bin = RecycleBin(int(self.recycleSize.get()), self)
-                self.recycleButton.configure(command=self.bin.show)
+                self.bin = RecycleBin(int(self.recycleSize.get()), self) # type: ignore
+                self.recycleButton.configure(command=self.bin.show) # type: ignore
 
         def saveConfig():
             if not path.isdir(configDir):
@@ -276,7 +276,7 @@ class MainWindow:
     def removeSnap(self, snap: Snapshot):
         if snap in self.snaps:
             self.snaps.remove(snap)
-            self.bin.addImage(snap.pilImage)
+            self.bin.addImage(snap.pilImage) # type: ignore
 
     def on_press(self, key):
         self.currentKeys.add(key)
@@ -347,7 +347,7 @@ class MainWindow:
     def withdraw(self):
         menu = (
             ("Capture!", None, lambda tray: self.capture()),
-            ("Recycle Bin", None, lambda tray: self.bin.show()),
+            ("Recycle Bin", None, lambda tray: self.bin.show()), # type: ignore
             ("Show Window", None, lambda tray: self.show()),
             ("Exit", None, lambda tray: self.quit()),
         )
@@ -370,7 +370,7 @@ class MainWindow:
     def resource_path(self, relative_path):
         """ Get absolute path to resource, works for dev and for PyInstaller """
         try:
-            base_path = sys._MEIPASS
+            base_path = sys._MEIPASS # type: ignore
         except Exception:
             base_path = path.abspath(".")
         return path.join(base_path, relative_path)

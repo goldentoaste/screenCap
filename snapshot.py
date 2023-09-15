@@ -38,7 +38,6 @@ class Snapshot(Toplevel):
     """
 
     def __initialize(self, size=(400, 400), *args, **kwargs):
-
         # canvas stuff
         self.canvas = Canvas(
             self, width=size[0], height=size[1], highlightthickness=1
@@ -78,10 +77,15 @@ class Snapshot(Toplevel):
         self.tempLineSegments = []
         self.drawingColor = self.mainWindow.lastColor.get()
 
+        self.modDown = False
+
         self.scale = 1
 
         # press esc to close the snap or to quit cropping
         self.bind("<Escape>", lambda event: self.__exit())
+
+        self.bind("<KeyPress>", self.keyDown)
+        self.bind("<KeyRelease>", self.keyUp)
 
         # settings up mouse event listener
         self.bind("<Motion>", self.__mouseMove)
@@ -140,6 +144,14 @@ class Snapshot(Toplevel):
         self.rightMenu.add_separator()
         self.rightMenu.add_command(label="Draw", font=("", 11), command=self.__draw)
 
+    def keyDown(self, event):
+        if event.keycode in (17, 16):
+            self.modDown = True
+
+    def keyUp(self, event):
+        if event.keycode in (17, 16):
+            self.modDown = False
+
     def __paste(self):
         image = ImageGrab.grabclipboard()
         if image:
@@ -160,7 +172,6 @@ class Snapshot(Toplevel):
         self.__resize()
 
     def __updateImage(self, image):
-
         t0 = time.time()
         self.canvas.configure(width=image.width, height=image.height)
         print("canvas size config: ", time.time() - t0)
@@ -181,7 +192,7 @@ class Snapshot(Toplevel):
                 int(self.pilImage.width * self.scale),
                 int(self.pilImage.height * self.scale),
             ),
-            Image.ANTIALIAS,
+            Image.Resampling.LANCZOS,
         )
         print("pilImage reize: ", time.time() - t0)
         if override:
@@ -214,14 +225,14 @@ class Snapshot(Toplevel):
 
     def __save(self):
         result = None
-        if self.scale == 1 and len(self.lines) == 0:
+        if self.scale == 1 and len(self.lineCords) == 0:  # type: ignore
             result = (False, False)
         else:
             dialog = SaveDialog(
                 self,
                 title="Save options",
                 scaled=self.scale != 1,
-                drawing=len(self.lines) != 0,
+                drawing=len(self.lineCords) != 0,  # type: ignore
             )
             if not (result := dialog.result):
                 return None
@@ -248,7 +259,7 @@ class Snapshot(Toplevel):
                         int(self.pilImage.width / self.scale),
                         int(self.pilImage.height / self.scale),
                     ),
-                    Image.ANTIALIAS,
+                    Image.Resampling.LANCZOS,
                 )
 
         else:
@@ -258,7 +269,7 @@ class Snapshot(Toplevel):
                         int(self.pilImage.width * self.scale),
                         int(self.pilImage.height * self.scale),
                     ),
-                    Image.ANTIALIAS,
+                    Image.Resampling.LANCZOS,
                 )
             else:
                 image = self.pilImage
@@ -295,7 +306,7 @@ class Snapshot(Toplevel):
         return self
 
     def __getBoundBox(self):
-        bounds = getDisplayRects()
+        bounds: list = getDisplayRects()
         x = self.mainWindow.main.winfo_pointerx()
         y = self.mainWindow.main.winfo_pointery()
 
@@ -369,7 +380,6 @@ class Snapshot(Toplevel):
         self.unbind("<Control-z>")
 
     def __clearDrawing(self):
-
         for line in self.lineRefs:
             for seg in line:
                 self.canvas.delete(seg)
@@ -437,16 +447,32 @@ class Snapshot(Toplevel):
 
     def __mouseDrag(self, event):
         if self.cropping:
-            self.canvas.delete(self.rectangle)
-            self.rectangle = self.canvas.create_rectangle(
-                self.startPos[0],
-                self.startPos[1],
-                event.x,
-                event.y,
-                outline="white",
-                fill="black",
-                stipple="gray50",
-            )
+            if not self.rectangle:
+                self.rectangle = self.canvas.create_rectangle(
+                    self.startPos[0],
+                    self.startPos[1],
+                    event.x,
+                    event.y,
+                    outline="white",
+                    fill="black",
+                    stipple="gray50",
+                )
+            else:
+                x: int = event.x
+                y: int = event.y
+
+                if self.modDown:
+                    diff = max(abs(x - self.startPos[0]), abs(y - self.startPos[1]))
+                    x = self.startPos[0] + diff * (-1 if x < self.startPos[0] else 1)
+                    y = self.startPos[1] + diff *(-1 if y < self.startPos[1] else 1)
+                self.canvas.coords(
+                    self.rectangle,
+                    self.startPos[0],
+                    self.startPos[1],
+                    x,
+                    y,
+                )
+                self.mousePos = (x, y)
         elif self.drawing:
             if self.colorPoint != None:
                 self.canvas.delete(self.colorPoint)
@@ -489,16 +515,15 @@ class Snapshot(Toplevel):
 
         self.moveLock = False
         if self.cropping:
-            self.canvas.delete(self.rectangle)
+            self.canvas.delete(self.rectangle)  # type: ignore
 
             coord = getCorrectCoord(
                 self.startPos[0],
                 self.startPos[1],
-                min(max(event.x, 0), self.pilImage.width),
-                min(max(event.y, 0), self.pilImage.height),
+                min(max(self.mousePos[0], 0), self.pilImage.width),
+                min(max(self.mousePos[1], 0), self.pilImage.height),
             )
-            if coord[3] - coord[1] < 10 or coord[2] - coord[0]:
-                pass
+
             self.pilImage = self.pilImage.crop(
                 coord
             )  # using min max to keep coord in bound
@@ -527,16 +552,16 @@ class Snapshot(Toplevel):
             y = int(min(max(0, event.y - halfCrop), self.pilImage.height - cropSize))
 
             tempImage = (
-                self.pilImage if self.scale == 1 else ImageTk.getimage(self.image)
+                self.pilImage if self.scale == 1 else ImageTk.getimage(self.image)  # type: ignore
             )
             tempImage = tempImage.filter(GaussianBlur(3)).crop(
                 [
                     x,
                     y,
                     min(self.pilImage.width, x + cropSize),
-                    min(self.pilImage.height, y + cropSize),
+                    min(self.pilImage.height, y + cropSize),  # type: ignore
                 ]
-            )
+            )  # type: ignore
             self.prevPos = (self.winfo_x(), self.winfo_y())
             self.__updateImage(tempImage)
             self.geometry(f"+{self.prevPos[0] + x }+{self.prevPos[1] + y}")
@@ -554,7 +579,7 @@ class Snapshot(Toplevel):
     def resource_path(self, relative_path):
         """Get absolute path to resource, works for dev and for PyInstaller"""
         try:
-            base_path = sys._MEIPASS
+            base_path = sys._MEIPASS  # type: ignore
         except Exception:
             base_path = path.abspath(".")
         return path.join(base_path, relative_path)
@@ -617,6 +642,8 @@ class SaveDialog(tkinter.simpledialog.Dialog):
     def body(self, master):
         self.scaleBool = BooleanVar()
         self.drawingBool = BooleanVar()
+        self.drawingBool.set(True)
+        self.scaleBool.set(True)
 
         if self.scaled:
             Checkbutton(
