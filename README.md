@@ -42,6 +42,8 @@ Here is a [modernized](https://github.com/tylearymf/SETUNA2) version of SETUNA, 
 - Ctrl+S: save image(brings up a save file window)
 - plus or minus key to enlarge or shrink image
 - Double click to minimize the snapshot to save screen space
+- (new!) Ctrl+D to start drawing
+- (new!) While cropping, hold ctrl or shift to make the selection area is a square
 
 # Dependencies
 
