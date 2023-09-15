@@ -1,3 +1,4 @@
+import os
 from tkinter import (
     BooleanVar,
     Canvas,
@@ -576,13 +577,14 @@ class Snapshot(Toplevel):
             self.mini = False
             # self.__resize()
 
-    def resource_path(self, relative_path):
-        """Get absolute path to resource, works for dev and for PyInstaller"""
-        try:
-            base_path = sys._MEIPASS  # type: ignore
-        except Exception:
+    def resource_path( self, relative_path):
+        """ Get absolute path to resource, works for dev and for PyInstaller """
+        
+        if "__compiled__" in globals():
+            base_path =path.join( str(os.getenv("TEMP")), "ONEFILE_SCREENCAP")
+        else:
             base_path = path.abspath(".")
-        return path.join(base_path, relative_path)
+        return path.join(str(base_path), relative_path)
 
 
 def hexToRgb(h: str):

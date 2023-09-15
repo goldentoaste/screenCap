@@ -383,13 +383,20 @@ class MainWindow:
         self.detect = True
         self.combo.clear()
 
-    def resource_path(self, relative_path):
+    def resource_path(self,  relative_path):
         """ Get absolute path to resource, works for dev and for PyInstaller """
-        try:
-            base_path = sys._MEIPASS # type: ignore
-        except Exception:
+        
+        if "__compiled__" in globals():
+            base_path =path.join( str(os.getenv("TEMP")), "ONEFILE_SCREENCAP")
+        else:
             base_path = path.abspath(".")
-        return path.join(base_path, relative_path)
+        return path.join(str(base_path), relative_path)
+        
+        # try:
+        #     base_path = sys._MEIPASS # type: ignore
+        # except Exception:
+        #     base_path = path.abspath(".")
+        # return path.join(base_path, relative_path)
 
     def makeUI(self):
         self.frame0 = Frame(self.main)
@@ -482,5 +489,5 @@ def is_admin():
     except:
         return False
 
-
-MainWindow()
+if __name__ == "__main__":
+    main = MainWindow()
