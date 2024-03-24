@@ -9,6 +9,7 @@ from tkinter import (
     Entry,
     IntVar,
     StringVar,
+    DoubleVar,
     Tk,
     Frame,
     Checkbutton,
@@ -70,6 +71,8 @@ class MainWindow:
         self.lastPath = StringVar()
         self.lastColor = StringVar()
         self.custColors = StringVar()
+        self.hoverOpacity = StringVar()
+        self.ihoverOpacity = 0
         # list of opended snapshot
         self.snaps = []
         # initialize icon
@@ -83,9 +86,10 @@ class MainWindow:
         if not self.config.has_section("screenCap"):
             self.config.add_section("screenCap")
 
-        def getIntConfig(section, default=0):
+        def getIntConfig(section, default=0, low=0, high=9999999):
+            # return min(high, max(low, int(self.config.getint("screenCap", section))))
             try:
-                return self.config.getint("screenCap", section)
+                return min(high, max(low, int(self.config.getint("screenCap", section))))
             except Exception:
                 return default
 
@@ -105,12 +109,18 @@ class MainWindow:
         self.lastColor.set(getStrConfig("lastColor", default="#ffffff"))
         self.custColors.set(getStrConfig("custColors", default="#ffffff"))
 
-        # load recycle size into variable and entry field
+        self.hoverOpacity.set(str(getIntConfig("hoverCopacity", default=100, low=1, high=100)))
+        self.opacityEntry.delete(0, END)
+        self.opacityEntry.insert(0, str(self.hoverOpacity.get()))
+        self.opacityEntry.configure(state="disabled")
 
-        self.recycleSize.set(str(getIntConfig("recycleSize")))
+        # load recycle size into variable and entry field
+        self.recycleSize.set(str(getIntConfig("recycleSize", default=20)))
         self.recycleEntry.delete(0, END)
         self.recycleEntry.insert(0, str(self.recycleSize.get()))
         self.recycleEntry.configure(state="disabled")
+
+        # key combo
         self.combo = getStrConfig("combo").split(seperator)
         vkList = getStrConfig("vkCombo", default="0").split(seperator)
         self.vkCombo = {int(key) for key in (vkList if vkList[0] != "" else [])}
@@ -134,7 +144,6 @@ class MainWindow:
             ("Capture!", None, lambda tray: self.capture()),
             ("Recycle Bin", None, lambda tray: self.bin.show()),  # type: ignore
             ("Show Window", None, lambda tray: self.show()),
-            # ("Exit", None, lambda tray: self.quit()),
         )
         self.tray = SysTrayIcon(
             self.resource_path(iconName), "screenCap", menu, default_menu_index=2, on_quit=lambda tray: self.quit()
@@ -158,7 +167,6 @@ class MainWindow:
         # not key up event
         if msg != 257 and data.vkCode in self.vkCombo:
             if {self.getVk(key) for key in self.currentKeys}.union({data.vkCode}) == self.vkCombo:
-                print("supressing last key!!")
                 self.listrener._suppress = True
         else:
             self.listrener._suppress = False
@@ -166,11 +174,9 @@ class MainWindow:
 
     def update(self, item):
         def lastColor():
-            print("last color", str(self.lastColor.get()))
             self.config.set("screenCap", "lastColor", str(self.lastColor.get()))
 
         def custColor():
-            print("cust color", str(self.custColors.get()))
             self.config.set("screenCap", "custColors", str(self.custColors.get()))
 
         def startUp():
@@ -242,23 +248,39 @@ class MainWindow:
             self.config.set("screenCap", "lastPath", self.lastPath.get())
 
         def recycle():
-            badEntry = False
             try:
-                self.recycleSize.set(self.recycleEntry.get())
-                self.config.set("screenCap", "recyclesize", self.recycleEntry.get())
+                size = int(self.recycleEntry.get())
             except Exception:
-                badEntry = True
+                size = 0
 
-            # ignore input/no update if input is not number/has issues
-            if not badEntry and int(self.recycleEntry.get()) >= 0:
-                self.bin = RecycleBin(int(self.recycleSize.get()), self)  # type: ignore
-                self.recycleButton.configure(command=self.bin.show)  # type: ignore
+            size = str(min(999, max(0, size)))
+            self.recycleSize.set(size)
+            self.recycleEntry.delete(0, END)
+            self.recycleEntry.insert(0, size)
+
+            self.config.set("screenCap", "recyclesize", str(size))
+            self.bin = RecycleBin(int(self.recycleSize.get()), self)  # TODO change size instead of making a new one
+            self.recycleButton.configure(command=self.bin.show)
 
         def saveConfig():
             if not path.isdir(configDir):
                 mkdir(configDir)
             with open(configFile, "w") as file:
                 self.config.write(file)
+
+        def hoverOpacity():
+            try:
+                size = int(self.opacityEntry.get())
+            except Exception:
+                size = 1
+
+            self.ihoverOpacity = min(100, max(1, size))
+            size = str(self.ihoverOpacity)
+            self.hoverOpacity.set(size)
+            self.opacityEntry.delete(0, END)
+            self.opacityEntry.insert(0, size)
+
+            self.config.set("screenCap", "hoverCopacity", size)
 
         mapping = {
             "startup": startUp,
@@ -270,6 +292,7 @@ class MainWindow:
             "recycle": recycle,
             "lastColor": lastColor,
             "custColors": custColor,
+            "hoverOpacity": hoverOpacity,
         }
         # execute all update methods
         if item == "all":
@@ -416,7 +439,7 @@ class MainWindow:
         self.frame0.pack(side=TOP, anchor="w", expand=True, fill=BOTH)
 
         recycleFrame = Frame(self.main)
-        Label(recycleFrame, text="Recycling bin capacity :").pack(side=LEFT)
+        Label(recycleFrame, text="Recycling bin capacity : ").pack(side=LEFT)
         self.recycleEntry = Entry(recycleFrame, width=10, justify="center")
         self.recycleEntry.pack(side=LEFT)
 
@@ -428,8 +451,21 @@ class MainWindow:
             ),
         )
         self.recycleEntry.bind("<Button-1>", lambda event: self.recycleEntry.configure(state="normal"))
-        # Button(recycleFrame, text="Set", command=self.update).pack(side=LEFT)
         recycleFrame.pack(side=TOP, padx=10, pady=(0, 5), fill=X)
+
+        opacityFrame = Frame(self.main)
+        Label(opacityFrame, text="Opacity on Hover(%) : ").pack(side=LEFT)
+        self.opacityEntry = Entry(opacityFrame, width=10, justify="center")
+        self.opacityEntry.pack(side=LEFT)
+        self.opacityEntry.bind(
+            "<Return>",
+            lambda event: (
+                self.update("hoverOpacity"),
+                self.opacityEntry.configure(state="disabled"),
+            ),
+        )
+        self.opacityEntry.bind("<Button-1>", lambda event: self.opacityEntry.configure(state="normal"))
+        opacityFrame.pack(side=TOP, padx=10, pady=(0, 5), fill=X)
 
         self.frame1 = Frame(self.main)
         self.hotKeyLabel = Label(self.frame1, text="Hotkey for screen capture:").pack(side=LEFT)

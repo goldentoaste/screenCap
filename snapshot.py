@@ -92,6 +92,8 @@ class Snapshot(Toplevel):
         self.bind("<Motion>", self.__mouseMove)
         self.bind("<B1-Motion>", self.__mouseDrag)
         self.bind("<Button-1>", self.__mouseDown)
+        self.bind("<Enter>", self.__mouseEnter)
+        self.bind("<Leave>", self.__mouseLeave)
         self.bind("<ButtonRelease-1>", self.__mouseUp)
         self.bind("<ButtonRelease-3>", self.__mouseRight)
         self.bind("<Double-Button-1>", self.__mouseDouble)
@@ -124,30 +126,30 @@ class Snapshot(Toplevel):
         self.bind("<Control-minus>", lambda event: self.__opacityDown())
         # setup right click menuItem
         self.rightMenu = Menu(self, tearoff=0)
-        self.rightMenu.add_command(label="Close (Esc)", font=("", 11), command=self.__exit)
+        self.rightMenu.add_command(label="Close (Esc)", font=("Arial", 11), command=self.__exit)
         self.rightMenu.add_separator()
-        self.rightMenu.add_command(label="Save (Ctrl S)", font=("", 11), command=self.__save)
-        self.rightMenu.add_command(label="Copy (Ctrl C)", font=("", 11), command=self.__copy)
-        self.rightMenu.add_command(label="Cut (Ctrl X)", font=("", 11), command=self.__cut)
-        self.rightMenu.add_command(label="Paste (Ctrl V)", font=("", 11), command=self.__paste)
+        self.rightMenu.add_command(label="Save (Ctrl S)", font=("Arial", 11), command=self.__save)
+        self.rightMenu.add_command(label="Copy (Ctrl C)", font=("Arial", 11), command=self.__copy)
+        self.rightMenu.add_command(label="Cut (Ctrl X)", font=("Arial", 11), command=self.__cut)
+        self.rightMenu.add_command(label="Paste (Ctrl V)", font=("Arial", 11), command=self.__paste)
         self.rightMenu.add_separator()
-        self.rightMenu.add_command(label="Opacity up (Ctrl +)", font=("", 11), command=self.__opacityUp)
-        self.rightMenu.add_command(label="Opacity down (Ctrl -)", font=("", 11), command=self.__opacityDown)
+        self.rightMenu.add_command(label="Opacity up (Ctrl +)", font=("Arial", 11), command=self.__opacityUp)
+        self.rightMenu.add_command(label="Opacity down (Ctrl -)", font=("Arial", 11), command=self.__opacityDown)
 
         self.rightMenu.add_separator()
-        self.rightMenu.add_command(label="Enlarge (+)", font=("", 11), command=self.__enlarge)
-        self.rightMenu.add_command(label="Shrink (-)", font=("", 11), command=self.__shrink)
-        self.rightMenu.add_command(label="Reset (0)", font=("", 11), command=self.__resetSize)
+        self.rightMenu.add_command(label="Enlarge (+)", font=("Arial", 11), command=self.__enlarge)
+        self.rightMenu.add_command(label="Shrink (-)", font=("Arial", 11), command=self.__shrink)
+        self.rightMenu.add_command(label="Reset (0)", font=("Arial", 11), command=self.__resetSize)
         self.rightMenu.add_separator()
-        self.rightMenu.add_command(label="Crop", font=("", 11), command=self.__crop)
+        self.rightMenu.add_command(label="Crop", font=("Arial", 11), command=self.__crop)
         self.rightMenu.add_separator()
         self.rightMenu.add_command(
             label="Recycling Bin",
-            font=("", 11),
+            font=("Arial", 11),
             command=lambda: self.mainWindow.bin.show(),
         )
         self.rightMenu.add_separator()
-        self.rightMenu.add_command(label="Draw (Ctrl D)", font=("", 11), command=self.__draw)
+        self.rightMenu.add_command(label="Draw (Ctrl D)", font=("Arial", 11), command=self.__draw)
 
     def keyDown(self, event):
         if event.keycode in (17, 16):
@@ -175,10 +177,12 @@ class Snapshot(Toplevel):
         self.__resize()
 
     def __shrink(self):
+        if(self.mini):return
         self.scale = max(0.2, self.scale - 0.25)
         self.__resize()
 
     def __enlarge(self):
+        if(self.mini):return
         self.scale = min(2, self.scale + 0.25)
         self.__resize()
 
@@ -187,7 +191,8 @@ class Snapshot(Toplevel):
         self.image = ImageTk.PhotoImage(image)
         self.canvas.itemconfig(self.canvasImageRef, image=self.image)
 
-    def __resize(self, override=False):
+    def __resize(self, override=False, bypass=False):
+        if(self.mini and not bypass):return
         image = self.pilImage.copy().resize(
             (
                 int(self.pilImage.width * self.scale),
@@ -405,6 +410,12 @@ class Snapshot(Toplevel):
             self.mainWindow.snaps.remove(self)
             self.destroy()
 
+    def __mouseEnter(self, event):
+        self.attributes("-alpha", self.mainWindow.ihoverOpacity / 100)
+
+    def __mouseLeave(self, event):
+        self.attributes("-alpha", self.opacity)
+
     def __mouseMove(self, event):
         if self.drawing:
             if self.colorPoint != None:
@@ -550,7 +561,7 @@ class Snapshot(Toplevel):
             if self.scale == 1:
                 self.__updateImage(self.pilImage)
             else:
-                self.__resize()
+                self.__resize(bypass=True)
             self.geometry(f"+{self.prevPos[0]}+{self.prevPos[1]}")
             self.mini = False
             # self.__resize()
