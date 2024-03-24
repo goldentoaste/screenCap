@@ -24,7 +24,6 @@ from os import path, getenv, mkdir, remove
 from infi.systray import SysTrayIcon
 import infi.systray.win32_adapter as win32
 from recycle import RecycleBin
-from elevate import elevate
 
 
 """
@@ -37,13 +36,11 @@ seperator = "(*)"
 # replace with screenCap.exe if compiling to exe!
 executable = "screenCap.exe"
 iconName = "icon.ico"
-configDir = path.join(getenv("appdata",""), "screenCap")
+configDir = path.join(getenv("appdata", ""), "screenCap")
 configFile = path.join(configDir, "config.ini")
 singletonFile = path.join(configDir, "singleton.lock")
 
-shortCutDest = path.join(
-    getenv("appdata", ""), "Microsoft\Windows\Start Menu\Programs\Startup"
-)
+shortCutDest = path.join(getenv("appdata", ""), "Microsoft\Windows\Start Menu\Programs\Startup")
 shortCutFile = path.join(shortCutDest, "screenCap.lnk")
 
 
@@ -127,12 +124,22 @@ class MainWindow:
         # be labeled as singleton. Works for both IDE and compiled exe.
 
         if os.path.isfile(singletonFile):
-            messagebox.showerror(
-                title="error", message="An instance of screenCap is already running!"
-            )
+            messagebox.showerror(title="error", message="An instance of screenCap is already running!")
             os._exit(0)
         else:
             os.open(singletonFile, os.O_CREAT | os.O_EXCL | os.O_TEMPORARY)
+
+        # init system tray
+        menu = (
+            ("Capture!", None, lambda tray: self.capture()),
+            ("Recycle Bin", None, lambda tray: self.bin.show()),  # type: ignore
+            ("Show Window", None, lambda tray: self.show()),
+            # ("Exit", None, lambda tray: self.quit()),
+        )
+        self.tray = SysTrayIcon(
+            self.resource_path(iconName), "screenCap", menu, default_menu_index=2, on_quit=lambda tray: self.quit()
+        )
+        self.tray.start()
 
         # withdraw if the program is to minimalize on startup
         if self.startMin.get() == 1:
@@ -141,7 +148,7 @@ class MainWindow:
         # starting keyboard event listener
         self.listrener = keyboard.Listener(
             on_press=self.on_press,
-            on_release=self.on_release, # type: ignore
+            on_release=self.on_release,  # type: ignore
             win32_event_filter=self.event_filter,
             suppress=False,
         )
@@ -150,9 +157,7 @@ class MainWindow:
     def event_filter(self, msg, data):
         # not key up event
         if msg != 257 and data.vkCode in self.vkCombo:
-            if {self.getVk(key) for key in self.currentKeys}.union(
-                {data.vkCode}
-            ) == self.vkCombo:
+            if {self.getVk(key) for key in self.currentKeys}.union({data.vkCode}) == self.vkCombo:
                 print("supressing last key!!")
                 self.listrener._suppress = True
         else:
@@ -172,9 +177,7 @@ class MainWindow:
             self.config.set("screenCap", "startup", str(self.startup.get()))
             if self.startup.get() == 1:
                 pythoncom.CoInitialize()
-                target = path.join(
-                    self.resource_path(path.dirname(path.abspath(__file__))), executable
-                )
+                target = path.join(self.resource_path(path.dirname(path.abspath(__file__))), executable)
                 shell = Dispatch("WScript.Shell")
                 shortcut = shell.CreateShortCut(shortCutFile)
                 shortcut.Targetpath = target
@@ -195,12 +198,8 @@ class MainWindow:
             self.config.set("screenCap", "startMin", str(self.startMin.get()))
 
         def combo():
-            self.config.set(
-                "screenCap", "combo", "(*)".join([key for key in self.combo])
-            )
-            self.config.set(
-                "screenCap", "vkCombo", "(*)".join([str(key) for key in self.vkCombo])
-            )
+            self.config.set("screenCap", "combo", "(*)".join([key for key in self.combo]))
+            self.config.set("screenCap", "vkCombo", "(*)".join([str(key) for key in self.vkCombo]))
             self.config.set("screenCap", "key_string", self.hotkeyButton["text"])
 
         def admin():
@@ -209,9 +208,6 @@ class MainWindow:
             # admin handle
             if self.admin.get() == 1:
                 if not is_admin():
-                    print("entering admin restart stuff")
-                    print(os.getcwd(), sys.executable,  " ".join(sys.argv))
-                    
                     # for nuitka
                     ctypes.windll.shell32.ShellExecuteW(
                         None,
@@ -222,7 +218,7 @@ class MainWindow:
                         None,
                         None,
                     )
-                    
+
                     # for pyinstaller
                     # selfPath = (
                     #     ""
@@ -239,7 +235,7 @@ class MainWindow:
                     #     1,
                     # )
                     self.main.destroy()
-                    
+
                     os._exit(0)
 
         def lastPath():
@@ -255,8 +251,8 @@ class MainWindow:
 
             # ignore input/no update if input is not number/has issues
             if not badEntry and int(self.recycleEntry.get()) >= 0:
-                self.bin = RecycleBin(int(self.recycleSize.get()), self) # type: ignore
-                self.recycleButton.configure(command=self.bin.show) # type: ignore
+                self.bin = RecycleBin(int(self.recycleSize.get()), self)  # type: ignore
+                self.recycleButton.configure(command=self.bin.show)  # type: ignore
 
         def saveConfig():
             if not path.isdir(configDir):
@@ -292,7 +288,7 @@ class MainWindow:
     def removeSnap(self, snap: Snapshot):
         if snap in self.snaps:
             self.snaps.remove(snap)
-            self.bin.addImage(snap.pilImage) # type: ignore
+            self.bin.addImage(snap.pilImage)  # type: ignore
 
     def on_press(self, key):
         self.currentKeys.add(key)
@@ -348,30 +344,19 @@ class MainWindow:
 
     # quit, show, and withdraw is meant for handling system tray
     def quit(self):
-
+        print("quiting")
         for snap in self.snaps:
             self.removeSnap(snap)
         ## allow 2 second for sys to save images to recycling
-
+        win32.DestroyWindow(self.tray._hwnd)
         self.main.after(2000, os._exit(0))
 
     def show(self):
         self.main.title("screenCap")
         self.main.deiconify()
-        win32.DestroyWindow(self.tray._hwnd)
 
     def withdraw(self):
-        menu = (
-            ("Capture!", None, lambda tray: self.capture()),
-            ("Recycle Bin", None, lambda tray: self.bin.show()), # type: ignore
-            ("Show Window", None, lambda tray: self.show()),
-            ("Exit", None, lambda tray: self.quit()),
-        )
-        self.tray = SysTrayIcon(
-            self.resource_path(iconName), "screenCap", menu, default_menu_index=2
-        )
         self.detect = False
-        self.tray.start()
         self.main.withdraw()
 
     def reset(self):
@@ -383,15 +368,15 @@ class MainWindow:
         self.detect = True
         self.combo.clear()
 
-    def resource_path(self,  relative_path):
-        """ Get absolute path to resource, works for dev and for PyInstaller """
-        
+    def resource_path(self, relative_path):
+        """Get absolute path to resource, works for dev and for PyInstaller"""
+
         if "__compiled__" in globals():
-            base_path =path.join( str(os.getenv("TEMP")), "ONEFILE_SCREENCAP")
+            base_path = path.join(str(os.getenv("TEMP")), "ONEFILE_SCREENCAP")
         else:
             base_path = path.abspath(".")
         return path.join(str(base_path), relative_path)
-        
+
         # try:
         #     base_path = sys._MEIPASS # type: ignore
         # except Exception:
@@ -442,34 +427,24 @@ class MainWindow:
                 self.recycleEntry.configure(state="disabled"),
             ),
         )
-        self.recycleEntry.bind(
-            "<Button-1>", lambda event: self.recycleEntry.configure(state="normal")
-        )
+        self.recycleEntry.bind("<Button-1>", lambda event: self.recycleEntry.configure(state="normal"))
         # Button(recycleFrame, text="Set", command=self.update).pack(side=LEFT)
         recycleFrame.pack(side=TOP, padx=10, pady=(0, 5), fill=X)
 
         self.frame1 = Frame(self.main)
-        self.hotKeyLabel = Label(self.frame1, text="Hotkey for screen capture:").pack(
-            side=LEFT
-        )
+        self.hotKeyLabel = Label(self.frame1, text="Hotkey for screen capture:").pack(side=LEFT)
         self.hotkeyButton = Button(self.frame1, command=self.record, width=20)
         self.hotkeyButton.pack(side=LEFT, fill=BOTH, expand=True)
-        self.hotkeyResetButton = Button(
-            self.frame1, text="Clear", command=self.reset, width=5
-        ).pack(side=LEFT)
+        self.hotkeyResetButton = Button(self.frame1, text="Clear", command=self.reset, width=5).pack(side=LEFT)
         self.frame1.pack(side=TOP, fill=X, padx=10)
 
         self.frame3 = Frame(self.main)
 
-        self.captureButton = Button(
-            self.frame3, command=self.capture, text="Capture"
-        ).pack(side=LEFT, anchor="w")
+        self.captureButton = Button(self.frame3, command=self.capture, text="Capture").pack(side=LEFT, anchor="w")
         self.recycleButton = Button(self.frame3, text="Recycling bin")
         self.recycleButton.pack(side=LEFT, anchor="w", padx=5)
 
-        self.exitButton = Button(self.frame3, text="Exit", command=self.quit).pack(
-            side=RIGHT, anchor="e"
-        )
+        self.exitButton = Button(self.frame3, text="Exit", command=self.quit).pack(side=RIGHT, anchor="e")
 
         self.aboutButton = Button(
             self.frame3,
@@ -488,6 +463,7 @@ def is_admin():
         return ctypes.windll.shell32.IsUserAnAdmin()
     except:
         return False
+
 
 if __name__ == "__main__":
     main = MainWindow()
