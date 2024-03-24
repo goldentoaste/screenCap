@@ -285,7 +285,7 @@ class Snapshot(Toplevel):
             if fType == ".jpg":
                 image.save(path, format="JPEG", quality=100, subsampling=0)
             elif fType == ".png":
-                image.save(path, format="PNG")
+                image.save(path, format="PNG", compress_level=1)
             elif fType == ".bmp":
                 image.save(path, format="BMP")
             self.mainWindow.lastPath.set(path)
@@ -411,6 +411,7 @@ class Snapshot(Toplevel):
             self.destroy()
 
     def __mouseEnter(self, event):
+        if self.firstCrop: return
         self.attributes("-alpha", self.mainWindow.ihoverOpacity / 100)
 
     def __mouseLeave(self, event):

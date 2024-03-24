@@ -54,8 +54,7 @@ class RecycleBin:
             self.thumbnails = [None for _ in range(len(self.filePaths))]
 
     # expecting pillow image
-    def addImage(self, image: Image, name=None):
-
+    def addImage(self, image: Image.Image, name=None):
         index = 0
         oldPath = None
         for i, p in enumerate(self.filePaths):
@@ -63,6 +62,7 @@ class RecycleBin:
                 index = i
                 oldPath = p
                 break
+
         if oldPath is not None and name != None and name in self.hashes:
             self.hashes.remove(name)
             oldPath = oldPath.rename(oldPath.with_name(datetime.now().strftime("%d%m%y_%H-%M-%S-%f") + ".png"))
@@ -76,7 +76,7 @@ class RecycleBin:
             self.hashes.add(oldPath.name)
         else:
             path = os.path.join(folder, datetime.now().strftime("%d%m%y_%H-%M-%S-%f") + ".png")
-            image.save(path)
+            image.save(path, "PNG",  compress_level=1)
             self.filePaths.insert(0, Path(path))
             self.hashes.add(os.path.basename(path))
             scale = min(self.frameSize[0] / image.width, self.frameSize[1] / image.height)

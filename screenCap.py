@@ -76,6 +76,8 @@ class MainWindow:
         # list of opended snapshot
         self.snaps = []
         self.bin :RecycleBin = None
+        self.isOnTop = False
+
         # initialize icon
         self.main.iconbitmap(path.join(self.resource_path(iconName)))
 
@@ -474,6 +476,19 @@ class MainWindow:
         self.captureButton = Button(self.frame3, command=self.capture, text="Capture").pack(side=LEFT, anchor="w")
         self.recycleButton = Button(self.frame3, text="Recycling bin")
         self.recycleButton.pack(side=LEFT, anchor="w", padx=5)
+
+        
+
+        self.pinButton = Button(self.frame3, text="Pin", )
+        self.pinButton.pack(side=LEFT, anchor="w", padx=5)
+        
+        def pin():
+            self.isOnTop = not self.isOnTop
+            self.main.attributes("-topmost", self.isOnTop)
+            self.pinButton.config(text="Pin: " + ('✓' if self.isOnTop else '✗'))
+
+        self.pinButton.config(command=pin)
+
 
         self.exitButton = Button(self.frame3, text="Exit", command=self.quit).pack(side=RIGHT, anchor="e")
 
