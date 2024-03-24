@@ -37,8 +37,10 @@ class Snapshot(Toplevel):
     """ 
     __initialize is to be called after self.image has been set(keeping the reference is neccessary)
     """
-
     def __initialize(self, size=(400, 400), *args, **kwargs):
+
+        self.name = ""
+
         # canvas stuff
         self.canvas = Canvas(
             self, width=size[0], height=size[1], highlightthickness=1
@@ -170,7 +172,7 @@ class Snapshot(Toplevel):
     def __paste(self):
         image = ImageGrab.grabclipboard()
         if image:
-            self.mainWindow.addSnap(Snapshot(mainWindow=self.mainWindow).fromImage(image=image))
+            Snapshot(mainWindow=self.mainWindow).fromImage(image=image)
 
     def __resetSize(self):
         self.scale = 1
@@ -299,12 +301,14 @@ class Snapshot(Toplevel):
         output.close()
 
     # this 'image' should be a pillow image
-    def fromImage(self, image, *args, **kwargs):
+    def fromImage(self, image, name:str = "", *args, **kwargs):
         super(Snapshot, self).__init__(*args, **kwargs)
         self.firstCrop = False
         self.pilImage = image
         self.image = ImageTk.PhotoImage(self.pilImage)
         self.__initialize((self.pilImage.width, self.pilImage.height), *args, **kwargs)
+        self.name = name
+        self.mainWindow.addSnap(self)
         return self
 
     def __getBoundBox(self):
@@ -326,16 +330,11 @@ class Snapshot(Toplevel):
         bound = self.__getBoundBox()
         self.geometry(f"+{bound[0]}+{bound[1]}")
         self.__crop()
-
         return self
 
     def __exit(self):
         if (self.firstCrop and self.cropping) or (not self.firstCrop and not self.cropping):
-            if self.firstCrop and self.cropping:
-                if self in self.mainWindow.snaps:
-                    self.mainWindow.snaps.remove(self)
             self.destroy()
-            self.mainWindow.removeSnap(self)
             self.pilImage.close()
             del self
             gc.collect()
@@ -404,10 +403,11 @@ class Snapshot(Toplevel):
 
     def __stopCrop(self):
         self.cropping = False
+        if self.firstCrop:
+            self.mainWindow.addSnap(self)
         self.firstCrop = False
         self["cursor"] = ""
         if self.pilImage.width < 20 or self.pilImage.height < 20:
-            self.mainWindow.snaps.remove(self)
             self.destroy()
 
     def __mouseEnter(self, event):

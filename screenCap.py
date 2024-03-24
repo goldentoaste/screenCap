@@ -75,6 +75,7 @@ class MainWindow:
         self.ihoverOpacity = 0
         # list of opended snapshot
         self.snaps = []
+        self.bin :RecycleBin = None
         # initialize icon
         self.main.iconbitmap(path.join(self.resource_path(iconName)))
 
@@ -259,7 +260,10 @@ class MainWindow:
             self.recycleEntry.insert(0, size)
 
             self.config.set("screenCap", "recyclesize", str(size))
-            self.bin = RecycleBin(int(self.recycleSize.get()), self)  # TODO change size instead of making a new one
+            if self.bin is None:
+                self.bin = RecycleBin(int(self.recycleSize.get()), self)  # TODO change size instead of making a new one
+            else:
+                self.bin.size = int(self.recycleSize.get())
             self.recycleButton.configure(command=self.bin.show)
 
         def saveConfig():
@@ -304,14 +308,9 @@ class MainWindow:
         mapping.get(item, lambda: print)()
         saveConfig()
 
-    def addSnap(self, snap: Snapshot):
-        if snap is not None:
-            self.snaps.append(snap)
 
-    def removeSnap(self, snap: Snapshot):
-        if snap in self.snaps:
-            self.snaps.remove(snap)
-            self.bin.addImage(snap.pilImage)  # type: ignore
+    def addSnap(self, snap: Snapshot):
+        self.bin.addImage(snap.pilImage, snap.name)  # type: ignore
 
     def on_press(self, key):
         self.currentKeys.add(key)
@@ -350,7 +349,7 @@ class MainWindow:
 
     def capture(self):
         gc.collect()
-        self.addSnap(Snapshot(mainWindow=self).fromFullScreen())
+        Snapshot(mainWindow=self).fromFullScreen()
 
     def getVk(self, key):
         if "vk" in dir(key):
@@ -367,12 +366,8 @@ class MainWindow:
 
     # quit, show, and withdraw is meant for handling system tray
     def quit(self):
-        print("quiting")
-        for snap in self.snaps:
-            self.removeSnap(snap)
-        ## allow 2 second for sys to save images to recycling
         win32.DestroyWindow(self.tray._hwnd)
-        self.main.after(2000, os._exit(0))
+        os._exit(0)
 
     def show(self):
         self.main.title("screenCap")
