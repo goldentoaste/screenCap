@@ -40,7 +40,7 @@ configDir = path.join(getenv("appdata", ""), "screenCap")
 configFile = path.join(configDir, "config.ini")
 singletonFile = path.join(configDir, "singleton.lock")
 
-shortCutDest = path.join(getenv("appdata", ""), "Microsoft\Windows\Start Menu\Programs\Startup")
+shortCutDest = path.join(getenv("appdata", ""), r"Microsoft\Windows\Start Menu\Programs\Startup")
 shortCutFile = path.join(shortCutDest, "screenCap.lnk")
 
 

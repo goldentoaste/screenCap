@@ -44,14 +44,13 @@ class Snapshot(Toplevel):
             self, width=size[0], height=size[1], highlightthickness=1
         )  # highlightthickness=0 for no border
         self.canvas.pack(expand=YES, fill=BOTH)
-        self.canvasImageRef = self.canvas.create_image(
-            0, 0, anchor=NW, image=self.image, tags="image"
-        )
+        self.canvasImageRef = self.canvas.create_image(0, 0, anchor=NW, image=self.image, tags="image")
         # init to None for now since canvas.delete(None) is okay.
         self.rectangle = None
 
         # window stuff
         self.attributes("-topmost", True)
+
         self.update_idletasks()
         self.overrideredirect(True)
 
@@ -80,6 +79,7 @@ class Snapshot(Toplevel):
 
         self.modDown = False
 
+        self.opacity = 1
         self.scale = 1
 
         # press esc to close the snap or to quit cropping
@@ -115,25 +115,29 @@ class Snapshot(Toplevel):
         self.bind("<Control-r>", lambda event: self.__resetSize())
         self.bind("<Control-v>", lambda event: self.__paste())
         self.bind("<Control-V>", lambda event: self.__paste())
-        # size Control
+        # # size Control
+        self.bind("0", lambda event: self.__resetSize())
         self.bind("=", lambda event: self.__enlarge())
         self.bind("-", lambda event: self.__shrink())
+        # opacity control
+        self.bind("<Control-=>", lambda event: self.__opacityUp())
+        self.bind("<Control-minus>", lambda event: self.__opacityDown())
         # setup right click menuItem
         self.rightMenu = Menu(self, tearoff=0)
-        self.rightMenu.add_command(label="Close", font=("", 11), command=self.__exit)
+        self.rightMenu.add_command(label="Close (Esc)", font=("", 11), command=self.__exit)
         self.rightMenu.add_separator()
-        self.rightMenu.add_command(label="Save", font=("", 11), command=self.__save)
-        self.rightMenu.add_command(label="Copy", font=("", 11), command=self.__copy)
-        self.rightMenu.add_command(label="Cut", font=("", 11), command=self.__cut)
-        self.rightMenu.add_command(label="Paste", font=("", 11), command=self.__paste)
+        self.rightMenu.add_command(label="Save (Ctrl S)", font=("", 11), command=self.__save)
+        self.rightMenu.add_command(label="Copy (Ctrl C)", font=("", 11), command=self.__copy)
+        self.rightMenu.add_command(label="Cut (Ctrl X)", font=("", 11), command=self.__cut)
+        self.rightMenu.add_command(label="Paste (Ctrl V)", font=("", 11), command=self.__paste)
         self.rightMenu.add_separator()
-        self.rightMenu.add_command(
-            label="Enlarge", font=("", 11), command=self.__enlarge
-        )
-        self.rightMenu.add_command(label="Shrink", font=("", 11), command=self.__shrink)
-        self.rightMenu.add_command(
-            label="Reset", font=("", 11), command=self.__resetSize
-        )
+        self.rightMenu.add_command(label="Opacity up (Ctrl +)", font=("", 11), command=self.__opacityUp)
+        self.rightMenu.add_command(label="Opacity down (Ctrl -)", font=("", 11), command=self.__opacityDown)
+
+        self.rightMenu.add_separator()
+        self.rightMenu.add_command(label="Enlarge (+)", font=("", 11), command=self.__enlarge)
+        self.rightMenu.add_command(label="Shrink (-)", font=("", 11), command=self.__shrink)
+        self.rightMenu.add_command(label="Reset (0)", font=("", 11), command=self.__resetSize)
         self.rightMenu.add_separator()
         self.rightMenu.add_command(label="Crop", font=("", 11), command=self.__crop)
         self.rightMenu.add_separator()
@@ -143,7 +147,7 @@ class Snapshot(Toplevel):
             command=lambda: self.mainWindow.bin.show(),
         )
         self.rightMenu.add_separator()
-        self.rightMenu.add_command(label="Draw", font=("", 11), command=self.__draw)
+        self.rightMenu.add_command(label="Draw (Ctrl D)", font=("", 11), command=self.__draw)
 
     def keyDown(self, event):
         if event.keycode in (17, 16):
@@ -153,12 +157,18 @@ class Snapshot(Toplevel):
         if event.keycode in (17, 16):
             self.modDown = False
 
+    def __opacityUp(self):
+        self.opacity = min(1, self.opacity + 0.1)
+        self.attributes("-alpha", self.opacity)
+
+    def __opacityDown(self):
+        self.opacity = max(0.1, self.opacity - 0.1)
+        self.attributes("-alpha", self.opacity)
+
     def __paste(self):
         image = ImageGrab.grabclipboard()
         if image:
-            self.mainWindow.addSnap(
-                Snapshot(mainWindow=self.mainWindow).fromImage(image=image)
-            )
+            self.mainWindow.addSnap(Snapshot(mainWindow=self.mainWindow).fromImage(image=image))
 
     def __resetSize(self):
         self.scale = 1
@@ -173,21 +183,11 @@ class Snapshot(Toplevel):
         self.__resize()
 
     def __updateImage(self, image):
-        t0 = time.time()
         self.canvas.configure(width=image.width, height=image.height)
-        print("canvas size config: ", time.time() - t0)
-        t0 = time.time()
         self.image = ImageTk.PhotoImage(image)
-        print("photoImage update: ", time.time() - t0)
-        t0 = time.time()
-
         self.canvas.itemconfig(self.canvasImageRef, image=self.image)
-        print("set new image: ", time.time() - t0)
 
     def __resize(self, override=False):
-        t = time.time()
-
-        t0 = time.time()
         image = self.pilImage.copy().resize(
             (
                 int(self.pilImage.width * self.scale),
@@ -195,12 +195,10 @@ class Snapshot(Toplevel):
             ),
             Image.Resampling.LANCZOS,
         )
-        print("pilImage reize: ", time.time() - t0)
+
         if override:
             self.pilImage = image
         self.__updateImage(image)
-
-        t0 = time.time()
 
         for line, coordGroup in zip(self.lineRefs, self.lineCords):
             iniScale = coordGroup[0]
@@ -217,8 +215,6 @@ class Snapshot(Toplevel):
                 ],
             ):
                 self.canvas.coords(seg, *coords)
-        print("resize took: ", time.time() - t0)
-        print("total: ", time.time() - t, "\n=======================")
 
     def __cut(self):
         self.__copy()
@@ -321,9 +317,7 @@ class Snapshot(Toplevel):
         self.image = ImageTk.PhotoImage(self.pilImage)
         self.firstCrop = True
         super(Snapshot, self).__init__(*args, **kwargs)
-        self.__initialize(
-            (self.winfo_screenwidth(), self.winfo_screenheight()), *args, **kwargs
-        )
+        self.__initialize((self.winfo_screenwidth(), self.winfo_screenheight()), *args, **kwargs)
         bound = self.__getBoundBox()
         self.geometry(f"+{bound[0]}+{bound[1]}")
         self.__crop()
@@ -331,9 +325,7 @@ class Snapshot(Toplevel):
         return self
 
     def __exit(self):
-        if (self.firstCrop and self.cropping) or (
-            not self.firstCrop and not self.cropping
-        ):
+        if (self.firstCrop and self.cropping) or (not self.firstCrop and not self.cropping):
             if self.firstCrop and self.cropping:
                 if self in self.mainWindow.snaps:
                     self.mainWindow.snaps.remove(self)
@@ -349,15 +341,9 @@ class Snapshot(Toplevel):
         self.drawing = True
         self["cursor"] = "tcross"
         self.rightMenu.delete("Draw")
-        self.rightMenu.add_command(
-            label="Stop drawing", font=("", 11), command=self.__stopDraw
-        )
-        self.rightMenu.add_command(
-            label="Pick color", font=("", 11), command=self.__pickColor
-        )
-        self.rightMenu.add_command(
-            label="Clear drawing", font=("", 11), command=self.__clearDrawing
-        )
+        self.rightMenu.add_command(label="Stop drawing", font=("", 11), command=self.__stopDraw)
+        self.rightMenu.add_command(label="Pick color", font=("", 11), command=self.__pickColor)
+        self.rightMenu.add_command(label="Clear drawing", font=("", 11), command=self.__clearDrawing)
 
         def undoLine():
             if len(self.lineRefs) == 0:
@@ -409,9 +395,7 @@ class Snapshot(Toplevel):
     def __crop(self):
         self.cropping = True
         self.__resetSize()
-        self.configure(
-            cursor='"@' + self.resource_path("bread.cur").replace("\\", "/") + '"'
-        )
+        self.configure(cursor='"@' + self.resource_path("bread.cur").replace("\\", "/") + '"')
 
     def __stopCrop(self):
         self.cropping = False
@@ -465,7 +449,7 @@ class Snapshot(Toplevel):
                 if self.modDown:
                     diff = max(abs(x - self.startPos[0]), abs(y - self.startPos[1]))
                     x = self.startPos[0] + diff * (-1 if x < self.startPos[0] else 1)
-                    y = self.startPos[1] + diff *(-1 if y < self.startPos[1] else 1)
+                    y = self.startPos[1] + diff * (-1 if y < self.startPos[1] else 1)
                 self.canvas.coords(
                     self.rectangle,
                     self.startPos[0],
@@ -525,13 +509,9 @@ class Snapshot(Toplevel):
                 min(max(self.mousePos[1], 0), self.pilImage.height),
             )
 
-            self.pilImage = self.pilImage.crop(
-                coord
-            )  # using min max to keep coord in bound
+            self.pilImage = self.pilImage.crop(coord)  # using min max to keep coord in bound
             self.image = ImageTk.PhotoImage(self.pilImage)
-            self.canvas.configure(
-                width=self.pilImage.width, height=self.pilImage.height
-            )
+            self.canvas.configure(width=self.pilImage.width, height=self.pilImage.height)
             self.canvas.itemconfig(self.canvasImageRef, image=self.image)
             self.geometry(f"+{coord[0]+ self.winfo_x()}+{coord[1] + self.winfo_y()}")
             self.__stopCrop()
@@ -552,9 +532,7 @@ class Snapshot(Toplevel):
             x = int(min(max(0, event.x - halfCrop), self.pilImage.width - cropSize))
             y = int(min(max(0, event.y - halfCrop), self.pilImage.height - cropSize))
 
-            tempImage = (
-                self.pilImage if self.scale == 1 else ImageTk.getimage(self.image)  # type: ignore
-            )
+            tempImage = self.pilImage if self.scale == 1 else ImageTk.getimage(self.image)  # type: ignore
             tempImage = tempImage.filter(GaussianBlur(3)).crop(
                 [
                     x,
@@ -577,11 +555,11 @@ class Snapshot(Toplevel):
             self.mini = False
             # self.__resize()
 
-    def resource_path( self, relative_path):
-        """ Get absolute path to resource, works for dev and for PyInstaller """
-        
+    def resource_path(self, relative_path):
+        """Get absolute path to resource, works for dev and for PyInstaller"""
+
         if "__compiled__" in globals():
-            base_path =path.join( str(os.getenv("TEMP")), "ONEFILE_SCREENCAP")
+            base_path = path.join(str(os.getenv("TEMP")), "ONEFILE_SCREENCAP")
         else:
             base_path = path.abspath(".")
         return path.join(str(base_path), relative_path)
@@ -631,9 +609,7 @@ class SaveDialog(tkinter.simpledialog.Dialog):
         self.protocol("WM_DELETE_WINDOW", self.cancel)
 
         if self.parent is not None:
-            self.geometry(
-                "+%d+%d" % (parent.winfo_rootx() + 50, parent.winfo_rooty() + 50)
-            )
+            self.geometry("+%d+%d" % (parent.winfo_rootx() + 50, parent.winfo_rooty() + 50))
 
         self.deiconify()  # become visible now
 
@@ -648,14 +624,12 @@ class SaveDialog(tkinter.simpledialog.Dialog):
         self.scaleBool.set(True)
 
         if self.scaled:
-            Checkbutton(
-                master, variable=self.scaleBool, text="Save scaled image?"
-            ).pack(side=TOP, anchor="w", padx=10)
+            Checkbutton(master, variable=self.scaleBool, text="Save scaled image?").pack(side=TOP, anchor="w", padx=10)
 
         if self.drawing:
-            Checkbutton(
-                master, variable=self.drawingBool, text="Save drawing to image?"
-            ).pack(side=TOP, anchor="w", padx=10)
+            Checkbutton(master, variable=self.drawingBool, text="Save drawing to image?").pack(
+                side=TOP, anchor="w", padx=10
+            )
 
     def apply(self):
         self.result = (self.scaleBool.get(), self.drawingBool.get())
