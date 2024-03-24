@@ -76,9 +76,6 @@ Here is a [modernized](https://github.com/tylearymf/SETUNA2) version of SETUNA, 
 
 # Limitations and issues
 
-- ~~Hotkey recognized is not intercepted, as in, if the capture hotkey is bind to 'x' for example, screen capturing will start but 'x' is still pressed. This might lead to undesired effects, please choose the hotkey that doesn't have conflicts in your system, I have mine on right ctrl key.~~
-
-- ~~Hotkeys will not be recognized if a program that does intercept the specific combinations is currently selected.~~ (The 2 above issues are now fixed.)
 
 - Hotkeys are not recognized if the selected program has a higher level of privilege, for example task manager, or program started as admin. Check 'start as admin' in the program or in windows properties to work around this.
 
@@ -90,14 +87,9 @@ Here is a [modernized](https://github.com/tylearymf/SETUNA2) version of SETUNA, 
 
 # Currently working on:
 - rework resizing snapshots. (drag on corners to scale)
-- improve cropping. Entering cropping mode should enlarge snapshot window so that reserving edges is trivial.
-- quick sketch on snapshot
+- improve cropping. Entering cdropping mode should enlarge snapshot window so that reserving edges is trivial.
+- ~~quick sketch on snapshot~~ (not until version 2)
 - (optional/feature creep) easy way to upload images to some image hosting service, returning the link
-- ctrl - z to undo closing a snapshot?
-- ~~modify the update() so that only the elements that needs to be updated are updated~~
-- ~~add support for windows Ui scaling~~
-- ~~test in virtual machine to test for bugs/crashes in different environments
-- ~~reduce launch time if possible~~(not possible, most likely)
 - add right click to upload to imgur and copy link, to share images when only text is allowed
 - bugs to fix: (1.recover zoom level after minimalizing)(2.minimalizing on zoomed snapshot respects zoom)(3.prevent right click on initial crop)
 - ~~Suppress keyboard input for last key of hotkey combo, if [possible](https://github.com/moses-palmer/pynput/issues/170).~~
