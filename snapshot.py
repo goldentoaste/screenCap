@@ -1,29 +1,22 @@
-import os
-from tkinter import (
-    BooleanVar,
-    Canvas,
-    Checkbutton,
-    Frame,
-    Menu,
-    Toplevel,
-    filedialog,
-)
-import tkinter
-from colorPicker import ColorChooser
-from tkinter.constants import BOTH, NW, TOP, YES
-from PIL import Image, ImageGrab, ImageTk
-import sys
-from os import path
-from PIL.ImageFilter import GaussianBlur
+import ctypes
 import gc
 import io
-import win32clipboard as clipboard
-from desktopmagic.screengrab_win32 import getDisplayRects, getRectAsImage
+import os
+import sys
 import time
-import ctypes
+import tkinter
 import tkinter.simpledialog
-import win32gui
+from os import path
+from tkinter import BooleanVar, Canvas, Checkbutton, Frame, Menu, Toplevel, filedialog
+from tkinter.constants import BOTH, NW, TOP, YES
 
+import win32clipboard as clipboard
+import win32gui
+from desktopmagic.screengrab_win32 import getDisplayRects, getRectAsImage
+from PIL import Image, ImageGrab, ImageTk
+from PIL.ImageFilter import GaussianBlur
+
+from colorPicker import ColorChooser
 
 shcore = ctypes.windll.shcore
 # auto dpi aware scalings
@@ -37,6 +30,7 @@ class Snapshot(Toplevel):
     """ 
     __initialize is to be called after self.image has been set(keeping the reference is neccessary)
     """
+
     def __initialize(self, size=(400, 400), *args, **kwargs):
 
         self.name = ""
@@ -179,12 +173,14 @@ class Snapshot(Toplevel):
         self.__resize()
 
     def __shrink(self):
-        if(self.mini):return
+        if self.mini:
+            return
         self.scale = max(0.2, self.scale - 0.25)
         self.__resize()
 
     def __enlarge(self):
-        if(self.mini):return
+        if self.mini:
+            return
         self.scale = min(2, self.scale + 0.25)
         self.__resize()
 
@@ -194,7 +190,8 @@ class Snapshot(Toplevel):
         self.canvas.itemconfig(self.canvasImageRef, image=self.image)
 
     def __resize(self, override=False, bypass=False):
-        if(self.mini and not bypass):return
+        if self.mini and not bypass:
+            return
         image = self.pilImage.copy().resize(
             (
                 int(self.pilImage.width * self.scale),
@@ -301,7 +298,7 @@ class Snapshot(Toplevel):
         output.close()
 
     # this 'image' should be a pillow image
-    def fromImage(self, image, name:str = "", *args, **kwargs):
+    def fromImage(self, image, name: str = "", *args, **kwargs):
         super(Snapshot, self).__init__(*args, **kwargs)
         self.firstCrop = False
         self.pilImage = image
@@ -411,7 +408,8 @@ class Snapshot(Toplevel):
             self.destroy()
 
     def __mouseEnter(self, event):
-        if self.firstCrop: return
+        if self.firstCrop:
+            return
         self.attributes("-alpha", self.mainWindow.ihoverOpacity / 100)
 
     def __mouseLeave(self, event):

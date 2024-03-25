@@ -1,7 +1,6 @@
 import ctypes
 import ctypes.wintypes as wtypes
 
-
 """
 https://stackoverflow.com/a/49237204/12471420
 thanks!
@@ -41,14 +40,12 @@ class ColorChooser:
 
         for i in range(16):
             custom_int_colors[i] = (
-                rgb_to_int(*custom_colors[i])
-                if i < len(custom_colors)
-                else rgb_to_int(*(255, 255, 255))
+                rgb_to_int(*custom_colors[i]) if i < len(custom_colors) else rgb_to_int(*(255, 255, 255))
             )
 
         return custom_int_colors
 
-    def askcolor(self,hostId, initialColor, custom_colors):
+    def askcolor(self, hostId, initialColor, custom_colors):
         struct = CHOOSECOLOR()
 
         ctypes.memset(ctypes.byref(struct), 0, ctypes.sizeof(struct))

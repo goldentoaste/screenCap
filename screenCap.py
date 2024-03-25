@@ -1,31 +1,21 @@
-import gc
-from tkinter.constants import END, TOP, LEFT, BOTH, X, RIGHT
-from snapshot import Snapshot
-from win32com.client import Dispatch
-from configparser import ConfigParser
-from values import conversionTable, modifiers
-from pynput import keyboard
-from tkinter import (
-    Entry,
-    IntVar,
-    StringVar,
-    DoubleVar,
-    Tk,
-    Frame,
-    Checkbutton,
-    Button,
-    Label,
-    messagebox,
-)
-import sys
-import pythoncom
 import ctypes
+import gc
 import os
-from os import path, getenv, mkdir, remove
-from infi.systray import SysTrayIcon
-import infi.systray.win32_adapter as win32
-from recycle import RecycleBin
+import sys
+from configparser import ConfigParser
+from os import getenv, mkdir, path, remove
+from tkinter import Button, Checkbutton, DoubleVar, Entry, Frame, IntVar, Label, StringVar, Tk, messagebox
+from tkinter.constants import BOTH, END, LEFT, RIGHT, TOP, X
 
+import infi.systray.win32_adapter as win32
+import pythoncom
+from infi.systray import SysTrayIcon
+from pynput import keyboard
+from win32com.client import Dispatch
+
+from recycle import RecycleBin
+from snapshot import Snapshot
+from values import conversionTable, modifiers
 
 """
 datas=[('icon.ico', '.'), ('bread.cur', '.')],
@@ -75,7 +65,7 @@ class MainWindow:
         self.ihoverOpacity = 0
         # list of opended snapshot
         self.snaps = []
-        self.bin :RecycleBin = None
+        self.bin: RecycleBin = None
         self.isOnTop = False
 
         # initialize icon
@@ -310,7 +300,6 @@ class MainWindow:
         mapping.get(item, lambda: print)()
         saveConfig()
 
-
     def addSnap(self, snap: Snapshot):
         self.bin.addImage(snap.pilImage, snap.name)  # type: ignore
 
@@ -477,15 +466,16 @@ class MainWindow:
         self.recycleButton = Button(self.frame3, text="Recycling bin")
         self.recycleButton.pack(side=LEFT, anchor="w", padx=5)
 
-        
-
-        self.pinButton = Button(self.frame3, text="Pin", )
+        self.pinButton = Button(
+            self.frame3,
+            text="Pin",
+        )
         self.pinButton.pack(side=LEFT, anchor="w", padx=5)
-        
+
         def pin():
             self.isOnTop = not self.isOnTop
             self.main.attributes("-topmost", self.isOnTop)
-            self.pinButton.config(text="Pin: " + ('✓' if self.isOnTop else '✗'))
+            self.pinButton.config(text="Pin: " + ("✓" if self.isOnTop else "✗"))
 
         self.pinButton.config(command=pin)
 

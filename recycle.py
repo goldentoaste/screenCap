@@ -1,13 +1,14 @@
+import gc
 import os
 import pathlib
-from pathlib import Path
-from tkinter import Canvas, Frame, PhotoImage, Toplevel, Label
-
-from tkinter.constants import BOTH, END, LEFT, TOP, X
-from PIL import Image, ImageTk
 from datetime import datetime
+from pathlib import Path
+from tkinter import Canvas, Frame, Label, PhotoImage, Toplevel
+from tkinter.constants import LEFT
+
+from PIL import Image, ImageTk
+
 from snapshot import Snapshot
-import gc
 
 folder = configDir = os.path.join(os.getenv("appdata"), "screenCap")
 kbCons = 1024
@@ -76,7 +77,7 @@ class RecycleBin:
             self.hashes.add(oldPath.name)
         else:
             path = os.path.join(folder, datetime.now().strftime("%d%m%y_%H-%M-%S-%f") + ".png")
-            image.save(path, "PNG",  compress_level=1)
+            image.save(path, "PNG", compress_level=1)
             self.filePaths.insert(0, Path(path))
             self.hashes.add(os.path.basename(path))
             scale = min(self.frameSize[0] / image.width, self.frameSize[1] / image.height)
@@ -167,7 +168,7 @@ class ImageFrame(Frame):
         self.pilImage.close()
 
         def show(path: Path):
-            
+
             Snapshot(mainWindow=self.mainWindow).fromImage(Image.open(path), path.name)
 
         self.img.bind("<Button-1>", lambda event: show(self.filePath))
