@@ -489,7 +489,6 @@ class MainWindow:
 
         self.pinButton.config(command=pin)
 
-
         self.exitButton = Button(self.frame3, text="Exit", command=self.quit).pack(side=RIGHT, anchor="e")
 
         self.aboutButton = Button(
@@ -497,7 +496,7 @@ class MainWindow:
             text="About",
             command=lambda: messagebox.showinfo(
                 title="About/Help",
-                message="Program by Ray Gong, 2021\nFor info and usage see:\ngithub.com/goldentoaste/screenCap",
+                message="Program by Ray Gong, 2024\nContact: rayg2375@gmail.com\n\nFor info and usage see:\ngithub.com/goldentoaste/screenCap\n\nVersion 1.2",
             ),
         ).pack(side=RIGHT, anchor="e")
 

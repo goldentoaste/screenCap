@@ -529,6 +529,8 @@ class Snapshot(Toplevel):
             self.__stopCrop()
 
     def __mouseRight(self, event):
+        if self.initialCrop:
+            return
         self.rightMenu.tk_popup(event.x_root, event.y_root, 0)
         self.rightMenu.grab_release()
 

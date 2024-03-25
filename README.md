@@ -26,7 +26,11 @@ Here is a [modernized](https://github.com/tylearymf/SETUNA2) version of SETUNA, 
 
 - Recycle bin capacity: set the number of recently closed images to keep in a 'recycling bin'. Click the 'Recycling bin' Button to open that menu, and click on any image to summon them back.
 
+- Opacity on Hover: set this to number to be the opacity percentage when mouse is hovering above an snapshot, so that any content underneath is visible. The default is 100%, so no changes to opactiy on hover.
+
 - Hotkey for screen capture: click the blank button and press a combination of keys of your choice to set a hotkey to do a screen capture. Click the 'Clear' button to rebind hotkey.
+
+- Pin button: click to toggle if the main menu is pinned on top. This might be useful in cases when users don't have a keyboard to do hotkeys with.
 
 ## For each snapshot:
 
@@ -42,8 +46,9 @@ Here is a [modernized](https://github.com/tylearymf/SETUNA2) version of SETUNA, 
 - Ctrl+S: save image(brings up a save file window)
 - plus or minus key to enlarge or shrink image
 - Double click to minimize the snapshot to save screen space
-- (new!) Ctrl+D to start drawing
-- (new!) While cropping, hold ctrl or shift to make the selection area is a square
+- Ctrl+D to start drawing
+- While cropping, hold ctrl or shift to make the selection area is a square
+- Ctrl + plus/minus to increase and decrease the opacity of the current image
 
 # Dependencies
 - nuitka:
@@ -85,9 +90,10 @@ Here is a [modernized](https://github.com/tylearymf/SETUNA2) version of SETUNA, 
 
 
 # Currently working on:
-- rework resizing snapshots. (drag on corners to scale)
+- use windows event scheduler to schedule auto starts instead of creating a short cut in the startup folder. There are some reports of the current method not working reliably.
+- rework resizing snapshots. (drag on corners to scale by using native win32 api)
 - improve cropping. Entering cdropping mode should enlarge snapshot window so that reserving edges is trivial.
-- ~~quick sketch on snapshot~~ (not until version 2)
+- ~~quick sketch on snapshot~~ (major improvements in version 2)
 - (optional/feature creep) easy way to upload images to some image hosting service, returning the link
 - add right click to upload to imgur and copy link, to share images when only text is allowed
 - bugs to fix: (1.recover zoom level after minimalizing)(2.minimalizing on zoomed snapshot respects zoom)(3.prevent right click on initial crop)
