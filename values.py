@@ -1,5 +1,6 @@
+from os import path
+import sys,os
 modifiers = {16, 17, 18, 160, 161, 162, 163, 164, 165}
-
 
 conversionTable = {
     8: "backspace",
@@ -138,3 +139,18 @@ conversionTable = {
     221: "]",
     222: "quote",
 }
+
+
+def resource_path( relative_path):
+    """Get absolute path to resource, works for dev and for PyInstaller"""
+    # # TODO for nuitka 
+    # if "__compiled__" in globals():
+    #     base_path = path.join(str(os.getenv("TEMP")), "ONEFILE_SCREENCAP")
+    # else:
+    #     base_path = path.abspath(".")
+    # return path.join(str(base_path), relative_path)
+    try:
+        base_path = sys._MEIPASS # type: ignore
+    except NameError:
+        base_path = path.abspath(".")
+    return path.join(base_path, relative_path)

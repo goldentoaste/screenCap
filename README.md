@@ -52,7 +52,7 @@ Here is a [modernized](https://github.com/tylearymf/SETUNA2) version of SETUNA, 
 
 # Dependencies
 - nuitka:
-  + for compiling: `python -m nuitka screenCap.py --standalone --onefile --enable-plugin=tk-inter --disable-console --windows-icon-from-ico=icon.ico`
+  + for compiling: `python -m nuitka screenCap.py --standalone --onefile --enable-plugin=tk-inter --python-flag=no_asserts  --windows-icon-from-ico=icon.ico --onefile-tempdir-spec="{TEMP}/ONEFILE_SCREENCAP" --include-data-files="bread.cur=bread.cur" --include-data-files="icon.ico=icon.ico" --disable-console`
 - Pillow, for image processing
 - desktopmagic, for advance screen capturing
 - pywin32, for interaction with Windows

@@ -15,7 +15,7 @@ from win32com.client import Dispatch
 
 from recycle import RecycleBin
 from snapshot import Snapshot
-from values import conversionTable, modifiers
+from values import conversionTable, modifiers, resource_path
 
 """
 datas=[('icon.ico', '.'), ('bread.cur', '.')],
@@ -69,7 +69,7 @@ class MainWindow:
         self.isOnTop = False
 
         # initialize icon
-        self.main.iconbitmap(path.join(self.resource_path(iconName)))
+        self.main.iconbitmap(path.join(resource_path(iconName)))
 
         # reading config file
         self.main.resizable(False, False)
@@ -139,7 +139,7 @@ class MainWindow:
             ("Show Window", None, lambda tray: self.show()),
         )
         self.tray = SysTrayIcon(
-            self.resource_path(iconName), "screenCap", menu, default_menu_index=2, on_quit=lambda tray: self.quit()
+            resource_path(iconName), "screenCap", menu, default_menu_index=2, on_quit=lambda tray: self.quit()
         )
         self.tray.start()
 
@@ -176,7 +176,7 @@ class MainWindow:
             self.config.set("screenCap", "startup", str(self.startup.get()))
             if self.startup.get() == 1:
                 pythoncom.CoInitialize()
-                target = path.join(self.resource_path(path.dirname(path.abspath(__file__))), executable)
+                target = path.join(resource_path(path.dirname(path.abspath(__file__))), executable)
                 shell = Dispatch("WScript.Shell")
                 shortcut = shell.CreateShortCut(shortCutFile)
                 shortcut.Targetpath = target
@@ -208,31 +208,31 @@ class MainWindow:
             if self.admin.get() == 1:
                 if not is_admin():
                     # for nuitka
-                    ctypes.windll.shell32.ShellExecuteW(
-                        None,
-                        "runas",
-                        # execute with console since, in editor, console would not be captured otherwise
-                        "".join(sys.argv),
-                        "",  # leave empty for deployment
-                        None,
-                        None,
-                    )
-
-                    # for pyinstaller
-                    # selfPath = (
-                    #     ""
-                    #     if hasattr(sys, "_MEIPASS")
-                    #     else '"' + os.getcwd() + "\\screenCap.py" + '"'
-                    # )
                     # ctypes.windll.shell32.ShellExecuteW(
                     #     None,
                     #     "runas",
                     #     # execute with console since, in editor, console would not be captured otherwise
-                    #     '"' + sys.executable + '"',
-                    #     selfPath,  # leave empty for deployment
+                    #     "".join(sys.argv),
+                    #     "",  # leave empty for deployment
                     #     None,
-                    #     1,
+                    #     None,
                     # )
+
+                    # # for pyinstaller
+                    selfPath = (
+                        ""
+                        if hasattr(sys, "_MEIPASS")
+                        else '"' + os.getcwd() + "\\screenCap.py" + '"'
+                    )
+                    ctypes.windll.shell32.ShellExecuteW(
+                        None,
+                        "runas",
+                        # execute with console since, in editor, console would not be captured otherwise
+                        '"' + sys.executable + '"',
+                        selfPath,  # leave empty for deployment
+                        None,
+                        1,
+                    )
                     self.main.destroy()
 
                     os._exit(0)
@@ -377,20 +377,7 @@ class MainWindow:
         self.detect = True
         self.combo.clear()
 
-    def resource_path(self, relative_path):
-        """Get absolute path to resource, works for dev and for PyInstaller"""
-
-        if "__compiled__" in globals():
-            base_path = path.join(str(os.getenv("TEMP")), "ONEFILE_SCREENCAP")
-        else:
-            base_path = path.abspath(".")
-        return path.join(str(base_path), relative_path)
-
-        # try:
-        #     base_path = sys._MEIPASS # type: ignore
-        # except Exception:
-        #     base_path = path.abspath(".")
-        # return path.join(base_path, relative_path)
+    
 
     def makeUI(self):
         self.frame0 = Frame(self.main)
@@ -501,4 +488,8 @@ def is_admin():
 
 
 if __name__ == "__main__":
-    main = MainWindow()
+    try:
+        main = MainWindow()
+    except Exception as e:
+        print(e)
+        input("press any to continue")

@@ -4,7 +4,7 @@ block_cipher = None
 
 
 a = Analysis(['screenCap.py'],
-             pathex=['D:\\Python Project\\screenCap'],
+             pathex=['D:\\PythonProject\\screenCap'],
              binaries=[],
              datas=[('icon.ico', '.'), ('bread.cur', '.')],
              hiddenimports=['pkg_resources.markers','pkg_resources.py2_warn','pynput.keyboard._win32', 'pynput.mouse._win32', 'pkg_resources', 'setuptools.py33compat','setuptools.py27compat'],

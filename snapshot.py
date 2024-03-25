@@ -1,12 +1,9 @@
 import ctypes
 import gc
 import io
-import os
-import sys
 import time
 import tkinter
 import tkinter.simpledialog
-from os import path
 from tkinter import BooleanVar, Canvas, Checkbutton, Frame, Menu, Toplevel, filedialog
 from tkinter.constants import BOTH, NW, TOP, YES
 
@@ -17,6 +14,7 @@ from PIL import Image, ImageGrab, ImageTk
 from PIL.ImageFilter import GaussianBlur
 
 from colorPicker import ColorChooser
+from values import resource_path
 
 shcore = ctypes.windll.shcore
 # auto dpi aware scalings
@@ -396,7 +394,7 @@ class Snapshot(Toplevel):
     def __crop(self):
         self.cropping = True
         self.__resetSize()
-        self.configure(cursor='"@' + self.resource_path("bread.cur").replace("\\", "/") + '"')
+        self.configure(cursor='"@' + resource_path("bread.cur").replace("\\", "/") + '"')
 
     def __stopCrop(self):
         self.cropping = False
@@ -566,15 +564,6 @@ class Snapshot(Toplevel):
             self.geometry(f"+{self.prevPos[0]}+{self.prevPos[1]}")
             self.mini = False
             # self.__resize()
-
-    def resource_path(self, relative_path):
-        """Get absolute path to resource, works for dev and for PyInstaller"""
-
-        if "__compiled__" in globals():
-            base_path = path.join(str(os.getenv("TEMP")), "ONEFILE_SCREENCAP")
-        else:
-            base_path = path.abspath(".")
-        return path.join(str(base_path), relative_path)
 
 
 def hexToRgb(h: str):

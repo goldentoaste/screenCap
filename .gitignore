@@ -9,3 +9,4 @@ testing.py
 screenCap.build
 screenCap.dist
 screenCap.onefile-build
+screenCap.exe
