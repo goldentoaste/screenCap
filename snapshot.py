@@ -328,6 +328,9 @@ class Snapshot(Toplevel):
         return self
 
     def __exit(self):
+        if self.drawing:
+            return self.__stopDraw()
+
         if (self.firstCrop and self.cropping) or (not self.firstCrop and not self.cropping):
             self.destroy()
             self.pilImage.close()
