@@ -176,7 +176,8 @@ class MainWindow:
             self.config.set("screenCap", "startup", str(self.startup.get()))
             if self.startup.get() == 1:
                 pythoncom.CoInitialize()
-                target = path.join(resource_path(path.dirname(path.abspath(__file__))), executable)
+                target = sys.argv[0]
+                # target = path.join(resource_path(path.dirname(path.abspath(__file__))), executable)
                 shell = Dispatch("WScript.Shell")
                 shortcut = shell.CreateShortCut(shortCutFile)
                 shortcut.Targetpath = target
