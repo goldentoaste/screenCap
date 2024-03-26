@@ -20,6 +20,7 @@ class RecycleBin:
         self.mainWindow = mainWindow
         self.main = mainWindow.main
         self.windowOpen = False
+        self.window : Toplevel = None
         self.frameSize = (
             int(self.main.winfo_screenwidth() / 6),
             int(self.main.winfo_screenheight() / 5),
@@ -27,8 +28,8 @@ class RecycleBin:
         self.filePaths = []
         self.thumbnails = []
         self.hashes = set()
-
         self.loadThumbs(loadImage=False)
+
 
     # returns PhotoImage
 
@@ -99,16 +100,25 @@ class RecycleBin:
             self.populate()
 
     def show(self):
+        if self.windowOpen and self.window is not None:
+            self.window.deiconify()
+            self.window.lift()
+            return
+
         self.loadThumbs(loadImage=True)
         self.windowOpen = True
         self.window = Toplevel(self.mainWindow.main)
         self.window.title("Recycling Bin")
 
+      
+
         def exit():
             self.windowOpen = False
             self.window.destroy()
+            self.window = None
             self.filePaths.clear()
             self.thumbnails.clear()
+            self.visible = False
             gc.collect()
 
         self.window.protocol("WM_DELETE_WINDOW", lambda: exit())

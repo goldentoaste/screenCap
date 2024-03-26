@@ -151,6 +151,6 @@ def resource_path( relative_path):
     # return path.join(str(base_path), relative_path)
     try:
         base_path = sys._MEIPASS # type: ignore
-    except NameError:
+    except (NameError, AttributeError) :
         base_path = path.abspath(".")
     return path.join(base_path, relative_path)

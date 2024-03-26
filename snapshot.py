@@ -337,12 +337,14 @@ class Snapshot(Toplevel):
             self.__stopCrop()
 
     def __draw(self):
+        if self.drawing:
+            return self.__stopDraw()
         self.drawing = True
         self["cursor"] = "tcross"
-        self.rightMenu.delete("Draw")
-        self.rightMenu.add_command(label="Stop drawing", font=("", 11), command=self.__stopDraw)
-        self.rightMenu.add_command(label="Pick color", font=("", 11), command=self.__pickColor)
-        self.rightMenu.add_command(label="Clear drawing", font=("", 11), command=self.__clearDrawing)
+        self.rightMenu.delete("Draw (Ctrl D)")
+        self.rightMenu.add_command(label="Stop drawing (Ctrl D)", font=("Arial", 11), command=self.__stopDraw)
+        self.rightMenu.add_command(label="Pick color", font=("Arial", 11), command=self.__pickColor)
+        self.rightMenu.add_command(label="Clear drawing", font=("Arial", 11), command=self.__clearDrawing)
 
         def undoLine():
             if len(self.lineRefs) == 0:
@@ -357,9 +359,9 @@ class Snapshot(Toplevel):
 
     def __stopDraw(self):
         self.drawing = False
-        self.rightMenu.add_command(label="Draw", font=("", 11), command=self.__draw)
+        self.rightMenu.add_command(label="Draw (Ctrl D)", font=("Arial", 11), command=self.__draw)
         self["cursor"] = ""
-        self.rightMenu.delete("Stop drawing")
+        self.rightMenu.delete("Stop drawing (Ctrl D)")
         self.rightMenu.delete("Pick color")
         self.rightMenu.delete("Clear drawing")
         self.unbind("<Control-Z>")
