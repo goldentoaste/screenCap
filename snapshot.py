@@ -44,6 +44,7 @@ class Snapshot(Toplevel):
 
         # window stuff
         self.attributes("-topmost", True)
+        self.wm_attributes("-toolwindow", True)
 
         self.update_idletasks()
         self.overrideredirect(True)
