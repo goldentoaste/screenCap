@@ -22,6 +22,14 @@ datas=[('icon.ico', '.'), ('bread.cur', '.')],
              hiddenimports=['pkg_resources.markers','pkg_resources.py2_warn','pynput.keyboard._win32', 'pynput.mouse._win32', 'pkg_resources', 'setuptools.py33compat','setuptools.py27compat'],
 """
 
+# lock files dont work, use mutex instead
+mutexName = "screenCapLock"
+mutex = ctypes.windll.kernel32.CreateMutexA(None,False,mutexName)
+
+if ctypes.windll.kernel32.GetLastError() == 183:  # 183 means "ERROR_ALREADY_EXISTS"
+    messagebox.showerror(title="error", message="An instance of screenCap is already running!")
+    os._exit(0)
+
 
 seperator = "(*)"
 # replace with screenCap.exe if compiling to exe!
@@ -29,7 +37,6 @@ executable = "screenCap.exe"
 iconName = "icon.ico"
 configDir = path.join(getenv("appdata", ""), "screenCap")
 configFile = path.join(configDir, "config.ini")
-singletonFile = path.join(configDir, "singleton.lock")
 
 shortCutDest = path.join(getenv("appdata", ""), r"Microsoft\Windows\Start Menu\Programs\Startup")
 shortCutFile = path.join(shortCutDest, "screenCap.lnk")
@@ -123,14 +130,6 @@ class MainWindow:
         # updating things to reflect settings
         self.update("all")
 
-        # singleton should be established after update, in  initialize, so that if the code aborts in update(restart as admin), it will not
-        # be labeled as singleton. Works for both IDE and compiled exe.
-
-        if os.path.isfile(singletonFile):
-            messagebox.showerror(title="error", message="An instance of screenCap is already running!")
-            os._exit(0)
-        else:
-            os.open(singletonFile, os.O_CREAT | os.O_EXCL | os.O_TEMPORARY)
 
         # init system tray
         menu = (
