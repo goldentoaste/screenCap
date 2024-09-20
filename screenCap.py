@@ -4,7 +4,7 @@ import os
 import sys
 from configparser import ConfigParser
 from os import getenv, mkdir, path, remove
-from tkinter import Button, Checkbutton, DoubleVar, Entry, Frame, IntVar, Label, StringVar, Tk, messagebox
+from tkinter import Button, Checkbutton, Entry, Frame, IntVar, Label, StringVar, Tk, messagebox
 from tkinter.constants import BOTH, END, LEFT, RIGHT, TOP, X
 
 import infi.systray.win32_adapter as win32
