@@ -24,7 +24,7 @@ datas=[('icon.ico', '.'), ('bread.cur', '.')],
 
 # lock files dont work, use mutex instead
 mutexName = "screenCapLock"
-mutex = ctypes.windll.kernel32.CreateMutexA(None,False,mutexName)
+
 
 if ctypes.windll.kernel32.GetLastError() == 183:  # 183 means "ERROR_ALREADY_EXISTS"
     messagebox.showerror(title="error", message="An instance of screenCap is already running!")
@@ -130,7 +130,6 @@ class MainWindow:
         # updating things to reflect settings
         self.update("all")
 
-
         # init system tray
         menu = (
             ("Capture!", None, lambda tray: self.capture()),
@@ -208,34 +207,37 @@ class MainWindow:
             if self.admin.get() == 1:
                 if not is_admin():
                     # for nuitka
-                    # ctypes.windll.shell32.ShellExecuteW(
-                    #     None,
-                    #     "runas",
-                    #     # execute with console since, in editor, console would not be captured otherwise
-                    #     "".join(sys.argv),
-                    #     "",  # leave empty for deployment
-                    #     None,
-                    #     None,
-                    # )
-
-                    # # for pyinstaller
-                    selfPath = (
-                        ""
-                        if hasattr(sys, "_MEIPASS")
-                        else '"' + os.getcwd() + "\\screenCap.py" + '"'
-                    )
                     ctypes.windll.shell32.ShellExecuteW(
                         None,
                         "runas",
                         # execute with console since, in editor, console would not be captured otherwise
-                        '"' + sys.executable + '"',
-                        selfPath,  # leave empty for deployment
+                        "".join(sys.argv),
+                        "",  # leave empty for deployment
                         None,
-                        1,
+                        None,
                     )
+
+                    # # for pyinstaller
+                    # selfPath = (
+                    #     ""
+                    #     if hasattr(sys, "_MEIPASS")
+                    #     else '"' + os.getcwd() + "\\screenCap.py" + '"'
+                    # )
+                    # ctypes.windll.shell32.ShellExecuteW(
+                    #     None,
+                    #     "runas",
+                    #     # execute with console since, in editor, console would not be captured otherwise
+                    #     '"' + sys.executable + '"',
+                    #     selfPath,  # leave empty for deployment
+                    #     None,
+                    #     1,
+                    # )
                     self.main.destroy()
 
                     os._exit(0)
+                self.mutex = ctypes.windll.kernel32.CreateMutexA(None, False, mutexName + "admin")
+            else:
+                self.mutex = mutex = ctypes.windll.kernel32.CreateMutexA(None, False, mutexName)
 
         def lastPath():
             self.config.set("screenCap", "lastPath", self.lastPath.get())
@@ -376,8 +378,6 @@ class MainWindow:
     def record(self):
         self.detect = True
         self.combo.clear()
-
-    
 
     def makeUI(self):
         self.frame0 = Frame(self.main)
