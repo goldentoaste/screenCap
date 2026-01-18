@@ -20,7 +20,7 @@ class RecycleBin:
         self.mainWindow = mainWindow
         self.main = mainWindow.main
         self.windowOpen = False
-        self.window : Toplevel = None
+        self.window : Toplevel | None = None
         self.frameSize = (
             int(self.main.winfo_screenwidth() / 6),
             int(self.main.winfo_screenheight() / 5),
@@ -49,7 +49,7 @@ class RecycleBin:
             for path in self.filePaths:
                 image = Image.open(path)
                 scale = min(self.frameSize[0] / image.width, self.frameSize[1] / image.height)
-                pimage = ImageTk.PhotoImage(image.resize([int(image.width * scale), int(image.height * scale)]))
+                pimage = ImageTk.PhotoImage(image.resize((int(image.width * scale), int(image.height * scale))))
                 self.thumbnails.append(pimage)
                 image.close()
         else:
@@ -73,7 +73,7 @@ class RecycleBin:
             scale = min(self.frameSize[0] / image.width, self.frameSize[1] / image.height)
             self.filePaths.insert(0, oldPath)
             self.thumbnails.insert(
-                0, ImageTk.PhotoImage(image.resize([int(image.width * scale), int(image.height * scale)]))
+                0, ImageTk.PhotoImage(image.resize((int(image.width * scale), int(image.height * scale))))
             )
             self.hashes.add(oldPath.name)
         else:
@@ -82,7 +82,7 @@ class RecycleBin:
             self.filePaths.insert(0, Path(path))
             self.hashes.add(os.path.basename(path))
             scale = min(self.frameSize[0] / image.width, self.frameSize[1] / image.height)
-            pImage = ImageTk.PhotoImage(image.resize([int(image.width * scale), int(image.height * scale)]))
+            pImage = ImageTk.PhotoImage(image.resize((int(image.width * scale), int(image.height * scale))))
 
             self.thumbnails.insert(0, pImage)
 
@@ -118,7 +118,7 @@ class RecycleBin:
             self.window = None
             self.filePaths.clear()
             self.thumbnails.clear()
-            self.visible = False
+            
             gc.collect()
 
         self.window.protocol("WM_DELETE_WINDOW", lambda: exit())
