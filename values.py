@@ -144,13 +144,13 @@ conversionTable = {
 def resource_path( relative_path):
     """Get absolute path to resource, works for dev and for PyInstaller"""
     # # TODO for nuitka 
-    # if "__compiled__" in globals():
-    #     base_path = path.join(str(os.getenv("TEMP")), "ONEFILE_SCREENCAP")
-    # else:
-    #     base_path = path.abspath(".")
-    # return path.join(str(base_path), relative_path)
-    try:
-        base_path = sys._MEIPASS # type: ignore
-    except (NameError, AttributeError) :
+    if "__compiled__" in globals():
+        base_path = path.join(str(os.getenv("TEMP")), "ONEFILE_SCREENCAP")
+    else:
         base_path = path.abspath(".")
-    return path.join(base_path, relative_path)
+    return path.join(str(base_path), relative_path)
+    # try:
+    #     base_path = sys._MEIPASS # type: ignore
+    # except (NameError, AttributeError) :
+    #     base_path = path.abspath(".")
+    # return path.join(base_path, relative_path)

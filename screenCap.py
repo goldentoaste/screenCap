@@ -4,7 +4,7 @@ import os
 import sys
 from configparser import ConfigParser
 from os import getenv, mkdir, path, remove
-from tkinter import Button, Checkbutton, DoubleVar, Entry, Frame, IntVar, Label, StringVar, Tk, messagebox
+from tkinter import Button, Checkbutton, Entry, Frame, IntVar, Label, StringVar, Tk, messagebox
 from tkinter.constants import BOTH, END, LEFT, RIGHT, TOP, X
 
 import infi.systray.win32_adapter as win32
@@ -22,6 +22,14 @@ datas=[('icon.ico', '.'), ('bread.cur', '.')],
              hiddenimports=['pkg_resources.markers','pkg_resources.py2_warn','pynput.keyboard._win32', 'pynput.mouse._win32', 'pkg_resources', 'setuptools.py33compat','setuptools.py27compat'],
 """
 
+# lock files dont work, use mutex instead
+mutexName = "screenCapLock"
+
+
+if ctypes.windll.kernel32.GetLastError() == 183:  # 183 means "ERROR_ALREADY_EXISTS"
+    messagebox.showerror(title="error", message="An instance of screenCap is already running!")
+    os._exit(0)
+
 
 seperator = "(*)"
 # replace with screenCap.exe if compiling to exe!
@@ -29,7 +37,6 @@ executable = "screenCap.exe"
 iconName = "icon.ico"
 configDir = path.join(getenv("appdata", ""), "screenCap")
 configFile = path.join(configDir, "config.ini")
-singletonFile = path.join(configDir, "singleton.lock")
 
 shortCutDest = path.join(getenv("appdata", ""), r"Microsoft\Windows\Start Menu\Programs\Startup")
 shortCutFile = path.join(shortCutDest, "screenCap.lnk")
@@ -123,15 +130,6 @@ class MainWindow:
         # updating things to reflect settings
         self.update("all")
 
-        # singleton should be established after update, in  initialize, so that if the code aborts in update(restart as admin), it will not
-        # be labeled as singleton. Works for both IDE and compiled exe.
-
-        if os.path.isfile(singletonFile):
-            messagebox.showerror(title="error", message="An instance of screenCap is already running!")
-            os._exit(0)
-        else:
-            os.open(singletonFile, os.O_CREAT | os.O_EXCL | os.O_TEMPORARY)
-
         # init system tray
         menu = (
             ("Capture!", None, lambda tray: self.capture()),
@@ -209,34 +207,37 @@ class MainWindow:
             if self.admin.get() == 1:
                 if not is_admin():
                     # for nuitka
-                    # ctypes.windll.shell32.ShellExecuteW(
-                    #     None,
-                    #     "runas",
-                    #     # execute with console since, in editor, console would not be captured otherwise
-                    #     "".join(sys.argv),
-                    #     "",  # leave empty for deployment
-                    #     None,
-                    #     None,
-                    # )
-
-                    # # for pyinstaller
-                    selfPath = (
-                        ""
-                        if hasattr(sys, "_MEIPASS")
-                        else '"' + os.getcwd() + "\\screenCap.py" + '"'
-                    )
                     ctypes.windll.shell32.ShellExecuteW(
                         None,
                         "runas",
                         # execute with console since, in editor, console would not be captured otherwise
-                        '"' + sys.executable + '"',
-                        selfPath,  # leave empty for deployment
+                        "".join(sys.argv),
+                        "",  # leave empty for deployment
                         None,
-                        1,
+                        None,
                     )
+
+                    # # for pyinstaller
+                    # selfPath = (
+                    #     ""
+                    #     if hasattr(sys, "_MEIPASS")
+                    #     else '"' + os.getcwd() + "\\screenCap.py" + '"'
+                    # )
+                    # ctypes.windll.shell32.ShellExecuteW(
+                    #     None,
+                    #     "runas",
+                    #     # execute with console since, in editor, console would not be captured otherwise
+                    #     '"' + sys.executable + '"',
+                    #     selfPath,  # leave empty for deployment
+                    #     None,
+                    #     1,
+                    # )
                     self.main.destroy()
 
                     os._exit(0)
+                self.mutex = ctypes.windll.kernel32.CreateMutexA(None, False, mutexName + "admin")
+            else:
+                self.mutex = mutex = ctypes.windll.kernel32.CreateMutexA(None, False, mutexName)
 
         def lastPath():
             self.config.set("screenCap", "lastPath", self.lastPath.get())
@@ -377,8 +378,6 @@ class MainWindow:
     def record(self):
         self.detect = True
         self.combo.clear()
-
-    
 
     def makeUI(self):
         self.frame0 = Frame(self.main)
