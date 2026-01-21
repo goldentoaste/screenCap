@@ -37,7 +37,7 @@ class ConfigManager:
 
         self.addMissingVars = addMissingVars
         self.removeExtraVars = removeExtraVars
-        
+
         if os.path.isfile(path):
             self.config.read(path)
         else:
@@ -251,7 +251,7 @@ class ConfigManager:
                         self.default[opt][0][length + 1 :]
                     )  # if the list has fewer items than the default, add the missing items.
                     self.config.set(sec, opt, self.getVarString(opt, temp))
-                    
+
                 if not temp[0]:
                     self.vals[opt] = []  # if temp is blank, just make it an empty array
                     return
@@ -280,7 +280,7 @@ class ConfigManager:
 if __name__ == "__main__":
 
     c = ConfigManager(
-        "D:\Work\Refactors\\test.ini",
+        "D:\\Work\\Refactors\\test.ini",
         {
             "inum": (33, "main"),
             "fnum": (2.2, "main"),

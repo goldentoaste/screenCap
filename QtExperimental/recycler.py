@@ -55,10 +55,10 @@ class Recycler(QWidget):
         self.resize(self.width(), int(self.maxSize.height() * 3.5))
         temp = ImageContainer(maxSize=self.maxSize)
         self.setFixedWidth(int(temp.width()))
-       
-    
-    
-    
+
+
+
+
     def loadImages(self):
 
         paths = sorted(
@@ -74,15 +74,15 @@ class Recycler(QWidget):
             img = QPixmap(str(path), "PNG", Qt.ImageConversionFlag.AutoColor)
             self.containers.append(ImageContainer(img, path, self.maxSize))
             self.listLayout.addWidget(self.containers[-1])
-            
-       
+
+
 
 
 class ImageContainer(QWidget):
     def __init__(self, image: QPixmap = None, path = "", maxSize: QSize = None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.path = path
-        
+
         layout = QHBoxLayout()
         img = QLabel()
         img.setFixedWidth(maxSize.width())
@@ -98,7 +98,7 @@ class ImageContainer(QWidget):
             )
         else:
             text = QLabel('%b.%d.%Y %I:%M|%p')
-        
+
         text.setMargin(15)
 
         layout.addWidget(img)
@@ -114,7 +114,7 @@ if __name__ == "__main__":
     ex = Recycler(
         os.path.join(os.getenv("appdata"), "screenCap"),
         ConfigManager.ConfigManager(
-            "D:\PythonProject\screenCap\QtExperimental\config.ini",
+            "D:\\PythonProject\\screenCap\\QtExperimental\\config.ini",
             default=values.defaultVariables,
         ),
     )

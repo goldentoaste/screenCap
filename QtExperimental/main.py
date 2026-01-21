@@ -35,7 +35,7 @@ configDir = path.join(getenv("appdata"), "screenCap")
 configFile = path.join(configDir, "config.ini")
 singletonFile = path.join(configDir, "singleton.lock")
 shortCutDest = path.join(
-    getenv("appdata"), "Microsoft\Windows\Start Menu\Programs\Startup"
+    getenv("appdata"), "Microsoft\\Windows\\Start Menu\\Programs\\Startup"
 )
 shortCutFile = path.join(shortCutDest, "screenCap.lnk")
 # shortCutTarget = path.join(
@@ -43,7 +43,7 @@ shortCutFile = path.join(shortCutDest, "screenCap.lnk")
 # )
 
 
-    
+
 class Main(QWidget):
     def __init__(self):
         super().__init__()
@@ -77,7 +77,7 @@ class Main(QWidget):
 
     def initConfig(self):
         self.config = ConfigManager(
-            r"D:\PythonProject\screenCap\QtExperimental\config.ini", defaultVariables, 
+            r".\\config.ini", defaultVariables,
         )
 
     def closeEvent(self, a0) -> None:
@@ -96,15 +96,15 @@ class Main(QWidget):
 
     def initGUI(self):
         self.setWindowTitle("screenCap owo")
-        
+
         self.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
 
         self.tabs = SizeAdjustingTabs([3],self)
-        
+
         self.generaltab = QWidget()
-        
+
         self.hotkeystab = QWidget()
-        
+
         self.generaltab.layout = QVBoxLayout()
 
         self.generaltab.setLayout(self.generaltab.layout)
@@ -240,13 +240,13 @@ class Main(QWidget):
             form.lines[i].lostFocus = self.hotkeysManager.stopRecording
 
             form.addRow(form.titles[i], form.lines[i])
-        
-    
+
+
         self.hotkeystab.setLayout(form)
         scroll = QScrollArea()
         scroll.setWidget(self.hotkeystab)
         self.tabs.addTab(scroll, "Hotkeys")
-        
+
     def applyGeneralConfig(self):
 
         self.startUpCheck.setChecked(bool(self.config.istartup))
@@ -271,8 +271,8 @@ class Main(QWidget):
         self.defaultSaveLocation.setDisabled(self.useLastLocationCheck.isChecked())
 
     def setupGeneralTab(self):
-        
-        
+
+
         def connectck(check, func):
             check.stateChanged.connect(lambda i: func())
 
@@ -376,16 +376,16 @@ class Main(QWidget):
         self.paintToolContainer.layout().addWidget(self.paintTool)
         self.paintToolContainer.layout().setContentsMargins(0,0,0,0)
         self.tabs.addTab(self.paintToolContainer, "Paint Tools")
-    
-    def takeSnapshot(self): 
+
+    def takeSnapshot(self):
         self.snapshots.append(Snapshot(master= self, image= None, config = self.config, contextMenu=self.contextMenuTab, paintTool= self.paintTool)) #call from full screen
-    
+
     def showRecycler(self):
         self.recycling.show()
-    
+
     def hideRecycler(self):
         self.recycling.hide()
-    
+
     def snapshotCloseEvent(self, snap: Snapshot):
         try:
             self.snapshots.remove(snap)
@@ -396,26 +396,26 @@ class Main(QWidget):
             #or if the snap closed is the one currently painting
             self.paintToolJoin()
         gc.collect()
-        
-    
+
+
     def snapshotPaintEvent(self, snap : Snapshot):
         if self.currentPainting and self.currentPainting is not snap: # current is not none
             self.currentPainting.stopPaint()
         self.currentPainting = snap
         self.paintToolPop()
-        
+
     def snapshotStopPaintEvent(self, snap : Snapshot):
         if snap is self.currentPainting:
             self.paintToolJoin()
-            
+
     def paintToolPop(self):
         self.paintTool.setParent(None)
         self.paintTool.show()
-    
+
     def paintToolJoin(self):
         self.paintToolContainer.layout().addWidget(self.paintTool)
-        
-    
+
+
 class CustomLineEdit(QLineEdit):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -446,21 +446,21 @@ class CustomLineEdit(QLineEdit):
 
 
 class SizeAdjustingTabs(QTabWidget):
-    
+
     def __init__(self, excluded = None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.excluded = excluded if excluded else []
         self.maxSize = None
         self.currentChanged.connect(self.onItemChanged)
-    
+
     def minimumSizeHint(self):
         return self.sizeHint()
-    
+
     def sizeHint(self):
-        
+
         if self.currentIndex() in self.excluded:
             return QSize(self.currentWidget().sizeHint().width(), self.currentWidget().sizeHint().height() + 30 )
-        
+
         try:
             maxWidth = max([self.widget(i).sizeHint().width() for i in range(self.count()) if i not in self.excluded])
             maxHeight = max([self.widget(i).sizeHint().height() for i in range(self.count()) if i not in self.excluded]) + 30
@@ -470,7 +470,7 @@ class SizeAdjustingTabs(QTabWidget):
 
     def onItemChanged(self):
         if self.sizeHint().width() < 50 or self.sizeHint().height() < 50:
-            return 
+            return
         self.setFixedSize(self.sizeHint())
         self.parent().adjustSize()
 

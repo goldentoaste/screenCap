@@ -32,25 +32,26 @@ class HotkeyManager(threading.Thread):
 
         self.task = []
         self.islocal = False
-        
+
         self.config = config
 
     def getModsCode(self, mods) -> int:
         num = 0
+        print("testing", modCode, mods)
         for mod in mods:
             num |= modCode[mod]
         return num
 
     def setHotkey(self, name, keys :Iterable, callback):
         keys = self.getSortedKeys(keys)
-        print(keys)
+        print(keys, "here")
         if not keys:
             key = None
             modifiers = None
         else:
             key = keys[-1]
             modifiers = keys[:-1]
-  
+
         self.task.append((self._setHotkey, [name, key, modifiers, callback], {}))
 
     def _setHotkey(self, name, key: str, modifiers: Iterable, callback):
@@ -59,7 +60,7 @@ class HotkeyManager(threading.Thread):
         """
 
         self.currentKey = key if type(key) is int else keycodeTable[key]
-        
+
         self.currentMods = {
             mod if type(mod) is int else keycodeTable[mod] for mod in modifiers
         }
@@ -68,6 +69,7 @@ class HotkeyManager(threading.Thread):
         self.recording = name
         self.callbacks[self.index] = callback
         self.hotkeys[name] = [self.index, None, set()]
+
         self._stopRecording()
 
     def recordNewHotkey(self, name, hotkeyCallback, stringCallback, islocal=False):
@@ -83,7 +85,7 @@ class HotkeyManager(threading.Thread):
 
             self._stopRecording()
         self.recording = name
-     
+
         self.keyStringCallback = stringCallback
         self.currentKey = None
         self.currentMods.clear()
@@ -99,18 +101,17 @@ class HotkeyManager(threading.Thread):
             self.currentKey = None
             self.currentMods.clear()
             self.keyStringCallback = None
-    
+
         if self.recording and self.currentKey is not None:
 
             vals = (self.index, self.currentKey, self.currentMods)
-            print(vals)
             if not self.islocal and not user32.RegisterHotKey(
                 None,
                 vals[0],
                 self.getModsCode(vals[2]),
                 vals[1],
             ):
-            
+
                 self.keyStringCallback("None")
                 clearFields()
 
@@ -124,7 +125,7 @@ class HotkeyManager(threading.Thread):
                     self.index += 1
                     self.hotkeys[self.recording][1] = self.currentKey
                     self.hotkeys[self.recording][2].update(self.currentMods)
-                    self.config[self.recording] =list(self.currentMods)+ [self.currentKey] 
+                    self.config[self.recording] =list(self.currentMods)+ [self.currentKey]
                     clearFields()
                     return
 
@@ -183,7 +184,7 @@ class HotkeyManager(threading.Thread):
         def modKey(key):
             if key in modifiers:
                 return modifiers.index(key)+1
-            return 0
+            return 9999
 
         return sorted(keys, key=modKey)
 

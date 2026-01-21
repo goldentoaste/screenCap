@@ -6,3 +6,4 @@ build.bat
 tempCodeRunnerFile.py
 temp.py
 testing.py
+*.dist
