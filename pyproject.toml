@@ -1,0 +1,27 @@
+[project]
+name = "screencap"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "goldentoaste",email = "rayg2375@gmail.com"}
+]
+license = {text = "GPL"}
+readme = "README.md"
+requires-python = ">=3.13,<3.15"
+dependencies = [
+    "pyside6 (>=6.10.1,<7.0.0)",
+    "pywin32 (>=311,<312)",
+    "betterconf (>=4.5.0,<5.0.0)",
+]
+
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[dependency-groups]
+dev = [
+    "pyside6-stubs (>=6.7.3.0,<7.0.0.0)",
+    "nuitka (>=2.8.10,<3.0.0)"
+]

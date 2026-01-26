@@ -1,0 +1,56 @@
+<?xml version='1.0' encoding='utf8'?>
+<nuitka-compilation-report nuitka_version="2.8.10" nuitka_commercial_version="not installed" mode="accelerated" completion="error exit message (1)" exit_message="Failed unexpectedly in Scons C backend compilation.">
+  <module name="__main__" kind="PythonMainModule" usage="root_module" reason="Root module" source_path="${cwd}\screencap\debug\test.py">
+    <optimization-time pass="1" time="0.02" micro_passes="5" max_branch_merge="18" merged_total="380" />
+    <optimization-time pass="2" time="0.00" micro_passes="1" max_branch_merge="15" merged_total="50" />
+    <module_usages>
+      <module_usage name="site" finding="excluded" line="1" exclusion_reason="Not following into stdlib unless standalone or requested to follow into stdlib." />
+      <module_usage name="_virtualenv" finding="absolute" line="1" />
+      <module_usage name="pywin32_bootstrap" finding="absolute" line="1" />
+      <module_usage name="sys" finding="absolute" line="3" />
+      <module_usage name="typing" finding="excluded" line="4" exclusion_reason="Not following into stdlib unless standalone or requested to follow into stdlib." />
+      <module_usage name="PySide6" finding="absolute" line="5" />
+      <module_usage name="PySide6.QtWidgets" finding="excluded" line="5" exclusion_reason="Extension modules cannot be inspected." />
+      <module_usage name="PySide6.QtWidgets" finding="excluded" line="6" exclusion_reason="Extension modules cannot be inspected." />
+    </module_usages>
+  </module>
+  <performance>
+    <memory_usage name="after_launch" value="42790912" />
+    <memory_usage name="before_c_code_generation" value="43618304" />
+    <memory_usage name="before_running_scons" value="48549888" />
+  </performance>
+  <data_composer blob_size="1804" total="161">
+    <module_data filename="__bytecode.const" blob_name=".bytecode" blob_size="3" input_size="0" />
+    <module_data filename="__constants.const" blob_name="" blob_size="1024" input_size="2404" />
+    <module_data filename="module.__main__.const" blob_name="__main__" blob_size="737" input_size="1321" />
+  </data_composer>
+  <command_line>
+    <option value=".\screencap\debug\test.py" />
+  </command_line>
+  <plugins>
+    <plugin name="anti-bloat" user_enabled="no" />
+    <plugin name="eventlet" user_enabled="no" />
+    <plugin name="gi" user_enabled="no" />
+    <plugin name="implicit-imports" user_enabled="no" />
+    <plugin name="multiprocessing" user_enabled="no" />
+    <plugin name="options-nanny" user_enabled="no" />
+    <plugin name="pkg-resources" user_enabled="no" />
+    <plugin name="transformers" user_enabled="no" />
+  </plugins>
+  <distributions />
+  <python python_exe="${sys.prefix}\Scripts\python.exe" python_flavor="CPython Official" python_version="3.13.11" os_name="Windows" os_release="11" arch_name="x86_64" filesystem_encoding="utf-8" gil="yes">
+    <search_path>
+      <path value="${cwd}" />
+      <path value="${cwd}\screencap\debug" />
+      <path value="${sys.real_prefix}\DLLs" />
+      <path value="${sys.real_prefix}\Lib" />
+      <path value="${sys.real_prefix}" />
+      <path value="${sys.prefix}" />
+      <path value="${sys.prefix}\Lib\site-packages" />
+      <path value="${sys.prefix}\Lib\site-packages\win32" />
+      <path value="${sys.prefix}\Lib\site-packages\win32\lib" />
+      <path value="${sys.prefix}\Lib\site-packages\Pythonwin" />
+    </search_path>
+  </python>
+  <output run_filename="${cwd}\test.cmd" />
+</nuitka-compilation-report>
