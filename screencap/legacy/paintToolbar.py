@@ -3,10 +3,31 @@ import sys
 from dataclasses import dataclass
 from typing import List
 
-from PyQt5 import QtCore, QtGui
-from PyQt5.QtCore import QPoint, QPointF, QSize, Qt
-from PyQt5.QtGui import QBrush, QColor, QFont, QFontMetrics, QIcon, QPainter, QPen, QPixmap, QRadialGradient
-from PyQt5.QtWidgets import QApplication, QCheckBox, QColorDialog, QGridLayout, QHBoxLayout, QLineEdit, QPushButton, QSlider, QVBoxLayout, QWidget
+from PySide6 import QtCore, QtGui
+from PySide6.QtCore import QPoint, QPointF, QSize, Qt
+from PySide6.QtGui import (
+    QBrush,
+    QColor,
+    QFont,
+    QFontMetrics,
+    QIcon,
+    QPainter,
+    QPen,
+    QPixmap,
+    QRadialGradient,
+)
+from PySide6.QtWidgets import (
+    QApplication,
+    QCheckBox,
+    QColorDialog,
+    QGridLayout,
+    QHBoxLayout,
+    QLineEdit,
+    QPushButton,
+    QSlider,
+    QVBoxLayout,
+    QWidget,
+)
 
 from ConfigManager import ConfigManager
 
@@ -28,7 +49,9 @@ class DrawOptions:
 
 
 def loadImage(path, x, y):
-    return QPixmap(path, "PNG").scaled(x, y, transformMode=Qt.TransformationMode.SmoothTransformation)
+    return QPixmap(path, "PNG").scaled(
+        x, y
+    )
 
 
 class PaintToolbar(QWidget):
@@ -51,7 +74,11 @@ class PaintToolbar(QWidget):
             (LINE, False, False): (loadImage("icons/crossLine.png", 32, 32), 16, 16),
             (LINE, True, False): (loadImage("icons/crossZigZag.png", 32, 32), 16, 16),
             (RECT, False, False): (loadImage("icons/crossRect.png", 32, 32), 16, 16),
-            (CIRCLE, False, False): (loadImage("icons/crossCircle.png", 32, 32), 16, 16),
+            (CIRCLE, False, False): (
+                loadImage("icons/crossCircle.png", 32, 32),
+                16,
+                16,
+            ),
             (SELECT, False, False): (Qt.CursorShape.ArrowCursor,),
             (ERASE, False, False): (loadImage("icons/eraserDark.png", 24, 24), 0, 24),
         }
@@ -77,7 +104,6 @@ class PaintToolbar(QWidget):
             self.colorButtons[i].setColor(QColor(colors[i]))
 
     def getDrawOptions(self, scale: float):
-
         """
         https://stackoverflow.com/a/59659424/12471420
         yoink, using graidents to smooth lines
@@ -97,17 +123,31 @@ class PaintToolbar(QWidget):
 
         # pen.setBrush(grad)
 
-        o.pen = QPen(color, radius, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
+        o.pen = QPen(
+            color,
+            radius,
+            Qt.PenStyle.SolidLine,
+            Qt.PenCapStyle.RoundCap,
+            Qt.PenJoinStyle.RoundJoin,
+        )
         # o.pen.setBrush(QBrush(grad))
         o.brush = QBrush(
             color,
-            Qt.BrushStyle.NoBrush if not self.fillCheck.isChecked() else Qt.BrushStyle.SolidPattern,
+            (
+                Qt.BrushStyle.NoBrush
+                if not self.fillCheck.isChecked()
+                else Qt.BrushStyle.SolidPattern
+            ),
         )
 
         return o
 
     def initGui(self):
-        self.setWindowFlags(Qt.WindowType.CustomizeWindowHint | Qt.WindowType.WindowCloseButtonHint | Qt.WindowType.WindowStaysOnTopHint)
+        self.setWindowFlags(
+            Qt.WindowType.CustomizeWindowHint
+            | Qt.WindowType.WindowCloseButtonHint
+            | Qt.WindowType.WindowStaysOnTopHint
+        )
 
         self.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
         metric = QFontMetrics(QFont())
@@ -125,9 +165,16 @@ class PaintToolbar(QWidget):
         self.radiusSlider.setMaximum(20)
         self.radiusSlider.setPageStep(1)
         self.radiusSlider.valueChanged.connect(
-            lambda val: (self.radiusField.setText(f"{val} px"), self.radiusIcon.setRadius(val), setConfig("isize", val))
+            lambda val: (
+                self.radiusField.setText(f"{val} px"),
+                self.radiusIcon.setRadius(val),
+                setConfig("isize", val),
+            )
         )
-        self.radiusField.onFinish = lambda val: (self.radiusSlider.setSliderPosition(val), setConfig("isize", val))
+        self.radiusField.onFinish = lambda val: (
+            self.radiusSlider.setSliderPosition(val),
+            setConfig("isize", val),
+        )
 
         self.alphaField = NumEditTemp("Alpha *%", "*", 0, 100)
         self.alphaField.setFixedWidth(metric.horizontalAdvance("Alpha 100%  "))
@@ -136,8 +183,16 @@ class PaintToolbar(QWidget):
         self.alphaSlider.setMinimum(0)
         self.alphaSlider.setMaximum(100)
         self.alphaSlider.setPageStep(5)
-        self.alphaSlider.valueChanged.connect(lambda val: (self.alphaField.setText(f"Alpha {val}%"), setConfig("ialpha", val)))
-        self.alphaField.onFinish = lambda val: (self.alphaSlider.setSliderPosition(val), setConfig("ialpha", val))
+        self.alphaSlider.valueChanged.connect(
+            lambda val: (
+                self.alphaField.setText(f"Alpha {val}%"),
+                setConfig("ialpha", val),
+            )
+        )
+        self.alphaField.onFinish = lambda val: (
+            self.alphaSlider.setSliderPosition(val),
+            setConfig("ialpha", val),
+        )
 
         def assignmentSelection(val):
             self.currentSelection = val
@@ -234,7 +289,9 @@ class PaintToolbar(QWidget):
 
 
 class NumEditTemp(QLineEdit):
-    def __init__(self, format: str, blankChar: str, min: int, max: int, *args, **kwargs):
+    def __init__(
+        self, format: str, blankChar: str, min: int, max: int, *args, **kwargs
+    ):
         super().__init__(*args, **kwargs)
         self.format = format
         self.blankChar = blankChar
@@ -326,5 +383,11 @@ if __name__ == "__main__":
     import values
 
     app = QApplication(sys.argv)
-    ex = PaintToolbar(ConfigManager("D:\\PythonProject\\screenCap\\QtExperimental\\config.ini", values.defaultVariables), None)
+    ex = PaintToolbar(
+        ConfigManager(
+            "D:\\PythonProject\\screenCap\\QtExperimental\\config.ini",
+            values.defaultVariables,
+        ),
+        None,
+    )
     sys.exit(app.exec_())

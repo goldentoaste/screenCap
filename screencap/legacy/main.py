@@ -1,20 +1,19 @@
 from typing import List
 
-from PyQt5 import QtCore
+from PySide6 import QtCore
 from HotkeyManager import HotkeyManager
 import os
 from ConfigManager import ConfigManager
 from os import path, getenv, remove
-from PyQt5.QtGui import QIntValidator
-from PyQt5.QtWidgets import *
+from PySide6.QtGui import QIntValidator
+from PySide6.QtWidgets import *
 import sys
 from recycler import Recycler
 
-configDir = path.join(getenv("appdata"), "screenCap")
-configFile = path.join(configDir, "config.ini")
+
 
 from values import defaultVariables, resource_path
-from PyQt5.QtCore import QObject, QSize, Qt
+from PySide6.QtCore import QObject, QSize, Qt
 from win32com.client import Dispatch
 import pythoncom
 
@@ -27,21 +26,18 @@ import gc
 from values import ThreadSignal
 
 
-
-
 executable = "screenCap.exe"
 iconName = "icon.ico"
-configDir = path.join(getenv("appdata"), "screenCap")
+configDir = path.join(getenv("appdata") or "", "screenCap")
 configFile = path.join(configDir, "config.ini")
 singletonFile = path.join(configDir, "singleton.lock")
 shortCutDest = path.join(
-    getenv("appdata"), "Microsoft\\Windows\\Start Menu\\Programs\\Startup"
+    getenv("appdata") or "", "Microsoft\\Windows\\Start Menu\\Programs\\Startup"
 )
 shortCutFile = path.join(shortCutDest, "screenCap.lnk")
 # shortCutTarget = path.join(
 #     resource_path(path.dirname(path.abspath(__file__))), executable
 # )
-
 
 
 class Main(QWidget):
@@ -52,20 +48,23 @@ class Main(QWidget):
         self.initHotkeys()
         self.initGUI()
         self.snapshots = []
-        self.currentPainting : Snapshot = None
+        self.currentPainting: Snapshot | None = None
 
     def initRecycling(self):
         self.recycling = Recycler(configDir, self.config)
         self.recycling.hide()
 
     def initHotkeys(self):
-        self.captureSignal =ThreadSignal()
+        self.captureSignal = ThreadSignal()
         self.captureSignal.signal.connect(self.takeSnapshot)
         self.recycleSignal = ThreadSignal()
         self.recycleSignal.signal.connect(self.showRecycler)
         self.hotkeys = {
-            "licapture": (self.captureSignal.signal.emit, "Capture Screen(global)"), #configname : ()
-            "lirecycle" : (self.recycleSignal.signal.emit, "Toggle Recycler(global)")
+            "licapture": (
+                self.captureSignal.signal.emit,
+                "Capture Screen(global)",
+            ),  # configname : ()
+            "lirecycle": (self.recycleSignal.signal.emit, "Toggle Recycler(global)"),
         }
         self.hotkeysManager = HotkeyManager(self.config)
         self.hotkeysManager.start()
@@ -73,41 +72,39 @@ class Main(QWidget):
             keys = self.config[key]
             if len(keys) == 0:
                 continue
-            self.hotkeysManager.setHotkey(key, keys, val[0] )
+            self.hotkeysManager.setHotkey(key, keys, val[0])
 
     def initConfig(self):
         self.config = ConfigManager(
-            r".\\config.ini", defaultVariables,
+            r".\\config.ini",
+            defaultVariables,
         )
 
-    def closeEvent(self, a0) -> None:
+    def closeEvent(self, event) -> None:
         if self.config.iminx:
-            print("closing")
-            a0.ignore()
+            event.ignore()
             return
-        return super().closeEvent(a0)
+        return super().closeEvent(event)
 
-    def hideEvent(self, a0) -> None:
+    def hideEvent(self, event) -> None:
         if self.config.imintray:
-            print("closing")
             a0.ignore()
             return
-        return super().hideEvent(a0)
+        return super().hideEvent(event)
 
     def initGUI(self):
-        self.setWindowTitle("screenCap owo")
+        self.setWindowTitle("screenCap v2")
 
         self.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
 
-        self.tabs = SizeAdjustingTabs([3],self)
+        self.tabs = SizeAdjustingTabs([3], self)
 
         self.generaltab = QWidget()
 
         self.hotkeystab = QWidget()
 
-        self.generaltab.layout = QVBoxLayout()
+        self.generaltab.setLayout(QVBoxLayout())
 
-        self.generaltab.setLayout(self.generaltab.layout)
         self.tabs.addTab(self.generaltab, "General")
 
         # first row
@@ -195,12 +192,12 @@ class Main(QWidget):
         mainsavingLayout.addWidget(self.useLastLocationCheck)
 
         # bottom
-        self.generaltab.layout.addLayout(temphbox)
-        self.generaltab.layout.addWidget(recycleGroup)
-        self.generaltab.layout.addWidget(savingGroup)
+        self.generaltab.layout().addLayout(temphbox)
+        self.generaltab.layout().addWidget(recycleGroup)
+        self.generaltab.layout().addWidget(savingGroup)
         self.captureButton = QPushButton("Capture")
 
-        self.generaltab.layout.addWidget(self.captureButton)
+        self.generaltab.layout().addWidget(self.captureButton)
         self.applyGeneralConfig()
         self.setupGeneralTab()
         self.initHotkeysTab()
@@ -231,7 +228,11 @@ class Main(QWidget):
         for key, val in self.hotkeys.items():
             i = next(r)
             form.titles.append(QLabel(val[1]))
-            form.lines.append(CustomLineEdit(self.hotkeysManager.getKeyString(None,set(self.config[key])))) #knee deep in jank
+            form.lines.append(
+                CustomLineEdit(
+                    self.hotkeysManager.getKeyString(None, set(self.config[key]))
+                )
+            )  # knee deep in jank
 
             form.lines[i].onFocus = makeFunc(
                 lineeditRecord,
@@ -240,7 +241,6 @@ class Main(QWidget):
             form.lines[i].lostFocus = self.hotkeysManager.stopRecording
 
             form.addRow(form.titles[i], form.lines[i])
-
 
         self.hotkeystab.setLayout(form)
         scroll = QScrollArea()
@@ -267,11 +267,10 @@ class Main(QWidget):
         self.showRecycleButton.setEnabled(self.recycleCheck.isChecked())
         self.clearRecycleButton.setEnabled(self.recycleCheck.isChecked())
         self.recycleCapacityEdit.setEnabled(self.recycleCheck.isChecked())
-       # self.savingOption.setDisabled(self.savePromptCheck.isChecked())
+        # self.savingOption.setDisabled(self.savePromptCheck.isChecked())
         self.defaultSaveLocation.setDisabled(self.useLastLocationCheck.isChecked())
 
     def setupGeneralTab(self):
-
 
         def connectck(check, func):
             check.stateChanged.connect(lambda i: func())
@@ -374,11 +373,19 @@ class Main(QWidget):
         self.paintToolContainer = QWidget()
         self.paintToolContainer.setLayout(QHBoxLayout())
         self.paintToolContainer.layout().addWidget(self.paintTool)
-        self.paintToolContainer.layout().setContentsMargins(0,0,0,0)
+        self.paintToolContainer.layout().setContentsMargins(0, 0, 0, 0)
         self.tabs.addTab(self.paintToolContainer, "Paint Tools")
 
     def takeSnapshot(self):
-        self.snapshots.append(Snapshot(master= self, image= None, config = self.config, contextMenu=self.contextMenuTab, paintTool= self.paintTool)) #call from full screen
+        self.snapshots.append(
+            Snapshot(
+                master=self,
+                image=None,
+                config=self.config,
+                contextMenu=self.contextMenuTab,
+                paintTool=self.paintTool,
+            )
+        )  # call from full screen
 
     def showRecycler(self):
         self.recycling.show()
@@ -392,19 +399,20 @@ class Main(QWidget):
         except ValueError as e:
             print(e, "oh no! trying to delete a snap that doesnt exist")
         if not self.snapshots or snap is self.currentPainting:
-            #if the last snap is closed, then painttool is no longer needed
-            #or if the snap closed is the one currently painting
+            # if the last snap is closed, then painttool is no longer needed
+            # or if the snap closed is the one currently painting
             self.paintToolJoin()
         gc.collect()
 
-
-    def snapshotPaintEvent(self, snap : Snapshot):
-        if self.currentPainting and self.currentPainting is not snap: # current is not none
+    def snapshotPaintEvent(self, snap: Snapshot):
+        if (
+            self.currentPainting and self.currentPainting is not snap
+        ):  # current is not none
             self.currentPainting.stopPaint()
         self.currentPainting = snap
         self.paintToolPop()
 
-    def snapshotStopPaintEvent(self, snap : Snapshot):
+    def snapshotStopPaintEvent(self, snap: Snapshot):
         if snap is self.currentPainting:
             self.paintToolJoin()
 
@@ -447,7 +455,7 @@ class CustomLineEdit(QLineEdit):
 
 class SizeAdjustingTabs(QTabWidget):
 
-    def __init__(self, excluded = None, *args, **kwargs):
+    def __init__(self, excluded=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.excluded = excluded if excluded else []
         self.maxSize = None
@@ -459,12 +467,30 @@ class SizeAdjustingTabs(QTabWidget):
     def sizeHint(self):
 
         if self.currentIndex() in self.excluded:
-            return QSize(self.currentWidget().sizeHint().width(), self.currentWidget().sizeHint().height() + 30 )
+            return QSize(
+                self.currentWidget().sizeHint().width(),
+                self.currentWidget().sizeHint().height() + 30,
+            )
 
         try:
-            maxWidth = max([self.widget(i).sizeHint().width() for i in range(self.count()) if i not in self.excluded])
-            maxHeight = max([self.widget(i).sizeHint().height() for i in range(self.count()) if i not in self.excluded]) + 30
-            return  QSize(maxWidth, maxHeight)
+            maxWidth = max(
+                [
+                    self.widget(i).sizeHint().width()
+                    for i in range(self.count())
+                    if i not in self.excluded
+                ]
+            )
+            maxHeight = (
+                max(
+                    [
+                        self.widget(i).sizeHint().height()
+                        for i in range(self.count())
+                        if i not in self.excluded
+                    ]
+                )
+                + 30
+            )
+            return QSize(maxWidth, maxHeight)
         except ValueError as e:
             return super().sizeHint()
 

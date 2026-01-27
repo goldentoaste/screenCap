@@ -3,11 +3,10 @@ import os
 import pathlib
 import time
 from typing import List
-from PyQt5.QtCore import QSize, Qt
-from PyQt5.QtGui import QImage, QPixmap
-from PyQt5.QtWidgets import (
+from PySide6.QtCore import QSize, Qt
+from PySide6.QtGui import QImage, QPixmap, QGuiApplication
+from PySide6.QtWidgets import (
     QApplication,
-    QDesktopWidget,
     QHBoxLayout,
     QLabel,
     QListView,
@@ -29,7 +28,7 @@ class Recycler(QWidget):
 
         self.path = path
         self.config = config
-        deskSize = QDesktopWidget().screenGeometry().size()
+        deskSize = QGuiApplication.primaryScreen().geometry().size()
         self.maxSize = QSize(int(deskSize.width() / 6.5), int(deskSize.height() / 5))
 
         self.containers : List[QWidget] = []

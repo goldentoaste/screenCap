@@ -1,9 +1,19 @@
 import sys
-from PyQt5 import QtGui, QtWidgets
+from PySide6 import QtGui, QtWidgets
 
-from PyQt5.QtCore import QRectF, QSize, Qt
+from PySide6.QtCore import QRectF, QSize, Qt
 
-from PyQt5.QtWidgets import QApplication, QHBoxLayout, QLabel, QListView, QListWidget, QMenu, QPushButton, QVBoxLayout, QWidget
+from PySide6.QtWidgets import (
+    QApplication,
+    QHBoxLayout,
+    QLabel,
+    QListView,
+    QListWidget,
+    QMenu,
+    QPushButton,
+    QVBoxLayout,
+    QWidget,
+)
 
 from ConfigManager import ConfigManager
 import values
@@ -13,7 +23,6 @@ shortDivider = "div"
 
 
 class MenuPage(QtWidgets.QWidget):
-
     """a gui to customize right click context menu for snapshots"""
 
     def __init__(self, config: ConfigManager, *args, **kwargs):
@@ -60,34 +69,41 @@ class MenuPage(QtWidgets.QWidget):
         self.setLayout(layout)
 
     def initValues(self):
-        
-        
+
         current = self.config.lscurrentcommands
         available = self.config.lsavailablecommands
         for command in current:
             if command not in values.rightclickOptions and command != shortDivider:
-                current = [] #if any of the items in the ini is not compatible, just reset it.
+                current = (
+                    []
+                )  # if any of the items in the ini is not compatible, just reset it.
                 break
-        available = [item for item in values.rightclickOptions.keys() if item not in current] # available is the commands not yet used 
+        available = [
+            item for item in values.rightclickOptions.keys() if item not in current
+        ]  # available is the commands not yet used
 
         if available:
             self.availableList.addItems(available)
 
         if current:
-            self.currentList.addItems([item if item != shortDivider else divider for item in current])
+            self.currentList.addItems(
+                [item if item != shortDivider else divider for item in current]
+            )
 
         self.availableList.setMovement(QListView.Movement.Free)
         self.currentList.setMovement(QListView.Movement.Free)
 
         def onDividerClick():
             self.currentList.addItem(divider)
-            self.config.lscurrentcommands = self.config.lscurrentcommands + [shortDivider]
+            self.config.lscurrentcommands = self.config.lscurrentcommands + [
+                shortDivider
+            ]
 
         self.addDividerButton.clicked.connect(onDividerClick)
 
     def buildMenu(self, target=None) -> QMenu:
         # .TODO maybe cache the menu generated
-        if self.menu is not None and not self.needUpdate and target == self.lastTarget: 
+        if self.menu is not None and not self.needUpdate and target == self.lastTarget:
             return self.menu
 
         def callFunc(key):
@@ -103,7 +119,9 @@ class MenuPage(QtWidgets.QWidget):
                 # . TODO quick recycling view
                 action = self.menu.addAction(text)
                 action.triggered.connect(
-                    (lambda t: (lambda: callFunc(key=t)))(text) if target is not None else (lambda text=text: print(text, type(text), "hi"))
+                    (lambda t: (lambda: callFunc(key=t)))(text)
+                    if target is not None
+                    else (lambda text=text: print(text, type(text), "hi"))
                 )
         self.lastTarget = target
         return self.menu
@@ -121,7 +139,8 @@ class CurrentListView(QListWidget):
         self.master.needUpate = True
         self.parent().needUpdate = True  # breaking oop in python :v
         commands = [
-            self.item(i).text() if self.item(i).text() != divider else shortDivider for i in range(self.count())
+            self.item(i).text() if self.item(i).text() != divider else shortDivider
+            for i in range(self.count())
         ]  # all strings in current list, but replace long div with short div
         self.config.lscurrentcommands = commands
 

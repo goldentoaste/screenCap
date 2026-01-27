@@ -7,7 +7,7 @@ authors = [
 ]
 license = {text = "GPL"}
 readme = "README.md"
-requires-python = ">=3.13,<3.15"
+requires-python = ">=3.12,<3.13"
 dependencies = [
     "pyside6 (>=6.10.1,<7.0.0)",
     "pywin32 (>=311,<312)",

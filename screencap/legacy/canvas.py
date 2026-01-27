@@ -1,8 +1,8 @@
 import sys
 from typing import List, Union
-from PyQt5 import QtCore, QtGui
-from PyQt5.QtCore import QLineF, QPoint, QPointF, QRectF, QSize, QSizeF, Qt
-from PyQt5.QtGui import (
+from PySide6 import QtCore, QtGui
+from PySide6.QtCore import QLineF, QPoint, QPointF, QRectF, QSize, QSizeF, Qt
+from PySide6.QtGui import (
     QCursor,
     QImage,
     QKeyEvent,
@@ -13,7 +13,7 @@ from PyQt5.QtGui import (
     QPen,
     QPixmap,
 )
-from PyQt5.QtWidgets import (
+from PySide6.QtWidgets import (
     QApplication,
     QGraphicsEllipseItem,
     QGraphicsItem,
@@ -43,7 +43,7 @@ from paintToolbar import (
 
 def smoothStep(p1: QPointF, p2: QPointF, amount: float):
     # just lerp is fine
-    return p1 + amount * (p2 - p1)
+    return p1 + (p2 - p1) * amount
     # amount = (amount ** 2) * (3 - 2 * amount)
     # return QPointF((1 - amount) * p1.x() + p2.x() * amount, (1 - amount) * p1.y() + p2.y() * amount)
 
@@ -133,7 +133,7 @@ class Canvas:
             self.cursurDot.show()
 
         self.updateCursor()
-        
+
 
 
     def onClick(self, a0: QMouseEvent):
@@ -153,7 +153,7 @@ class Canvas:
                 self.tempLine.hide()
                 self.finalizeCurrentShape()
                 return
-     
+
         if self.drawingLine:
             self.path.lineTo(mapped)
             self.currentObject.setPath(self.path)
@@ -166,7 +166,7 @@ class Canvas:
             return
 
         # dealing with select and erase
-     
+
         if opt == SELECT:
             item = self.view.itemAt(self.iniPos)
             if item not in self.objects:
@@ -272,7 +272,7 @@ class Canvas:
         if a0.buttons() == Qt.MouseButton.RightButton:
             self.deleteObj(a0.pos())
             return # drag right click to delete
-        
+
         if a0.buttons() == Qt.MouseButton.LeftButton:
             mappedIniPos = self.view.mapToScene(self.iniPos) / self.scale()
             if opt == PATH:

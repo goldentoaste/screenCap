@@ -5,11 +5,11 @@ modCode = {16: 0x0004, 17: 0x0002, 18: 0x0001, 91: 0x0008}
 NOREPEAT = 0x4000
 
 import os
-from PyQt5 import QtCore
+from PySide6 import QtCore
 
-from PyQt5.QtCore import QObject
+from PySide6.QtCore import QObject
 
-defaultConfigPath = os.path.join(os.getenv("appdata"), "screenCap")
+defaultConfigPath = os.path.join(os.getenv("appdata"), "screenCap_2")
 
 
 conversionTable = {
@@ -166,8 +166,7 @@ rightclickOptions = {
     "Close": Snapshot.close,
     "Crop": Snapshot.startCrop,
     "Toggle Painting": Snapshot.togglePaint,
-    "Clear Canvas": Snapshot.clearCanvas
-    
+    "Clear Canvas": Snapshot.clearCanvas,
     # size options +-20%, reset
     # show recycling
     # show color picker
@@ -188,23 +187,22 @@ defaultVariables = {  # if im doing this again, these tuples should be dataclass
     "ishowsaveprompt": (0, "main"),
     "ssavelocation": (os.getenv("HOME"), "main"),
     "iuselastsave": (0, "main"),
-    #snapshot
+    # snapshot
     "iquality": (100, "snapshot"),
-     "bfastcrop":(False, "snapshot"),
+    "bfastcrop": (False, "snapshot"),
     # hotkeys
-    "licapture": ([17, 49], "global"), #windows global key codes
+    "licapture": ([17, 49], "global"),  # windows global key codes
     "licopy": ([17, 50], "local"),
-    "licut": ([17, 88], "local"), 
+    "licut": ([17, 88], "local"),
     "liclose": ([27], "local"),
     "lipaint": ([80], "local"),
     "lisave": ([17, 83], "local"),
     "lizoom10": ([], "local"),
     "lishrink10": ([], "local"),
     "lizoom20": ([], "local"),
-    "lishrink20":([] ,"local"),
+    "lishrink20": ([], "local"),
     "lirecycle": ([], "global"),
-    
-    # painter   
+    # painter
     "isize": (5, "painter"),
     "ialpha": (100, "painter"),
     "lscolors": (
@@ -224,7 +222,6 @@ defaultVariables = {  # if im doing this again, these tuples should be dataclass
             "#8A2BE2",
             "#8A2BE2",
             "#8A2BE2",
-            
         ],
         "painter",
     ),
@@ -237,6 +234,8 @@ defaultVariables = {  # if im doing this again, these tuples should be dataclass
 
 import sys
 from os import path
+
+
 def resource_path(relative_path):
     """Get absolute path to resource, works for dev and for PyInstaller"""
     try:
@@ -245,5 +244,6 @@ def resource_path(relative_path):
         base_path = path.abspath(".")
     return path.join(base_path, relative_path)
 
+
 class ThreadSignal(QObject):
-    signal = QtCore.pyqtSignal()
+    signal = QtCore.Signal()

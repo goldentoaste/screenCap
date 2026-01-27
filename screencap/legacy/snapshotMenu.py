@@ -1,8 +1,8 @@
 import sys
-from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QApplication, QHBoxLayout, QPushButton, QWidget
+from PySide6.QtGui import QIcon
+from PySide6.QtWidgets import QApplication, QHBoxLayout, QPushButton, QWidget
 
-from PyQt5.QtCore import QSize, Qt
+from PySide6.QtCore import QSize, Qt
 
 
 from values import resource_path
@@ -12,8 +12,9 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from snapshot import Snapshot
 
+
 class SnapshotMenu(QWidget):
-    def __init__(self, parent : 'Snapshot') -> None:
+    def __init__(self, parent: "Snapshot") -> None:
         super().__init__(parent)
         self.master = parent
         self.initGui()
@@ -25,23 +26,30 @@ class SnapshotMenu(QWidget):
         self.paintButton = QPushButton(QIcon(resource_path("icons/draw.svg")), "")
         self.paintButton.setToolTip("Start painting")
         self.paintButton.setIconSize(QSize(24, 24))
-        self.paintButton.clicked.connect(lambda: (self.master.stopCrop(), self.master.startPaint()))
-
+        self.paintButton.clicked.connect(
+            lambda: (self.master.stopCrop(), self.master.startPaint())
+        )
 
         self.saveButton = QPushButton(QIcon(resource_path("icons/save.svg")), "")
         self.saveButton.setToolTip("Save button")
         self.saveButton.setIconSize(QSize(24, 24))
-        self.saveButton.clicked.connect(lambda: (self.master.stopCrop(), self.master.saveImage()))
+        self.saveButton.clicked.connect(
+            lambda: (self.master.stopCrop(), self.master.saveImage())
+        )
 
         self.copyButton = QPushButton(QIcon(resource_path("icons/copy.svg")), "")
         self.copyButton.setToolTip("Copy image into clipboard")
         self.copyButton.setIconSize(QSize(24, 24))
-        self.copyButton.clicked.connect(lambda: (self.master.stopCrop(), self.master.copy()))
+        self.copyButton.clicked.connect(
+            lambda: (self.master.stopCrop(), self.master.copy())
+        )
 
         self.cutButton = QPushButton(QIcon(resource_path("icons/cut.svg")), "")
         self.cutButton.setToolTip("Cut: copy and close")
         self.cutButton.setIconSize(QSize(24, 24))
-        self.cutButton.clicked.connect(lambda: (self.master.stopCrop(), self.master.cut()))
+        self.cutButton.clicked.connect(
+            lambda: (self.master.stopCrop(), self.master.cut())
+        )
 
         self.closeButton = QPushButton(QIcon(resource_path("icons/cross.svg")), "")
         self.closeButton.setToolTip("Cancel and close")
@@ -52,7 +60,6 @@ class SnapshotMenu(QWidget):
         self.doneButton.setToolTip("Finish cropping")
         self.doneButton.setIconSize(QSize(24, 24))
         self.doneButton.clicked.connect(lambda: self.master.stopCrop())
-
 
         self.layout().addWidget(self.paintButton)
         self.layout().addWidget(self.saveButton)

@@ -7,3 +7,7 @@ tempCodeRunnerFile.py
 temp.py
 testing.py
 *.dist
+included_modules.txt
+nuitka-crash-report.xml
+*.exe
+*build

@@ -1,7 +1,7 @@
 from typing import Iterable
 from values import *
-from PyQt5 import QtGui
-from PyQt5.QtWidgets import *
+from PySide6 import QtGui
+from PySide6.QtWidgets import *
 import sys
 import threading
 import win32con
@@ -14,7 +14,7 @@ user32 = ctypes.windll.user32
 
 
 class HotkeyManager(threading.Thread):
-    def __init__(self, config = None):
+    def __init__(self, config=None):
 
         threading.Thread.__init__(self, daemon=True)
 
@@ -42,7 +42,7 @@ class HotkeyManager(threading.Thread):
             num |= modCode[mod]
         return num
 
-    def setHotkey(self, name, keys :Iterable, callback):
+    def setHotkey(self, name, keys: Iterable, callback):
         keys = self.getSortedKeys(keys)
         print(keys, "here")
         if not keys:
@@ -121,11 +121,13 @@ class HotkeyManager(threading.Thread):
                         self.keyStringCallback("Duplicate")
                         clearFields()
                 else:
-                    #success
+                    # success
                     self.index += 1
                     self.hotkeys[self.recording][1] = self.currentKey
                     self.hotkeys[self.recording][2].update(self.currentMods)
-                    self.config[self.recording] =list(self.currentMods)+ [self.currentKey]
+                    self.config[self.recording] = list(self.currentMods) + [
+                        self.currentKey
+                    ]
                     clearFields()
                     return
 
@@ -173,7 +175,9 @@ class HotkeyManager(threading.Thread):
             " + ".join(
                 [
                     conversionTable.get(key, "Unkown") if key else ""
-                    for key in self.getSortedKeys(mods | ({key} if key else set())) #FIXME this is really bad and janky, more clearly define what key & mods is if using in another object
+                    for key in self.getSortedKeys(
+                        mods | ({key} if key else set())
+                    )  # FIXME this is really bad and janky, more clearly define what key & mods is if using in another object
                 ]
             )
             if key or mods
@@ -183,7 +187,7 @@ class HotkeyManager(threading.Thread):
     def getSortedKeys(self, keys):
         def modKey(key):
             if key in modifiers:
-                return modifiers.index(key)+1
+                return modifiers.index(key) + 1
             return 9999
 
         return sorted(keys, key=modKey)
@@ -236,8 +240,22 @@ class HotKeyTestWindow(QDialog):
         self.manager = HotkeyManager()
 
         self.manager.start()
-        self.manager.setHotkey("testing 1",  {"ctrl", "a",}, lambda: print("nice one!"))
-        self.manager.setHotkey("testing 2",  {"ctrl","b",}, lambda: print("nice 2!"))
+        self.manager.setHotkey(
+            "testing 1",
+            {
+                "ctrl",
+                "a",
+            },
+            lambda: print("nice one!"),
+        )
+        self.manager.setHotkey(
+            "testing 2",
+            {
+                "ctrl",
+                "b",
+            },
+            lambda: print("nice 2!"),
+        )
         self.manager.setHotkey("testing 3", {"num_*"}, lambda: print("nice b!"))
 
         self.show()

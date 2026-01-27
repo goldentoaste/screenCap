@@ -1,9 +1,9 @@
 import sys
 from typing import List
 
-from PyQt5 import QtGui, QtWidgets
+from PySide6 import QtGui, QtWidgets
 
-from PyQt5.QtCore import QPoint, QRect, QRectF, Qt
+from PySide6.QtCore import QPoint, QRect, QRectF, Qt
 
 topleft = 0
 top = 1
@@ -64,8 +64,20 @@ class SelectionBox(QtWidgets.QRubberBand):
 
     def mouseMoveEvent(self, a0: QtGui.QMouseEvent) -> None:
         self.move(
-            max(0, min(self.x() + a0.globalX() - self.lastpos.x(), self.parent().width() - self.width())),
-            max(0, min(self.y() + a0.globalY() - self.lastpos.y(), self.parent().height() - self.height())),
+            max(
+                0,
+                min(
+                    self.x() + a0.globalX() - self.lastpos.x(),
+                    self.parent().width() - self.width(),
+                ),
+            ),
+            max(
+                0,
+                min(
+                    self.y() + a0.globalY() - self.lastpos.y(),
+                    self.parent().height() - self.height(),
+                ),
+            ),
         )
         self.lastpos = a0.globalPos()
 
@@ -78,7 +90,9 @@ class SelectionBox(QtWidgets.QRubberBand):
 
         painter.setRenderHints(painter.Antialiasing)
 
-        painter.setPen(QtGui.QPen(QtGui.QColor(100, 100, 150), 5.5, Qt.PenStyle.DotLine))
+        painter.setPen(
+            QtGui.QPen(QtGui.QColor(100, 100, 150), 5.5, Qt.PenStyle.DotLine)
+        )
         painter.setBrush(QtGui.QBrush(Qt.BrushStyle.NoBrush))
         painter.drawRect(self.rect())
 
@@ -115,10 +129,14 @@ class SizeGrip(QtWidgets.QWidget):
         painter.setBrush(QtGui.QColor(100, 100, 200))
 
         if self.loc == top:
-            painter.drawRect(QRectF(self.width() // 2 - self.side // 2, 0, self.side, self.side))
+            painter.drawRect(
+                QRectF(self.width() // 2 - self.side // 2, 0, self.side, self.side)
+            )
 
         elif self.loc == left:
-            painter.drawRect(QRectF(0, self.height() // 2 - self.side // 2, self.side, self.side))
+            painter.drawRect(
+                QRectF(0, self.height() // 2 - self.side // 2, self.side, self.side)
+            )
         elif self.loc == right:
             painter.drawRect(
                 QRectF(
@@ -202,7 +220,9 @@ class SizeGrip(QtWidgets.QWidget):
                 m.resize(m.width() - dx, m.height() - dy),
             ),
             top: lambda: (
-                m.move(m.x(), m.y() + dy if m.height() - dy > m.minimumHeight() else m.y()),
+                m.move(
+                    m.x(), m.y() + dy if m.height() - dy > m.minimumHeight() else m.y()
+                ),
                 m.resize(m.width(), m.height() - dy),
             ),
             topright: lambda: (
@@ -215,12 +235,16 @@ class SizeGrip(QtWidgets.QWidget):
                 )
             ),
             left: lambda: (
-                m.move(m.x() + dx if m.width() - dx > m.minimumWidth() else m.x(), m.y()),
+                m.move(
+                    m.x() + dx if m.width() - dx > m.minimumWidth() else m.x(), m.y()
+                ),
                 m.resize(m.width() - dx, m.height()),
             ),
             right: lambda: m.resize(m.width() + dx, m.height()),
             botleft: lambda: (
-                m.move(m.x() + dx if m.width() - dx > m.minimumWidth() else m.x(), m.y()),
+                m.move(
+                    m.x() + dx if m.width() - dx > m.minimumWidth() else m.x(), m.y()
+                ),
                 m.resize(m.width() - dx, m.height() + dy),
             ),
             bot: lambda: m.resize(m.width(), m.height() + dy),
