@@ -1,12 +1,17 @@
-
-
 from datetime import datetime
 from utils import Logger as L
 import sys
 from typing import Callable, Dict, List, Literal, Tuple, Union
-from PySide6.QtCore import QAbstractNativeEventFilter, QByteArray
+from PySide6.QtCore import QAbstractNativeEventFilter, QByteArray, QKeyCombination, Qt
 from PySide6.QtGui import QKeyEvent, QKeySequence
-from PySide6.QtWidgets import QApplication, QKeySequenceEdit, QLabel, QLineEdit, QVBoxLayout, QWidget
+from PySide6.QtWidgets import (
+    QApplication,
+    QKeySequenceEdit,
+    QLabel,
+    QLineEdit,
+    QVBoxLayout,
+    QWidget,
+)
 from ctypes import wintypes, POINTER, cast, windll
 import win32con
 
@@ -15,15 +20,23 @@ user32 = windll.user32
 
 class WinGlobalHotkey(QAbstractNativeEventFilter):
     modCodeMap = {16: 0x0004, 17: 0x0002, 18: 0x0001, 91: 0x0008}
+    QtModMap = {
+        Qt.KeyboardModifier.AltModifier: 0x0001,
+        Qt.KeyboardModifier.ControlModifier: 0x0002,
+        Qt.KeyboardModifier.ShiftModifier: 0x0004,
+        Qt.KeyboardModifier.MetaModifier: 0x0008,
+    }
     NO_REPEAT = 0x4000
 
-    _instance : "WinGlobalHotkey | None" = None
+    _instance: "WinGlobalHotkey | None" = None
 
     def __init__(self) -> None:
         super().__init__()
         self.index = 1
-        self.callbacks : Dict[int, Tuple[Callable, Tuple]]= dict()
-        self.mappedCallbacks : Dict[Tuple, Tuple[int, str]] = dict() # key tuple mapped back to (id, label)
+        self.callbacks: Dict[int, Tuple[Callable, Tuple]] = dict()
+        self.mappedCallbacks: Dict[Tuple, Tuple[int, str]] = (
+            dict()
+        )  # key tuple mapped back to (id, label)
 
         app = QApplication.instance()
         if app:
@@ -36,13 +49,18 @@ class WinGlobalHotkey(QAbstractNativeEventFilter):
 
         return WinGlobalHotkey._instance
 
-    def registerHotKey(self, label:str, modKeyCodes: List[int], keyCode: int, callback: Callable)-> Tuple[Literal[True], int] | Tuple[Literal[False], str]:
-        '''
+    def registerHotKey(
+        self, label: str, keyCombo: QKeyCombination, callback: Callable
+    ) -> Tuple[Literal[True], int] | Tuple[Literal[False], str]:
+        """
         return False when hotkey registration is unsuccessful, likely due to key combo is already reserved by system.
-        '''
-        keyTuple = (tuple(sorted(modKeyCodes)), keyCode)
+        """
+
         if keyTuple in self.mappedCallbacks:
-            return (False, f"Hotkey already used by: {self.mappedCallbacks[keyTuple][1]}")
+            return (
+                False,
+                f"Hotkey already used by: {self.mappedCallbacks[keyTuple][1]}",
+            )
 
         modCode = WinGlobalHotkey.NO_REPEAT
         for key in modKeyCodes:
@@ -53,15 +71,17 @@ class WinGlobalHotkey(QAbstractNativeEventFilter):
             modCode |= WinGlobalHotkey.modCodeMap[key]
 
         res = user32.RegisterHotKey(
-            None, # handle hotkey events in main thread,
-            self.index,
-            modCode,
-            keyCode
+            None, self.index, modCode, keyCode  # handle hotkey events in main thread,
         )
 
         if res == 0:
-            L.log(f"Global hotkey registration failed, mods: {modKeyCodes}, key: {keyCode}, callback: {callback}")
-            return (False, "Hotkey register failed, likely hotkey already used by system.")
+            L.log(
+                f"Global hotkey registration failed, mods: {modKeyCodes}, key: {keyCode}, callback: {callback}"
+            )
+            return (
+                False,
+                "Hotkey register failed, likely hotkey already used by system.",
+            )
 
         self.callbacks[self.index] = (callback, keyTuple)
         self.mappedCallbacks[keyTuple] = (self.index, label)
@@ -69,7 +89,7 @@ class WinGlobalHotkey(QAbstractNativeEventFilter):
 
         return (True, self.index - 1)
 
-    def unregisterHotkey(self, hotkeyId:int):
+    def unregisterHotkey(self, hotkeyId: int):
         if hotkeyId not in self.callbacks:
             L.log(f"Hotkey not yet registered: {hotkeyId}")
             return
@@ -78,15 +98,16 @@ class WinGlobalHotkey(QAbstractNativeEventFilter):
         if res == 0:
             L.log(f"Failed to unregister hotkey using user32 api: {hotkeyId}")
 
-
-
-    def nativeEventFilter(self, eventType: Union[QByteArray, bytes, bytearray, memoryview], message: int) -> object:
+    def nativeEventFilter(
+        self, eventType: Union[QByteArray, bytes, bytearray, memoryview], message: int
+    ) -> object:
         msg = cast(int(message), POINTER(wintypes.MSG)).contents
         if msg.message == win32con.WM_HOTKEY:
             if msg.wParam in self.callbacks:
                 self.callbacks[msg.wParam][0]()
             return True
         return False
+
 
 class Test(QWidget):
     def __init__(self, parent: QWidget | None) -> None:
@@ -103,16 +124,19 @@ class Test(QWidget):
         self.layout().addWidget(self.seq)
         self.show()
 
-        '''
+        """
         hwnd,
         hotkey id,
         modifiers flags,
         virtual key code.
-        '''
+        """
 
-        res = WinGlobalHotkey.getManager().registerHotKey("tester", [], 0x2c, lambda: print("nice!", datetime.now().isoformat()))
-        res2 = WinGlobalHotkey.getManager().registerHotKey("tester", [], 0x2c, lambda: print("nice2!", datetime.now().isoformat()))
-
+        res = WinGlobalHotkey.getManager().registerHotKey(
+            "tester", [], 0x2C, lambda: print("nice!", datetime.now().isoformat())
+        )
+        res2 = WinGlobalHotkey.getManager().registerHotKey(
+            "tester", [], 0x2C, lambda: print("nice2!", datetime.now().isoformat())
+        )
 
 
 if __name__ == "__main__":
