@@ -1,3 +1,4 @@
+from curses import KEY_LEFT
 from datetime import datetime
 from utils import Logger as L
 import sys
@@ -33,8 +34,8 @@ class WinGlobalHotkey(QAbstractNativeEventFilter):
     def __init__(self) -> None:
         super().__init__()
         self.index = 1
-        self.callbacks: Dict[int, Tuple[Callable, Tuple]] = dict()
-        self.mappedCallbacks: Dict[Tuple, Tuple[int, str]] = (
+        self.callbacks: Dict[int, Tuple[Callable, QKeyCombination]] = dict()
+        self.mappedCallbacks: Dict[QKeyCombination, Tuple[int, str]] = (
             dict()
         )  # key tuple mapped back to (id, label)
 
@@ -56,19 +57,17 @@ class WinGlobalHotkey(QAbstractNativeEventFilter):
         return False when hotkey registration is unsuccessful, likely due to key combo is already reserved by system.
         """
 
-        if keyTuple in self.mappedCallbacks:
+        if keyCombo in self.mappedCallbacks:
             return (
                 False,
-                f"Hotkey already used by: {self.mappedCallbacks[keyTuple][1]}",
+                f"Hotkey already used by: {self.mappedCallbacks[keyCombo][1]}",
             )
 
         modCode = WinGlobalHotkey.NO_REPEAT
-        for key in modKeyCodes:
-            if key not in WinGlobalHotkey.modCodeMap:
-                L.log(f"Error, unsupported modifier: {key}")
-                continue
+        for key in WinGlobalHotkey.QtModMap:
+            if keyCombo.keyboardModifiers() & key:
+                modCode |= WinGlobalHotkey.QtModMap[key]
 
-            modCode |= WinGlobalHotkey.modCodeMap[key]
 
         res = user32.RegisterHotKey(
             None, self.index, modCode, keyCode  # handle hotkey events in main thread,

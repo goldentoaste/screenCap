@@ -1,10 +1,17 @@
-
-
 import sys
 from typing import Any, Optional
 from PySide6.QtCore import QKeyCombination, Qt
 from PySide6.QtGui import QKeyEvent, QKeySequence
-from PySide6.QtWidgets import QApplication, QKeySequenceEdit, QLabel, QLineEdit, QVBoxLayout, QWidget
+from PySide6.QtWidgets import (
+    QApplication,
+    QKeySequenceEdit,
+    QLabel,
+    QLineEdit,
+    QVBoxLayout,
+    QWidget,
+)
+
+from screencap.src.Consts import QT_KEY_TO_WIN_VK
 
 
 class TestInput(QLineEdit):
@@ -13,8 +20,8 @@ class TestInput(QLineEdit):
         super().__init__(*args, **kwargs)
 
     def keyPressEvent(self, arg__1: QKeyEvent) -> None:
-        print(arg__1.key(), arg__1.modifiers())
         return super().keyPressEvent(arg__1)
+
 
 class TestKeyEdit(QKeySequenceEdit):
     def __init__(self, *args, **kwargs):
@@ -22,8 +29,14 @@ class TestKeyEdit(QKeySequenceEdit):
 
     def keyPressEvent(self, arg__1: QKeyEvent) -> None:
         super().keyPressEvent(arg__1)
-
+        print(
+            hex(arg__1.nativeVirtualKey()),
+            hex(QT_KEY_TO_WIN_VK.get(Qt.Key(arg__1.key()), 0)),
+            Qt.Key(arg__1.key()).name,
+            (arg__1.modifiers() & Qt.KeyboardModifier.KeypadModifier) and "NumPad",
+        )
         self.setKeySequence(QKeySequence(arg__1.keyCombination()))
+
 
 class Tester(QWidget):
 
@@ -37,7 +50,7 @@ class Tester(QWidget):
 
         self.seq = TestKeyEdit()
         self.seq.setMaximumSequenceLength(1)
-        self.seq.keySequenceChanged.connect(lambda x: (print(x[0].key(), x[0].keyboardModifiers()) if x.count() else "pass"))
+        # self.seq.keySequenceChanged.connect(lambda x: (print(hex(x[0].key()), x[0].keyboardModifiers()) if x.count() else "pass"))
         self.seq.setClearButtonEnabled(True)
         self.layout().addWidget(self.seq)
 
@@ -47,13 +60,10 @@ class Tester(QWidget):
         self.show()
 
 
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     try:
         app = QApplication(sys.argv)
         main = Tester()
         sys.exit(app.exec())
     except RuntimeError as e:
         print(e)
-    finally:
-        input("press enter to end...")
