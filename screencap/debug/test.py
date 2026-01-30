@@ -1,6 +1,7 @@
 import sys
+
 from typing import Any, Optional
-from PySide6.QtCore import QKeyCombination, Qt
+from PySide6.QtCore import QKeyCombination, Qt, Signal
 from PySide6.QtGui import QKeyEvent, QKeySequence
 from PySide6.QtWidgets import (
     QApplication,
@@ -11,7 +12,13 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from screencap.src.Consts import QT_KEY_TO_WIN_VK
+from screencap.src.Consts import (
+    QT_KEY_TO_WIN_VK,
+    QT_MODIFIERS,
+    QT_SHIFT_NUMPAD_WIN_CASE,
+    QT_SHIFT_WIN_CASE,
+    QT_NumPad_WIN_VK,
+)
 
 
 class TestInput(QLineEdit):
@@ -23,19 +30,42 @@ class TestInput(QLineEdit):
         return super().keyPressEvent(arg__1)
 
 
-class TestKeyEdit(QKeySequenceEdit):
+class HotkeyEdit(QKeySequenceEdit):
+    comboChangeSignal = Signal((QKeyCombination))
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.id = -1
 
-    def keyPressEvent(self, arg__1: QKeyEvent) -> None:
-        super().keyPressEvent(arg__1)
-        print(
-            hex(arg__1.nativeVirtualKey()),
-            hex(QT_KEY_TO_WIN_VK.get(Qt.Key(arg__1.key()), 0)),
-            Qt.Key(arg__1.key()).name,
-            (arg__1.modifiers() & Qt.KeyboardModifier.KeypadModifier) and "NumPad",
-        )
-        self.setKeySequence(QKeySequence(arg__1.keyCombination()))
+    def keyPressEvent(self, e: QKeyEvent) -> None:
+        super().keyPressEvent(e)
+
+        keyCombo = e.keyCombination()
+        key = keyCombo.key()
+        keyMod = keyCombo.keyboardModifiers()
+
+        if key in QT_MODIFIERS:
+            return
+
+        if keyMod & Qt.KeyboardModifier.ShiftModifier:
+            if key in QT_SHIFT_WIN_CASE:
+                keyCombo = QKeyCombination(keyMod, QT_SHIFT_WIN_CASE[key])
+            if key in QT_SHIFT_NUMPAD_WIN_CASE and not (
+                keyMod & Qt.KeyboardModifier.KeypadModifier
+            ):
+                keyCombo = QKeyCombination(keyMod, QT_SHIFT_NUMPAD_WIN_CASE[key])
+
+        self.setKeySequence(QKeySequence(keyCombo))
+        self.comboChangeSignal.emit(keyCombo)
+
+    def getHotkey(self):
+        seq = self.keySequence()
+        if seq.count() > 0:
+            return seq[0]  # pyright: ignore[reportIndexIssue]
+        return None
+
+    def setId(self, id: int):
+        self.id = id
 
 
 class Tester(QWidget):
@@ -48,15 +78,17 @@ class Tester(QWidget):
         self.setLayout(QVBoxLayout())
         self.layout().addWidget(QLabel("Stuff"))
 
-        self.seq = TestKeyEdit()
+        self.seq = HotkeyEdit()
         self.seq.setMaximumSequenceLength(1)
-        # self.seq.keySequenceChanged.connect(lambda x: (print(hex(x[0].key()), x[0].keyboardModifiers()) if x.count() else "pass"))
+        self.seq.comboChangeSignal.connect(lambda x: print(x, self.seq.getHotkey()))
+
         self.seq.setClearButtonEnabled(True)
         self.layout().addWidget(self.seq)
 
         self.line = TestInput()
         self.layout().addWidget(self.line)
 
+        self.setWindowFlag(Qt.WindowType.WindowStaysOnTopHint)
         self.show()
 
 

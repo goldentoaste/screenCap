@@ -1,3 +1,4 @@
+
 from PySide6.QtCore import Qt
 
 # https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-registerhotkey
@@ -153,7 +154,7 @@ QT_KEY_TO_WIN_VK = {
     Qt.Key.Key_Zoom: 0xFB,  # VK_ZOOM
 }
 
-QT_MOD_WIN_VK = {
+QT_NumPad_WIN_VK = {
     Qt.Key.Key_Minus: 0x6D, # numpad subtract
     Qt.Key.Key_Period: 0x6E,         # VK_DECIMAL (.)
     Qt.Key.Key_Slash: 0x6F, # numpad divide,
@@ -168,4 +169,42 @@ QT_MOD_WIN_VK = {
     Qt.Key.Key_7: 0x67,              # VK_NUMPAD7
     Qt.Key.Key_8: 0x68,              # VK_NUMPAD8
     Qt.Key.Key_9: 0x69,              # VK_NUMPAD9
+}
+
+
+# TODO, allow alternate keyboard layouts? not big deal for now.
+# maps from upper case to lower case, for example, ? -> /
+# these keys are likely OEM, so depends on exact keyboard layout
+QT_SHIFT_WIN_CASE = {
+    Qt.Key.Key_AsciiTilde: Qt.Key.Key_QuoteLeft,
+    Qt.Key.Key_Exclam: Qt.Key.Key_1,
+    Qt.Key.Key_At: Qt.Key.Key_2,
+    Qt.Key.Key_NumberSign: Qt.Key.Key_3,
+    Qt.Key.Key_Dollar: Qt.Key.Key_4,
+    Qt.Key.Key_Percent: Qt.Key.Key_5,
+    Qt.Key.Key_AsciiCircum: Qt.Key.Key_6,
+    Qt.Key.Key_Ampersand: Qt.Key.Key_7,
+    Qt.Key.Key_ParenLeft: Qt.Key.Key_9,
+    Qt.Key.Key_ParenRight: Qt.Key.Key_0,
+    Qt.Key.Key_Underscore: Qt.Key.Key_Minus,
+    Qt.Key.Key_BraceLeft: Qt.Key.Key_BracketLeft,
+    Qt.Key.Key_BraceRight: Qt.Key.Key_BracketRight,
+    Qt.Key.Key_Colon: Qt.Key.Key_Semicolon,
+    Qt.Key.Key_QuoteDbl: Qt.Key.Key_Apostrophe,
+    Qt.Key.Key_Bar: Qt.Key.Key_Backslash,
+    Qt.Key.Key_Less: Qt.Key.Key_Comma,
+    Qt.Key.Key_Greater: Qt.Key.Key_Period,
+    Qt.Key.Key_Question: Qt.Key.Key_Slash
+}
+
+QT_SHIFT_NUMPAD_WIN_CASE = {
+    Qt.Key.Key_Asterisk: Qt.Key.Key_8, # NOTE: this is not the same as numpad asterisk. Numpad should have higher prio
+    Qt.Key.Key_Plus: Qt.Key.Key_Equal, # NOTE: shared with numpad plus sign.
+}
+
+QT_MODIFIERS = {
+    Qt.Key.Key_Control,
+    Qt.Key.Key_Shift,
+    Qt.Key.Key_Alt,
+    Qt.Key.Key_Meta
 }
