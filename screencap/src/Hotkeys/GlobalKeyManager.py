@@ -1,12 +1,6 @@
-from ast import Lambda
-from datetime import datetime
-from screencap.src.Consts import (
-    QT_KEY_TO_WIN_VK,
-    QT_MODIFIERS,
-    QT_SHIFT_NUMPAD_WIN_CASE,
-    QT_SHIFT_WIN_CASE,
-    QT_NumPad_WIN_VK,
-)
+
+
+from screencap.src.Hotkeys.common import QT_KEY_TO_WIN_VK, HotkeyEdit, QT_NumPad_WIN_VK
 from utils import Logger as L
 import sys
 from typing import Callable, Dict, List, Literal, Tuple, Union
@@ -15,14 +9,14 @@ from PySide6.QtCore import (
     QByteArray,
     QKeyCombination,
     Qt,
-    Signal,
+
 )
-from PySide6.QtGui import QKeyEvent, QKeySequence, QTextList
+
 from PySide6.QtWidgets import (
     QApplication,
-    QKeySequenceEdit,
+
     QLabel,
-    QLineEdit,
+
     QListWidget,
     QVBoxLayout,
     QWidget,
@@ -33,45 +27,6 @@ import win32con
 user32 = windll.user32
 
 
-class HotkeyEdit(QKeySequenceEdit):
-    comboChangeSignal = Signal((QKeyCombination))
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.id = 0
-
-    def keyPressEvent(self, e: QKeyEvent) -> None:
-        super().keyPressEvent(e)
-
-        keyCombo = e.keyCombination()
-        key = keyCombo.key()
-        keyMod = keyCombo.keyboardModifiers()
-
-        if key in QT_MODIFIERS:
-            return
-
-        if keyMod & Qt.KeyboardModifier.ShiftModifier:
-            if key in QT_SHIFT_WIN_CASE:
-                keyCombo = QKeyCombination(keyMod, QT_SHIFT_WIN_CASE[key])
-            if key in QT_SHIFT_NUMPAD_WIN_CASE and not (
-                keyMod & Qt.KeyboardModifier.KeypadModifier
-            ):
-                keyCombo = QKeyCombination(keyMod, QT_SHIFT_NUMPAD_WIN_CASE[key])
-
-        self.setKeySequence(QKeySequence(keyCombo))
-        self.comboChangeSignal.emit(keyCombo)
-
-    def getHotkey(self):
-        seq = self.keySequence()
-        if seq.count() > 0:
-            return seq[0]  # pyright: ignore[reportIndexIssue]
-        return None
-
-    def setId(self, id: int):
-        self.id = id
-
-    def getId(self):
-        return self.id
 class WinGlobalHotkey(QAbstractNativeEventFilter):
     modCodeMap = {16: 0x0004, 17: 0x0002, 18: 0x0001, 91: 0x0008}
     QtModMap = {
@@ -120,7 +75,6 @@ class WinGlobalHotkey(QAbstractNativeEventFilter):
         for key in WinGlobalHotkey.QtModMap:
             if keyCombo.keyboardModifiers() & key:
                 modCode |= WinGlobalHotkey.QtModMap[key]
-
 
         keyCode = -1
 
@@ -187,25 +141,27 @@ class Test(QWidget):
 
         self.keyManager = WinGlobalHotkey.getManager()
 
-
         self.comboEdit.comboChangeSignal.connect(self.regKey)
 
-
         self.show()
-
 
     def regKey(self, key: QKeyCombination):
 
         if self.comboEdit.id:
-            UnRegRes =self.keyManager.unregisterHotkey(self.comboEdit.id)
+            UnRegRes = self.keyManager.unregisterHotkey(self.comboEdit.id)
             self.listList.insertItem(0, f"Unreg result: {UnRegRes}")
 
         self.listList.insertItem(0, f"RegKey: {key}")
-        res = self.keyManager.registerHotKey("Test", key, lambda: self.listList.insertItem(0, f"Hotkey activation: {self.comboEdit.id}"))
+        res = self.keyManager.registerHotKey(
+            "Test",
+            key,
+            lambda: self.listList.insertItem(
+                0, f"Hotkey activation: {self.comboEdit.id}"
+            ),
+        )
         self.listList.insertItem(0, f"Reg Result: {res}")
         if res[0]:
             self.comboEdit.id = res[1]  # pyright: ignore[reportAttributeAccessIssue]
-
 
 
 if __name__ == "__main__":

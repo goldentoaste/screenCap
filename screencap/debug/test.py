@@ -1,18 +1,19 @@
 import sys
 
 from typing import Any, Optional
-from PySide6.QtCore import QKeyCombination, Qt, Signal
+from PySide6.QtCore import QKeyCombination, QPoint, QTime, QTimer, Qt, Signal
 from PySide6.QtGui import QKeyEvent, QKeySequence
 from PySide6.QtWidgets import (
     QApplication,
     QKeySequenceEdit,
     QLabel,
     QLineEdit,
+    QToolTip,
     QVBoxLayout,
     QWidget,
 )
 
-from screencap.src.Consts import (
+from screencap.src.Hotkeys.common import (
     QT_KEY_TO_WIN_VK,
     QT_MODIFIERS,
     QT_SHIFT_NUMPAD_WIN_CASE,
@@ -91,11 +92,31 @@ class Tester(QWidget):
         self.setWindowFlag(Qt.WindowType.WindowStaysOnTopHint)
         self.show()
 
+        self.seq.setWhatsThis("HUH")
+        self.seq.setToolTip("WHAT WHAT WHT")
+
+        self.timer = QTimer()
+        self.timer.setSingleShot(True)
+
+        self.timer.timeout.connect(
+            lambda: print("test", QToolTip.showText(
+                self.line.mapToGlobal(QPoint(0, 100)),
+                "HELL SD SAD SAD SAD ASD AS ASD AS  asD AS ASO",
+                self.line,
+                rect=self.line.rect(),
+                msecShowTime=1000,
+            ))
+        )
+        self.timer.start(100)
+
+
 
 if __name__ == "__main__":
     try:
         app = QApplication(sys.argv)
         main = Tester()
+        main.destroyed.connect(lambda: print("window closing"))
         sys.exit(app.exec())
     except RuntimeError as e:
         print(e)
+
