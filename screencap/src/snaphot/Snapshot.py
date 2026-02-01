@@ -3,7 +3,7 @@
 
 import sys
 from PySide6.QtCore import QKeyCombination, QPoint, QRect, QSize, Qt
-from PySide6.QtGui import QColor, QImage, QPen, QPixmap
+from PySide6.QtGui import QBrush, QColor, QImage, QPen, QPixmap
 from PySide6.QtWidgets import QApplication, QGraphicsScene, QGraphicsView, QHBoxLayout, QWidget
 
 from screencap.src.GlobalContext import GlobalContext
@@ -89,12 +89,17 @@ class Snapshot(QWidget):
     def loadImage(self, img: QPixmap):
         self.pixmap = img
         self.pixmapItem.setPixmap(self.pixmap)
-        self.view.setSceneRect(self.pixmapItem.sceneBoundingRect())
+        self.view.setSceneRect(self.pixmap.rect())
         self.view.setFixedSize(self.pixmap.rect().size())
         self.setFixedSize(self.view.size())
         self.scene.setBackgroundBrush(QColor('#fb493433'))
+        self.view.setStyleSheet("border: 1px solid red")
 
-        print(self.pixmap.rect(), self.pixmapItem.sceneBoundingRect(), self.view.size())
+        self.scene.addRect(self.pixmapItem.boundingRect(), QPen(Qt.GlobalColor.blue, 2),)
+
+
+        print(self.pixmap.rect(), self.pixmapItem.boundingRect(), self.view.size(), self.view.sceneRect())
+
 
 
     def fromFullscreen(self):
