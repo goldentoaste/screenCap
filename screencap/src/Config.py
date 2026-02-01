@@ -53,7 +53,6 @@ class ConfigBase:
             self._callbacks[attr] = []
 
         self._callbacks[attr].append(callback)
-        print("reg", self._callbacks)
 
     def __setattr__(self, name: str, value: Any, /) -> None:
         if name.startswith("_"):
@@ -64,8 +63,6 @@ class ConfigBase:
             return
 
         super().__setattr__(name, value)
-
-        print("what", self._callbacks)
         if name in self._callbacks:
             for callback in self._callbacks[name]:
                 callback(value)
@@ -190,7 +187,7 @@ def createConfigInstance(configPath: str, configObj: type[T]) -> T:
     return obj
 
 
-class Config(ConfigBase):
+class _Config(ConfigBase):
     """
     Define the defaults config items and types here.
     """
@@ -204,15 +201,15 @@ class Config(ConfigBase):
 if __name__ == "__main__":
     # testing config
 
-    obj = createConfigInstance("./test.config", Config)
+    obj = createConfigInstance("./test.config", _Config)
     print(obj.colors)
-    print(Config.colors)
+    print(_Config.colors)
 
     print(type(obj.colors))
     print(type(obj.floatVal))
     print(type(obj.numberVal))
     print(type(obj.stringVal))
 
-    obj._registerCallback(Config.floatVal, lambda x: print('nice', x))
+    obj._registerCallback(_Config.floatVal, lambda x: print('nice', x))
     obj.floatVal = 1.2345222
 

@@ -5,6 +5,9 @@ from PySide6.QtCore import QPoint, QPointF, QRect, QSize, QSizeF, Qt
 from PySide6.QtGui import QBrush, QColor, QMouseEvent, QPaintEvent, QPainter, QPen
 from PySide6.QtWidgets import QApplication, QRubberBand, QWidget
 
+from screencap.src.GlobalContext import GlobalContext
+
+
 
 class Dir(Enum):
     NA = -2
@@ -34,12 +37,14 @@ class SelectionBox(QRubberBand):
         self.refRect = QRect()
         self.iniPoint = QPoint()
 
+        self.pen = QPen(QColor(GlobalContext.getCtx().getConfig().border), 3, Qt.PenStyle.DotLine)
+        self.brush = QBrush(Qt.BrushStyle.NoBrush)
+
         self.dir: Dir = Dir.NA
 
     def mousePressEvent(self, e: QMouseEvent) -> None:
         if not e.buttons() & Qt.MouseButton.LeftButton:
             return
-
         self.refRect = self.geometry()
 
         self.iniPoint = e.globalPosition()
@@ -98,7 +103,7 @@ class SelectionBox(QRubberBand):
         super().mouseReleaseEvent(event)
         self.dir = Dir.NA
         self.pressed = False
-        if self.cursor() == Qt.CursorShape.ClosedHandCursor:
+        if self.cursor().shape() == Qt.CursorShape.ClosedHandCursor:
             self.setCursor(Qt.CursorShape.OpenHandCursor)
 
     def mouseMoveEvent(self, e: QMouseEvent) -> None:
@@ -177,12 +182,12 @@ class SelectionBox(QRubberBand):
         )
 
     def paintEvent(self, e: QPaintEvent) -> None:
-        super().paintEvent(e)
+        # super().paintEvent(e)
 
         painter = QPainter(self)
 
-        painter.setPen(QPen(QColor(100, 100, 150), 3, Qt.PenStyle.DotLine))
-        painter.setBrush(QBrush(Qt.BrushStyle.NoBrush))
+        painter.setPen(self.pen)
+        painter.setBrush(self.brush)
         painter.drawRect(self.rect())
 
 

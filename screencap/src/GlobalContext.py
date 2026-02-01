@@ -1,4 +1,9 @@
 
+from screencap.src.Config import ConfigBase, createConfigInstance
+
+
+defaultConfigLocation = "./screenCap.config"
+
 class GlobalContext:
     '''
     Store global states here
@@ -9,7 +14,8 @@ class GlobalContext:
 
 
     def __init__(self) -> None:
-        pass
+        self.config = createConfigInstance(defaultConfigLocation, Config)
+
 
     @classmethod
     def getCtx(cls):
@@ -17,3 +23,17 @@ class GlobalContext:
             GlobalContext.__instance = GlobalContext()
         return GlobalContext.__instance
 
+    def getConfig(self):
+        return self.config
+
+class Config(ConfigBase):
+    # Colors, TODO make color profiles
+
+    bg: str = "#282828"
+    bgTrans : str = "#28282844"
+    bgAlt: str = "#3c3836"
+
+    fg: str = "#fbf1c7"
+    fgAlt: str = "#ebdbb2"
+
+    border: str = "#a89984"

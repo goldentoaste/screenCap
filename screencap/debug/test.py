@@ -2,7 +2,7 @@ import sys
 
 from typing import Any, Optional
 from PySide6.QtCore import QKeyCombination, QPoint, QTime, QTimer, Qt, Signal
-from PySide6.QtGui import QKeyEvent, QKeySequence
+from PySide6.QtGui import QImage, QKeyEvent, QKeySequence, QPixmap
 from PySide6.QtWidgets import (
     QApplication,
     QKeySequenceEdit,
@@ -108,6 +108,14 @@ class Tester(QWidget):
             ))
         )
         self.timer.start(100)
+
+        # self.img =
+        # self.imgpixmap = QPixmap(self.img)
+        # self.imgLabel = QLabel()
+        # self.imgLabel.setPixmap(QPixmap("D:\Projects\screenCap\screencap\debug\stuff.png"))
+        # self.imgLabel.setFixedWidth(500)
+
+        # self.layout().addWidget(self.imgLabel)
 
 
 
