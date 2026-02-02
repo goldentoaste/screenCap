@@ -25,8 +25,8 @@ class SelectionBox(QRubberBand):
 
     def __init__(self, parent: QWidget, clampRect: QRect | None = None) -> None:
         super().__init__(QRubberBand.Shape.Rectangle, parent)
-        self._margin = 10
-        self.margin = 10  # px around edges that are mouse gripper area
+        self._margin = 12
+        self.margin = 12  # px around edges that are mouse gripper area
         self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, False)
         self.setMouseTracking(True)
 
@@ -45,6 +45,11 @@ class SelectionBox(QRubberBand):
             self.clampRect = clampRect
         else:
             self.clampRect = parent.rect()
+
+
+    def setRect(self, p1: QPoint, p2: QPoint):
+        self.setGeometry(QRect(p1, p2).normalized())
+
 
     def setUseMinSize(self, opt: bool):
         if opt:

@@ -9,6 +9,7 @@ from PySide6.QtCore import (
     QObject,
     QPoint,
     QRect,
+    QRectF,
     QSize,
     Qt,
 )
@@ -29,7 +30,7 @@ from screencap.src.snaphot.utils import getCurrentScreen
 
 
 DEBUG = False
-
+MARGIN = 30
 class Snapshot(QWidget):
     __init = False
 
@@ -39,6 +40,7 @@ class Snapshot(QWidget):
         keyMgr.registerShortCut(
             "Snapshot", "close", QKeyCombination(Qt.Key.Key_Escape), cls.close
         )
+        keyMgr.registerShortCut("Snapshot", "crop", QKeyCombination(Qt.Key.Key_Space), cls.startCrop)
 
 
     def __init__(self):
@@ -88,12 +90,12 @@ class Snapshot(QWidget):
         self.maskBot.setZValue(-10)
 
         self.cropping = False
-        self.cropOffset = QPoint()
+        self.cropOffset = 0
 
         self.initialize()
 
     def initialize(self):
-        self.setWindowFlags(Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.FramelessWindowHint | Qt.WindowType.SubWindow)
+        self.setWindowFlags(Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.FramelessWindowHint ) # | Qt.WindowType.SubWindow
 
         self.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
         # self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
@@ -115,29 +117,42 @@ class Snapshot(QWidget):
         self.setFixedSize(self.view.size() )
 
         self.scene.addRect(
-            self.pixmapItem.boundingRect(),
-            QPen(Qt.GlobalColor.blue, 1),
+            self.pixmapItem.boundingRect().adjusted(0.25, 0.25, -0.25, -0.25), # avoids pixel rounding
+            QPen(QColor(self.config.border), 0.5),
         )
 
         self.selectionBox.clampRect = self.rect()
+
 
     def fromFullscreen(self):
         curScreen = getCurrentScreen()
         self.loadImage(curScreen.grabWindow(0))
         self.move(curScreen.geometry().topLeft())
         self.startCrop()
-
         self.showNormal()
 
 
     def startCrop(self, margin = 0):
-        self.cropOffset = 0
         self.cropping = True
         self.setCursor(Qt.CursorShape.CrossCursor)
+        self.cropOffset = margin
 
     def finishCrop(self):
         self.setCursor(Qt.CursorShape.ArrowCursor)
+        self.selectionBox.hide()
         self.cropping = False
+
+        rect = self.selectionBox.geometry()
+        rect.moveTopLeft(rect.topLeft() - QPoint(self.cropOffset, self.cropOffset)) # compensate for margin, if any
+        rect = QRect(rect.topLeft() * self.devicePixelRatio(), rect.bottomRight() * self.devicePixelRatio())
+
+        self.cropOffset = 0
+
+        self.pixmap.convertFromImage(self.pixmap.toImage().copy(rect))
+        self.hide()
+        self.move(self.mapToGlobal(self.selectionBox.geometry().topLeft()))
+        self.loadImage(self.pixmap)
+        self.show()
 
     def mousePressEvent(self, event: QMouseEvent) -> None:
         self.originPos = event.position().toPoint()
@@ -148,19 +163,17 @@ class Snapshot(QWidget):
         event.accept()
 
     def mouseMoveEvent(self, event: QMouseEvent) -> None:
-        print(event.buttons() & Qt.MouseButton.LeftButton)
         if self.cropping and event.buttons() & Qt.MouseButton.LeftButton:
-            self.selectionBox.setGeometry(QRect(self.originPos, event.position().toPoint()))
+            self.selectionBox.setRect(self.originPos, event.position().toPoint())
             self.selectionBox.clamp()
-
-            print(QRect(self.originPos, event.position().toPoint()))
 
     def mouseReleaseEvent(self, event: QMouseEvent) -> None:
         # TODO, alternative finish methods
-        print("release")
         if self.cropping:
             self.selectionBox.setUseMinSize(True)
-            self.finishCrop()
+
+            if self.config.quickSnap:
+                self.finishCrop()
 
 
     def closeEvent(self, event: QCloseEvent) -> None:

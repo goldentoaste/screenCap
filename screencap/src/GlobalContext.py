@@ -37,3 +37,7 @@ class Config(ConfigBase):
     fgAlt: str = "#ebdbb2"
 
     border: str = "#a89984"
+    borderAlt: str =  "#7c6f64"
+
+    #### SNAPSHOT CONTROLS ####
+    quickSnap : bool = True
