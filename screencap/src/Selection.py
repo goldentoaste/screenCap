@@ -8,7 +8,6 @@ from PySide6.QtWidgets import QApplication, QRubberBand, QWidget
 from screencap.src.GlobalContext import GlobalContext
 
 
-
 class Dir(Enum):
     NA = -2
     mid = -1
@@ -24,23 +23,37 @@ class Dir(Enum):
 
 class SelectionBox(QRubberBand):
 
-    def __init__(self, parent: QWidget) -> None:
+    def __init__(self, parent: QWidget, clampRect: QRect | None = None) -> None:
         super().__init__(QRubberBand.Shape.Rectangle, parent)
+        self._margin = 10
         self.margin = 10  # px around edges that are mouse gripper area
-        self.setMinimumSize(self.margin * 3, self.margin * 3)
         self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, False)
         self.setMouseTracking(True)
-
-        self._parent: QWidget = parent
 
         self.pressed = False
         self.refRect = QRect()
         self.iniPoint = QPoint()
 
-        self.pen = QPen(QColor(GlobalContext.getCtx().getConfig().border), 3, Qt.PenStyle.DotLine)
+        self.pen = QPen(
+            QColor(GlobalContext.getCtx().getConfig().border), 3, Qt.PenStyle.DotLine
+        )
         self.brush = QBrush(Qt.BrushStyle.NoBrush)
 
         self.dir: Dir = Dir.NA
+
+        if clampRect:
+            self.clampRect = clampRect
+        else:
+            self.clampRect = parent.rect()
+
+    def setUseMinSize(self, opt: bool):
+        if opt:
+            self.margin = self._margin
+            self.setMinimumSize(self.margin * 3, self.margin * 3)
+        else:
+            self.margin = 0
+            self.setGeometry(QRect(self.pos(), QSize(0,0)))
+            self.setMinimumSize(QSize(0,0))
 
     def mousePressEvent(self, e: QMouseEvent) -> None:
         if not e.buttons() & Qt.MouseButton.LeftButton:
@@ -117,23 +130,23 @@ class SelectionBox(QRubberBand):
 
         match self.dir:
             case Dir.bot:
-                y = min(y, self._parent.height() - self.refRect.bottom())
+                y = min(y, self.clampRect.bottom() - self.refRect.bottom())
                 self.resize(self.refRect.width(), self.refRect.height() + y)
             case Dir.botLeft:
-                x = max(-self.refRect.left(), x)
-                y = min(y, self._parent.height() - self.refRect.bottom())
+                x = max(self.clampRect.top() - self.refRect.left(), x)
+                y = min(y, self.clampRect.bottom() - self.refRect.bottom())
                 self.move(
                     self.refRect.x()
-                    + +min(x, self.refRect.width() - self.minimumWidth()),
+                    + min(x, self.refRect.width() - self.minimumWidth()),
                     self.refRect.y(),
                 )
                 self.resize(self.refRect.width() - x, self.refRect.height() + y)
             case Dir.botRight:
-                x = min(self._parent.width() - self.refRect.right(), x)
-                y = min(y, self._parent.height() - self.refRect.bottom())
+                x = min(self.clampRect.right() - self.refRect.right(), x)
+                y = min(y, self.clampRect.bottom() - self.refRect.bottom())
                 self.resize(self.refRect.width() + x, self.refRect.height() + y)
             case Dir.left:
-                x = max(-self.refRect.left(), x)
+                x = max(self.clampRect.left() - self.refRect.left(), x)
                 self.move(
                     self.refRect.x()
                     + min(x, self.refRect.width() - self.minimumWidth()),
@@ -141,12 +154,12 @@ class SelectionBox(QRubberBand):
                 )
                 self.resize(self.refRect.width() - x, self.refRect.height())
             case Dir.right:
-                x = min(self._parent.width() - self.refRect.right(), x)
+                x = min(self.clampRect.right() - self.refRect.right(), x)
 
                 self.resize(self.refRect.width() + x, self.refRect.height())
             case Dir.topLeft:
-                x = max(-self.refRect.left(), x)
-                y = max(-self.refRect.top(), y)
+                x = max(self.clampRect.left() - self.refRect.left(), x)
+                y = max(self.clampRect.top() - self.refRect.top(), y)
                 self.move(
                     self.refRect.x()
                     + min(x, self.refRect.width() - self.minimumWidth()),
@@ -155,8 +168,8 @@ class SelectionBox(QRubberBand):
                 )
                 self.resize(self.refRect.width() - x, self.refRect.height() - y)
             case Dir.topRight:
-                y = max(-self.refRect.top(), y)
-                x = min(self._parent.width() - self.refRect.right(), x)
+                y = max(self.clampRect.top() - self.refRect.top(), y)
+                x = min(self.clampRect.right() - self.refRect.right(), x)
 
                 self.move(
                     self.refRect.x(),
@@ -165,7 +178,7 @@ class SelectionBox(QRubberBand):
                 )
                 self.resize(self.refRect.width() + x, self.refRect.height() - y)
             case Dir.top:
-                y = max(-self.refRect.top(), y)
+                y = max(self.clampRect.top() - self.refRect.top(), y)
 
                 self.move(
                     self.refRect.x(),
@@ -177,9 +190,24 @@ class SelectionBox(QRubberBand):
                 self.move(self.refRect.x() + x, self.refRect.y() + y)
 
         self.move(
-            max(0, min(self._parent.width() - self.width(), self.x())),
-            max(0, min(self._parent.height() - self.height(), self.y())),
+            max(
+                self.clampRect.left(),
+                min(self.clampRect.right() - self.width(), self.x()),
+            ),
+            max(
+                self.clampRect.top(),
+                min(self.clampRect.bottom() - self.height(), self.y()),
+            ),
         )
+
+    def clamp(self):
+        rect = self.geometry()
+        rect.setLeft(max(rect.left(), self.clampRect.left()))
+        rect.setRight(min(rect.right(), self.clampRect.right()))
+        rect.setTop(max(rect.top(), self.clampRect.top()))
+        rect.setBottom(min(rect.bottom(), self.clampRect.bottom()))
+
+        self.setGeometry(rect)
 
     def paintEvent(self, e: QPaintEvent) -> None:
         # super().paintEvent(e)
@@ -198,7 +226,7 @@ class Test(QWidget):
 
         self.setGeometry(100, 100, 500, 500)
 
-        self.box = SelectionBox(self)
+        self.box = SelectionBox(self, QRect(100, 100, 333, 333))
         self.box.move(100, 100)
         self.box.resize(200, 75)
 

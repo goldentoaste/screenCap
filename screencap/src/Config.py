@@ -129,6 +129,7 @@ def createConfigInstance(configPath: str, configObj: type[T]) -> T:
 
             # read content of existing config file
             for line in lines:
+                line = line.strip()
                 idx = line.find("=")
                 if idx == -1:
                     continue
