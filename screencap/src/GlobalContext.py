@@ -30,7 +30,7 @@ class Config(ConfigBase):
     # Colors, TODO make color profiles
 
     bg: str = "#282828"
-    bgTrans : str = "#28282844"
+    bgTrans : str = "#28282888"
     bgAlt: str = "#3c3836"
 
     fg: str = "#fbf1c7"
@@ -38,6 +38,7 @@ class Config(ConfigBase):
 
     border: str = "#a89984"
     borderAlt: str =  "#7c6f64"
+    borderTrans: str = "#77a89984"
 
     #### SNAPSHOT CONTROLS ####
     quickSnap : bool = True

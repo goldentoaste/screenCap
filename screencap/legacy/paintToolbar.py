@@ -341,7 +341,6 @@ class RadiusIcon(QWidget):
         painter = QPainter(self)
 
         painter.translate(0.5, 0.5)
-        painter.setRenderHints(painter.Antialiasing)
         painter.setPen(QPen(Qt.PenStyle.NoPen))
         painter.setBrush(self.color)
         painter.setBackground(QColor(230, 230, 230))
