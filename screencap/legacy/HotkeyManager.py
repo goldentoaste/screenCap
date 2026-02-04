@@ -276,6 +276,9 @@ class HotKeyTestWindow(QDialog):
             lambda s: (label.setText(s), ""),
         )
 
+
+        
+
     def keyPressEvent(self, a0: QtGui.QKeyEvent) -> None:
         self.manager.keyDown(a0)
 

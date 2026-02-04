@@ -1,7 +1,9 @@
 
 
 from screencap.src.Hotkeys.common import QT_KEY_TO_WIN_VK, HotkeyEdit, QT_NumPad_WIN_VK
-from utils import Logger as L
+
+from screencap.src.snaphot.Snapshot import Snapshot
+from screencap.src.utils import Logger as L
 import sys
 from typing import Callable, Dict, List, Literal, Tuple, Union
 from PySide6.QtCore import (
@@ -143,7 +145,21 @@ class Test(QWidget):
 
         self.comboEdit.comboChangeSignal.connect(self.regKey)
 
+
+        self.keyManager.registerHotKey(
+            "Stuff",
+            QKeyCombination(Qt.Key.Key_2),
+            self.makescreenshot
+        )
+        self.shots = []
+
+
         self.show()
+
+    def makescreenshot(self):
+        sc =Snapshot()
+        self.shots.append(sc)
+        sc.fromFullscreen()
 
     def regKey(self, key: QKeyCombination):
 

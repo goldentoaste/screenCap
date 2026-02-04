@@ -17,6 +17,7 @@ from PySide6.QtGui import (
     QCloseEvent,
     QColor,
     QImage,
+    QKeyEvent,
     QMouseEvent,
     QPen,
     QPixmap,
@@ -123,9 +124,11 @@ class Snapshot(QWidget):
 
         self.view.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.view.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        print(self.config.borderTrans)
+
         self.view.setBackgroundBrush(QBrush(self.config.borderTrans))
         self.view.setStyleSheet(f"border: 0px solid; background:transparent;")
+
+        self.pixmapItem.setPos(QPoint(0,0))
 
         self.setMouseTracking(True)
 
@@ -170,7 +173,9 @@ class Snapshot(QWidget):
             )
 
             self.view.setFixedSize(self.size())
-            self.view.setSceneRect(self.pixmapItem.sceneBoundingRect().adjusted(-margin, -margin, margin, margin))
+            self.view.setSceneRect(QRect(QPoint(), self.size()))
+            self.pixmapItem.setPos(QPoint(margin, margin))
+
 
             self.setBorder(self.rect().toRectF())
 
@@ -242,6 +247,17 @@ class Snapshot(QWidget):
     def closeEvent(self, event: QCloseEvent) -> None:
         if DEBUG:
             sys.exit(0)
+
+    def keyPressEvent(self, event: QKeyEvent) -> None:
+
+        if event.key() == Qt.Key.Key_Up:
+            self.move(self.pos() + QPoint(0, -1))
+        if event.key() == Qt.Key.Key_Down:
+            self.move(self.pos() + QPoint(0, 1))
+        if event.key() == Qt.Key.Key_Right:
+            self.move(self.pos() + QPoint(1, 0))
+        if event.key() == Qt.Key.Key_Left:
+            self.move(self.pos() + QPoint(-1, 0))
 
 
 if __name__ == "__main__":
