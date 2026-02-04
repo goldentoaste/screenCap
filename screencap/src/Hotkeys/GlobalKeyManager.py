@@ -1,5 +1,6 @@
 
 
+import gc
 from screencap.src.Hotkeys.common import QT_KEY_TO_WIN_VK, HotkeyEdit, QT_NumPad_WIN_VK
 
 from screencap.src.snaphot.Snapshot import Snapshot
@@ -20,6 +21,7 @@ from PySide6.QtWidgets import (
     QLabel,
 
     QListWidget,
+    QPushButton,
     QVBoxLayout,
     QWidget,
 )
@@ -153,6 +155,10 @@ class Test(QWidget):
         )
         self.shots = []
 
+        self.btn = QPushButton("Garbage collection")
+        self.layout().addWidget(self.btn)
+        self.btn.pressed.connect(lambda: gc.collect())
+
 
         self.show()
 
@@ -160,6 +166,8 @@ class Test(QWidget):
         sc =Snapshot()
         self.shots.append(sc)
         sc.fromFullscreen()
+
+        sc.destroyed.connect(lambda:self.shots.remove(sc))
 
     def regKey(self, key: QKeyCombination):
 

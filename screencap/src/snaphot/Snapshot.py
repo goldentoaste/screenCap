@@ -1,7 +1,9 @@
 from ast import Lambda
 from math import e
+from re import T
 import sys
 from traceback import print_tb
+from turtle import pos
 from PySide6.QtCore import (
     QEvent,
     QKeyCombination,
@@ -10,6 +12,8 @@ from PySide6.QtCore import (
     QRect,
     QRectF,
     QSize,
+    QTime,
+    QTimer,
     Qt,
 )
 from PySide6.QtGui import (
@@ -128,20 +132,25 @@ class Snapshot(QWidget):
         self.view.setBackgroundBrush(QBrush(self.config.borderTrans))
         self.view.setStyleSheet(f"border: 0px solid; background:transparent;")
 
-        self.pixmapItem.setPos(QPoint(0,0))
+        self.view.setInteractive(False)
+
+        self.pixmapItem.setPos(QPoint(0, 0))
 
         self.setMouseTracking(True)
 
-    def loadImage(self, img: QPixmap):
+    def loadImage(self, img: QPixmap, newPos: QPoint | None = None):
         self.pixmap = img
         self.pixmapItem.setPixmap(self.pixmap)
+
+        self.setWindowOpacity(0)
         self.view.setSceneRect(self.pixmap.rect())
         self.view.setFixedSize(self.pixmap.rect().size() / self.devicePixelRatio())
-        # self.setFixedSize(self.view.size())
-        self.setGeometry(QRect(self.pos(), self.view.size()))
-        self.setBorder(self.pixmapItem.boundingRect())
+        QApplication.instance().processEvents()  # pyright: ignore[reportOptionalMemberAccess]
 
+        self.setGeometry(QRect((self.pos() if not newPos else newPos), self.view.size()))
+        self.setBorder(self.pixmapItem.boundingRect())
         self.selectionBox.clampRect = self.rect()
+        self.setWindowOpacity(1)
 
     def fromFullscreen(self):
         self.initialCrop = True
@@ -151,10 +160,8 @@ class Snapshot(QWidget):
         self.startCrop()
         self.showNormal()
 
-
     def setBorder(self, rect: QRectF):
         self.border.setRect(rect.adjusted(0.25, 0.25, -0.25, -0.25))
-
 
     def startCrop(self, margin=0):
         self.cropping = True
@@ -176,11 +183,9 @@ class Snapshot(QWidget):
             self.view.setSceneRect(QRect(QPoint(), self.size()))
             self.pixmapItem.setPos(QPoint(margin, margin))
 
-
             self.setBorder(self.rect().toRectF())
 
             self.setUpdatesEnabled(True)
-
 
     def finishCrop(self):
         self.setCursor(Qt.CursorShape.ArrowCursor)
@@ -197,12 +202,8 @@ class Snapshot(QWidget):
                 self.close()
             return  # cancel crop
 
-
-        self.hide()
-
         self.cropping = False
         self.initialCrop = False
-
 
         rect.moveTopLeft(
             rect.topLeft() - QPoint(self.cropOffset, self.cropOffset)
@@ -214,10 +215,12 @@ class Snapshot(QWidget):
 
         self.cropOffset = 0
 
+
         self.pixmap.convertFromImage(self.pixmap.toImage().copy(rect))
-        self.loadImage(self.pixmap)
-        self.move(self.mapToGlobal(self.selectionBox.geometry().topLeft()))
-        self.show()
+        self.loadImage(self.pixmap, self.mapToGlobal(self.selectionBox.geometry().topLeft()))
+
+        # force image to load before moving, to avoid flicker
+
 
     def mousePressEvent(self, event: QMouseEvent) -> None:
         self.originPos = event.position().toPoint()
@@ -245,6 +248,11 @@ class Snapshot(QWidget):
             self.finishCrop()
 
     def closeEvent(self, event: QCloseEvent) -> None:
+        # del self.pixmap
+        # self.scene.clear()
+        # self.destroy()
+
+        super().closeEvent(event)
         if DEBUG:
             sys.exit(0)
 
