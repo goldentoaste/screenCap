@@ -20,6 +20,7 @@ from PySide6.QtGui import (
     QBrush,
     QCloseEvent,
     QColor,
+    QColorSpace,
     QImage,
     QKeyEvent,
     QMouseEvent,
@@ -139,23 +140,24 @@ class Snapshot(QWidget):
         self.setMouseTracking(True)
 
     def loadImage(self, img: QPixmap, newPos: QPoint | None = None):
+        self.setWindowOpacity(0)
         self.pixmap = img
         self.pixmapItem.setPixmap(self.pixmap)
 
-        self.setWindowOpacity(0)
         self.view.setSceneRect(self.pixmap.rect())
         self.view.setFixedSize(self.pixmap.rect().size() / self.devicePixelRatio())
-        QApplication.instance().processEvents()  # pyright: ignore[reportOptionalMemberAccess]
 
         self.setGeometry(QRect((self.pos() if not newPos else newPos), self.view.size()))
         self.setBorder(self.pixmapItem.boundingRect())
         self.selectionBox.clampRect = self.rect()
+        QApplication.instance().processEvents()  # pyright: ignore[reportOptionalMemberAccess]
         self.setWindowOpacity(1)
 
     def fromFullscreen(self):
         self.initialCrop = True
         curScreen = getCurrentScreen()
-        self.loadImage(curScreen.grabWindow(0))
+        img = curScreen.grabWindow()
+        self.loadImage(img)
         self.move(curScreen.geometry().topLeft())
         self.startCrop()
         self.showNormal()
@@ -215,7 +217,6 @@ class Snapshot(QWidget):
 
         self.cropOffset = 0
 
-
         self.pixmap.convertFromImage(self.pixmap.toImage().copy(rect))
         self.loadImage(self.pixmap, self.mapToGlobal(self.selectionBox.geometry().topLeft()))
 
@@ -228,15 +229,22 @@ class Snapshot(QWidget):
             self.selectionBox.setUseMinSize(False)
             self.selectionBox.move(event.position().toPoint())
             self.selectionBox.show()
+        else:
+            if event.buttons() & Qt.MouseButton.LeftButton:
+                self.setCursor(Qt.CursorShape.ClosedHandCursor)
         event.accept()
 
     def mouseMoveEvent(self, event: QMouseEvent) -> None:
         if self.cropping and event.buttons() & Qt.MouseButton.LeftButton:
             self.selectionBox.setRect(self.originPos, event.position().toPoint())
             self.selectionBox.clamp()
+        else:
+            if event.buttons() & Qt.MouseButton.LeftButton:
+                self.move(event.globalPosition().toPoint() - self.originPos)
 
     def mouseReleaseEvent(self, event: QMouseEvent) -> None:
         # TODO, alternative finish methods
+        self.setCursor(Qt.CursorShape.ArrowCursor)
         if self.cropping:
             self.selectionBox.setUseMinSize(True)
 
@@ -248,10 +256,6 @@ class Snapshot(QWidget):
             self.finishCrop()
 
     def closeEvent(self, event: QCloseEvent) -> None:
-        # del self.pixmap
-        # self.scene.clear()
-        # self.destroy()
-
         super().closeEvent(event)
         if DEBUG:
             sys.exit(0)
