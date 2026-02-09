@@ -1,27 +1,16 @@
-from ast import Lambda
-from math import e
-from re import T
 import sys
-from traceback import print_tb
-from turtle import pos
 from PySide6.QtCore import (
-    QEvent,
     QKeyCombination,
-    QObject,
     QPoint,
     QRect,
     QRectF,
     QSize,
-    QTime,
-    QTimer,
     Qt,
 )
 from PySide6.QtGui import (
     QBrush,
     QCloseEvent,
     QColor,
-    QColorSpace,
-    QImage,
     QKeyEvent,
     QMouseEvent,
     QPen,

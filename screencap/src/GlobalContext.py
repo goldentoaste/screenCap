@@ -32,6 +32,7 @@ class Config(ConfigBase):
     bg: str = "#282828"
     bgTrans : str = "#28282888"
     bgAlt: str = "#3c3836"
+    bgAlt2 : str = "#504945"
 
     fg: str = "#fbf1c7"
     fgAlt: str = "#ebdbb2"
