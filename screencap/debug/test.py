@@ -21,6 +21,11 @@ from screencap.src.Hotkeys.common import (
     QT_NumPad_WIN_VK,
 )
 
+import ctypes.wintypes as win
+
+import ctypes
+ctypes.windll
+
 
 class TestInput(QLineEdit):
 
