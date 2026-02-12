@@ -62,7 +62,6 @@ class Stuff(QWidget):
             errorCode = kernel32.GetLastError()
             print("error code: ", errorCode)
 
-
 if __name__ == "__main__":
     a = QApplication()
     s = Stuff()

@@ -12,6 +12,7 @@ dependencies = [
     "pyside6 (>=6.10.1,<7.0.0)",
     "pywin32 (>=311,<312)",
     "betterconf (>=4.5.0,<5.0.0)",
+    "evdev (>=1.9.3,<2.0.0) ; sys_platform == \"linux\"",
 ]
 
 

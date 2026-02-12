@@ -13,6 +13,18 @@ files = [
 ]
 
 [[package]]
+name = "evdev"
+version = "1.9.3"
+description = "Bindings to the Linux input handling subsystem"
+optional = false
+python-versions = ">=3.9"
+groups = ["main"]
+markers = "sys_platform == \"linux\""
+files = [
+    {file = "evdev-1.9.3.tar.gz", hash = "sha256:2c140e01ac8437758fa23fe5c871397412461f42d421aa20241dc8fe8cfccbc9"},
+]
+
+[[package]]
 name = "librt"
 version = "0.7.8"
 description = "Mypyc runtime library"
@@ -475,4 +487,4 @@ cffi = ["cffi (>=1.17,<2.0) ; platform_python_implementation != \"PyPy\" and pyt
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<3.13"
-content-hash = "9fbfd544719134d536812b153aaf3c405cb09cd21883f99423174f00428dbbc5"
+content-hash = "a4e03891adbdd754771c08f8e79e85d8600e598c76f73deaeab0c13ee98a3238"
