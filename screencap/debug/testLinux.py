@@ -24,6 +24,7 @@ import os
 import subprocess
 import sys
 
+
 from PySide6.QtWidgets import QApplication, QWidget
 
 def createPolicy(relPath:str):
