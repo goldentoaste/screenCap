@@ -11,3 +11,4 @@ included_modules.txt
 nuitka-crash-report.xml
 *.exe
 *build
+*.bin
