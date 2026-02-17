@@ -1,1 +1,1 @@
-SUBSYSTEM=="input", KERNEL=="event*", ENV{ID_INPUT_KEYBOARD}=="1", GROUP="goldentoaste-input", MODE="0640"
+SUBSYSTEM=="input", KERNEL=="event*", GROUP="goldentoaste-input", MODE="0640"
