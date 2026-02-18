@@ -12,3 +12,5 @@ nuitka-crash-report.xml
 *.exe
 *build
 *.bin
+upx.*
+nuitka-crash-report.xml
