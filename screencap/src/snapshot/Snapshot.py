@@ -28,7 +28,7 @@ from PySide6.QtWidgets import (
 from screencap.src.GlobalContext import GlobalContext
 from screencap.src.Hotkeys.LocalKeyManager import LocalKeyManager
 from screencap.src.Selection import SelectionBox
-from screencap.src.snaphot.utils import getCurrentScreen
+from screencap.src.snapshot.utils import getCurrentScreen
 
 
 DEBUG = False
@@ -250,7 +250,6 @@ class Snapshot(QWidget):
             sys.exit(0)
 
     def keyPressEvent(self, event: QKeyEvent) -> None:
-
         if event.key() == Qt.Key.Key_Up:
             self.move(self.pos() + QPoint(0, -1))
         if event.key() == Qt.Key.Key_Down:

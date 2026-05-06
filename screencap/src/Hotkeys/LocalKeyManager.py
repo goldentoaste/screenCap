@@ -2,7 +2,6 @@
 
 
 from collections import defaultdict
-from operator import truediv
 import sys
 from typing import Callable, Dict, List, Tuple
 
@@ -102,10 +101,3 @@ if __name__ == "__main__":
     timer.start(1000)
 
     sys.exit(app.exec())
-
-
-
-
-
-
-

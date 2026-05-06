@@ -4,7 +4,39 @@ from typing import Any, Callable, List, TypeVar, Dict, Set
 import typing
 
 
+
+
 class ConfigBase:
+    '''
+Config usage
+
+1. Create a config class with desired config names and default values, inheriting ConfigBase.
+Use python type hint for type checking on load. (but not on save)
+This class is the metadata of the metadata.
+
+Example:
+```
+class DemoConfig(Config):
+    number: int  # defaults to 0
+    colors: list[str] = ["...", "..."]
+    value: float = 1234.5
+```
+2. create an instance of the config.
+Ex: obj = createConfigInstance("./test.config", DemoConfig)
+Note that the config file in disk is created if not exist
+
+3. config data from disk or the default value is now loaded in the config instance (obj)
+
+
+Other notes:
+* Each method in ConfigBase is prefixed with "_", so that config attributes always appears before methods when using intellisense.
+* After calling createConfigInstance(..., DemoConfig), the original class's attribute will be rewritten with the attribute name.
+In this example, `DemoConfig.number == "number", DemoConfig.colors == "colors"`
+This has some consequences:
+    + This allows the config items's name to be referenced in a typesafe way, this is used to implement: `obj._registerCallback(DemoConfig.number, lambda: ...)`
+    + However, the original default value is lost after calling createConfigInstance().
+    + createConfigInstance should be only called once for each config class, ie, each should be unique within the app. Which is fine.
+    '''
     class _SaveContext:
         def __init__(self, config: "ConfigBase") -> None:
             self.config = config

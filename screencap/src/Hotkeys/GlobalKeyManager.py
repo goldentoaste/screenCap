@@ -3,7 +3,7 @@
 import gc
 from screencap.src.Hotkeys.common import QT_KEY_TO_WIN_VK, HotkeyEdit, QT_NumPad_WIN_VK
 
-from screencap.src.snaphot.Snapshot import Snapshot
+from screencap.src.snapshot.Snapshot import Snapshot
 from screencap.src.utils import Logger as L
 import sys
 from typing import Callable, Dict, List, Literal, Tuple, Union
@@ -115,6 +115,11 @@ class WinGlobalHotkey(QAbstractNativeEventFilter):
         if res == 0:
             L.log(f"Failed to unregister hotkey using user32 api: {hotkeyId}")
 
+        if res != 0:
+            _, combo =self.callbacks.pop(hotkeyId)
+            self.mappedCallbacks.pop(combo)
+
+        print("Unregistered hotkey: ", hotkeyId)
         return res != 0
 
     def nativeEventFilter(
