@@ -1,10 +1,8 @@
-
-
 import gc
-from screencap.src.Hotkeys.common import QT_KEY_TO_WIN_VK, HotkeyEdit, QT_NumPad_WIN_VK
+from screencap.src.hotkeys.Common import QT_KEY_TO_WIN_VK, HotkeyEdit, QT_NumPad_WIN_VK
 
 from screencap.src.snapshot.Snapshot import Snapshot
-from screencap.src.utils import Logger as L
+from screencap.src.Utils import Logger as L
 import sys
 from typing import Callable, Dict, List, Literal, Tuple, Union
 from PySide6.QtCore import (
@@ -12,14 +10,11 @@ from PySide6.QtCore import (
     QByteArray,
     QKeyCombination,
     Qt,
-
 )
 
 from PySide6.QtWidgets import (
     QApplication,
-
     QLabel,
-
     QListWidget,
     QPushButton,
     QVBoxLayout,
@@ -116,7 +111,7 @@ class WinGlobalHotkey(QAbstractNativeEventFilter):
             L.log(f"Failed to unregister hotkey using user32 api: {hotkeyId}")
 
         if res != 0:
-            _, combo =self.callbacks.pop(hotkeyId)
+            _, combo = self.callbacks.pop(hotkeyId)
             self.mappedCallbacks.pop(combo)
 
         print("Unregistered hotkey: ", hotkeyId)
@@ -152,11 +147,8 @@ class Test(QWidget):
 
         self.comboEdit.comboChangeSignal.connect(self.regKey)
 
-
         self.keyManager.registerHotKey(
-            "Stuff",
-            QKeyCombination(Qt.Key.Key_2),
-            self.makescreenshot
+            "Stuff", QKeyCombination(Qt.Key.Key_2), self.makescreenshot
         )
         self.shots = []
 
@@ -164,15 +156,14 @@ class Test(QWidget):
         self.layout().addWidget(self.btn)
         self.btn.pressed.connect(lambda: gc.collect())
 
-
         self.show()
 
     def makescreenshot(self):
-        sc =Snapshot()
+        sc = Snapshot()
         self.shots.append(sc)
         sc.fromFullscreen()
 
-        sc.destroyed.connect(lambda:self.shots.remove(sc))
+        sc.destroyed.connect(lambda: self.shots.remove(sc))
 
     def regKey(self, key: QKeyCombination):
 

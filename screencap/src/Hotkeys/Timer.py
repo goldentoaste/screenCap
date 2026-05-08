@@ -1,18 +1,22 @@
-
-
-
 import sys
 import time
-from PySide6.QtCore import QKeyCombination, QTimer, Qt
-from PySide6.QtWidgets import QApplication, QLabel, QPushButton, QVBoxLayout, QWidget
+from PySide6.QtCore import QKeyCombination, QPoint, QRect, QSize, QTimer, Qt
+from PySide6.QtWidgets import (
+    QApplication,
+    QLabel,
+    QPushButton,
+    QSizeGrip,
+    QVBoxLayout,
+    QWidget,
+)
 
-from screencap.src.Hotkeys.GlobalKeyManager import WinGlobalHotkey
-from screencap.src.Hotkeys.common import HotkeyEdit
+from screencap.src.hotkeys.GlobalKeyManager import WinGlobalHotkey
+from screencap.src.hotkeys.Common import HotkeyEdit
 
 
 class HotkeyTimer(QWidget):
 
-    def __init__(self, parent: QWidget | None= None) -> None:
+    def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
 
         self.setWindowTitle("Hotkey Timer")
@@ -42,22 +46,22 @@ class HotkeyTimer(QWidget):
 
         self.comboEdit.comboChangeSignal.connect(self.regKey)
 
+        self.sizeGrip = QSizeGrip(self)
+        self.sizeGrip.resize(16, 16)
+        self.sizeGrip.setGeometry(
+            QRect(self.rect().bottomRight() - QPoint(16, 16), QSize(16, 16))
+        )
+        self.sizeGrip.setVisible(True)
         self.show()
-
 
     def regKey(self, key: QKeyCombination):
         if self.comboEdit.id:
             UnRegRes = self.hotkeyManager.unregisterHotkey(self.comboEdit.id)
 
-        res = self.hotkeyManager.registerHotKey(
-            "Test",
-            key,
-            lambda: self.toggleTimer()
-        )
+        res = self.hotkeyManager.registerHotKey("Test", key, lambda: self.toggleTimer())
         self.comboEdit.clearFocus()
         if res[0]:
             self.comboEdit.id = res[1]  # pyright: ignore[reportAttributeAccessIssue]
-
 
     def toggleTimer(self):
         print("Toggling timer")
@@ -66,22 +70,19 @@ class HotkeyTimer(QWidget):
         else:
             self.start()
 
-
     def stop(self):
         if self.timer:
             self.timer.stop()
             self.timer = None
 
-
     def start(self):
         self.t = 0
-        self.t0= time.time()
+        self.t0 = time.time()
         self.timer = QTimer()
         self.timer.setInterval(10)
         self.timer.setSingleShot(False)
         self.timer.timeout.connect(self.updateTimer)
         self.timer.start()
-
 
     def updateTimer(self):
         self.t = time.time() - self.t0
@@ -90,7 +91,8 @@ class HotkeyTimer(QWidget):
         miliSeconds = int((self.t - int(self.t)) * 1000)
         self.label.setText(f"Timer: {minutes:02d}:{seconds:02d}.{miliSeconds:03d}")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
 
     a = QApplication()
     w = HotkeyTimer()

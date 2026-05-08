@@ -1,5 +1,8 @@
 import sys
+from typing import Union
 from PySide6.QtCore import (
+    QByteArray,
+    QEvent,
     QKeyCombination,
     QPoint,
     QRect,
@@ -11,25 +14,28 @@ from PySide6.QtGui import (
     QBrush,
     QCloseEvent,
     QColor,
+    QEnterEvent,
     QKeyEvent,
     QMouseEvent,
     QPen,
     QPixmap,
+    QResizeEvent,
 )
 from PySide6.QtWidgets import (
     QApplication,
     QGraphicsScene,
     QGraphicsView,
     QHBoxLayout,
+    QSizeGrip,
     QStyle,
     QWidget,
 )
 
 from screencap.src.GlobalContext import GlobalContext
-from screencap.src.Hotkeys.LocalKeyManager import LocalKeyManager
+from screencap.src.hotkeys.LocalKeyManager import LocalKeyManager
 from screencap.src.Selection import SelectionBox
-from screencap.src.snapshot.utils import getCurrentScreen
-
+from screencap.src.snapshot.Utils import getCurrentScreen
+from screencap.src.snapshot.WindowSetup import WindowResizeHelper
 
 DEBUG = False
 MARGIN = 30
@@ -97,12 +103,18 @@ class Snapshot(QWidget):
         self.maskRight.setZValue(-10)
         self.maskBot.setZValue(-10)
 
-        self.border = self.scene.addRect(r, QPen(QColor(self.config.border), 1))
+        # self.border = self.scene.addRect(r, QPen(QColor(self.config.border), 1))
 
         self.cropping = False
         self.cropOffset = 0
 
+        self.scale = 1.0
+        self.resizeHelper = WindowResizeHelper(self)
+
         self.initialize()
+
+    def resizeEvent(self, event: QResizeEvent) -> None:
+        self.resizeHelper.handleResize()
 
     def initialize(self):
         self.setWindowFlags(
@@ -136,7 +148,9 @@ class Snapshot(QWidget):
         self.view.setSceneRect(self.pixmap.rect())
         self.view.setFixedSize(self.pixmap.rect().size() / self.devicePixelRatio())
 
-        self.setGeometry(QRect((self.pos() if not newPos else newPos), self.view.size()))
+        self.setGeometry(
+            QRect((self.pos() if not newPos else newPos), self.view.size())
+        )
         self.setBorder(self.pixmapItem.boundingRect())
         self.selectionBox.clampRect = self.rect()
         QApplication.instance().processEvents()  # pyright: ignore[reportOptionalMemberAccess]
@@ -152,6 +166,7 @@ class Snapshot(QWidget):
         self.showNormal()
 
     def setBorder(self, rect: QRectF):
+        return
         self.border.setRect(rect.adjusted(0.25, 0.25, -0.25, -0.25))
 
     def startCrop(self, margin=0):
@@ -159,6 +174,7 @@ class Snapshot(QWidget):
         self.setCursor(Qt.CursorShape.CrossCursor)
         self.cropOffset = margin
 
+        # crop margin logics
         if not self.initialCrop and margin > 0:
             rect = self.geometry()
             self.setUpdatesEnabled(False)
@@ -175,7 +191,9 @@ class Snapshot(QWidget):
             self.pixmapItem.setPos(QPoint(margin, margin))
 
             self.setBorder(self.rect().toRectF())
-
+            self.selectionBox.clampRect = self.rect().adjusted(
+                margin, margin, -margin, -margin
+            )
             self.setUpdatesEnabled(True)
 
     def finishCrop(self):
@@ -207,10 +225,13 @@ class Snapshot(QWidget):
         self.cropOffset = 0
 
         self.pixmap.convertFromImage(self.pixmap.toImage().copy(rect))
-        self.loadImage(self.pixmap, self.mapToGlobal(self.selectionBox.geometry().topLeft()))
+        self.loadImage(
+            self.pixmap, self.mapToGlobal(self.selectionBox.geometry().topLeft())
+        )
 
-        # force image to load before moving, to avoid flicker
-
+        # reset pixmap location to remove margin
+        self.pixmapItem.setPos(QPoint(0, 0))
+        self.view.setSceneRect(self.pixmapItem.boundingRect())
 
     def mousePressEvent(self, event: QMouseEvent) -> None:
         self.originPos = event.position().toPoint()
@@ -258,6 +279,13 @@ class Snapshot(QWidget):
             self.move(self.pos() + QPoint(1, 0))
         if event.key() == Qt.Key.Key_Left:
             self.move(self.pos() + QPoint(-1, 0))
+
+    def nativeEvent(
+        self,
+        eventType: Union[QByteArray, bytes, bytearray, memoryview],
+        message: int,
+    ) -> object:
+        return self.resizeHelper.nativeEvent(eventType, message)
 
 
 if __name__ == "__main__":

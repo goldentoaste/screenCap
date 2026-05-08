@@ -66,8 +66,6 @@ class LocalKeyManager:
             sc.activated.connect(lambda _callback = callback: _callback(widget) )
             shortCuts[actionName] = sc
 
-            sc.destroyed.connect(lambda: print('test'))
-
         widget.destroyed.connect(lambda: self.contexts[contextName].pop(widget))
 
         self.contexts[contextName][widget] = shortCuts

@@ -74,7 +74,10 @@
     + use python context manager (`with ... as ...:`) to assist with batch updates.
 
 
-
+## MISC
+* Update dependencies to latest:
+    + nuitka: https://nuitka.net/posts/nuitka-release-40.html
+    + python 3.14
 
 ## Memory saving
 * ~~Allow bit depth select~~. This doesn't help, when displayed on screen, the image is converted to monitor's color space anyways

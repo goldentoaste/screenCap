@@ -13,7 +13,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from screencap.src.Hotkeys.common import (
+from screencap.src.hotkeys.Common import (
     QT_KEY_TO_WIN_VK,
     QT_MODIFIERS,
     QT_SHIFT_NUMPAD_WIN_CASE,
@@ -24,6 +24,7 @@ from screencap.src.Hotkeys.common import (
 import ctypes.wintypes as win
 
 import ctypes
+
 ctypes.windll
 
 
@@ -104,13 +105,16 @@ class Tester(QWidget):
         self.timer.setSingleShot(True)
 
         self.timer.timeout.connect(
-            lambda: print("test", QToolTip.showText(
-                self.line.mapToGlobal(QPoint(0, 100)),
-                "HELL SD SAD SAD SAD ASD AS ASD AS  asD AS ASO",
-                self.line,
-                rect=self.line.rect(),
-                msecShowTime=1000,
-            ))
+            lambda: print(
+                "test",
+                QToolTip.showText(
+                    self.line.mapToGlobal(QPoint(0, 100)),
+                    "HELL SD SAD SAD SAD ASD AS ASD AS  asD AS ASO",
+                    self.line,
+                    rect=self.line.rect(),
+                    msecShowTime=1000,
+                ),
+            )
         )
         self.timer.start(100)
 
@@ -123,7 +127,6 @@ class Tester(QWidget):
         # self.layout().addWidget(self.imgLabel)
 
 
-
 if __name__ == "__main__":
     try:
         app = QApplication(sys.argv)
@@ -132,4 +135,3 @@ if __name__ == "__main__":
         sys.exit(app.exec())
     except RuntimeError as e:
         print(e)
-

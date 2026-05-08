@@ -13,7 +13,7 @@ from PySide6.QtWidgets import (
 )
 
 from screencap.src.GlobalContext import GlobalContext
-from screencap.src.utils import pixmapWithMaskedColor
+from screencap.src.Utils import pixmapWithMaskedColor
 
 
 class CropUI(object):
@@ -119,7 +119,7 @@ class CropUI(object):
 
 class CropToolBar(QWidget, CropUI):
 
-    def __init__(self, parent: QWidget) -> None:
+    def __init__(self, parent: QWidget | None) -> None:
         super().__init__(parent)
 
         self.setupUi(self)
