@@ -2,7 +2,6 @@ import sys
 from typing import Union
 from PySide6.QtCore import (
     QByteArray,
-    QEvent,
     QKeyCombination,
     QPoint,
     QRect,
@@ -14,7 +13,6 @@ from PySide6.QtGui import (
     QBrush,
     QCloseEvent,
     QColor,
-    QEnterEvent,
     QKeyEvent,
     QMouseEvent,
     QPen,
@@ -26,8 +24,6 @@ from PySide6.QtWidgets import (
     QGraphicsScene,
     QGraphicsView,
     QHBoxLayout,
-    QSizeGrip,
-    QStyle,
     QWidget,
 )
 
@@ -103,7 +99,7 @@ class Snapshot(QWidget):
         self.maskRight.setZValue(-10)
         self.maskBot.setZValue(-10)
 
-        # self.border = self.scene.addRect(r, QPen(QColor(self.config.border), 1))
+        self.border = self.scene.addRect(r, QPen(QColor(self.config.border), 1))
 
         self.cropping = False
         self.cropOffset = 0
@@ -117,12 +113,7 @@ class Snapshot(QWidget):
         self.resizeHelper.handleResize()
 
     def initialize(self):
-        self.setWindowFlags(
-            Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.FramelessWindowHint
-        )  # | Qt.WindowType.SubWindow
-
         self.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
-        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self.setMinimumSize(QSize(20, 20))
         self.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
 
@@ -166,7 +157,6 @@ class Snapshot(QWidget):
         self.showNormal()
 
     def setBorder(self, rect: QRectF):
-        return
         self.border.setRect(rect.adjusted(0.25, 0.25, -0.25, -0.25))
 
     def startCrop(self, margin=0):
@@ -240,8 +230,9 @@ class Snapshot(QWidget):
             self.selectionBox.move(event.position().toPoint())
             self.selectionBox.show()
         else:
-            if event.buttons() & Qt.MouseButton.LeftButton:
-                self.setCursor(Qt.CursorShape.ClosedHandCursor)
+            pass # Use native move logic for now.
+            # if event.buttons() & Qt.MouseButton.LeftButton:
+            #     self.setCursor(Qt.CursorShape.ClosedHandCursor)
         event.accept()
 
     def mouseMoveEvent(self, event: QMouseEvent) -> None:
@@ -249,8 +240,9 @@ class Snapshot(QWidget):
             self.selectionBox.setRect(self.originPos, event.position().toPoint())
             self.selectionBox.clamp()
         else:
-            if event.buttons() & Qt.MouseButton.LeftButton:
-                self.move(event.globalPosition().toPoint() - self.originPos)
+            pass # maybe delete, using native calls for now.
+            # if event.buttons() & Qt.MouseButton.LeftButton:
+            #     self.move(event.globalPosition().toPoint() - self.originPos)
 
     def mouseReleaseEvent(self, event: QMouseEvent) -> None:
         # TODO, alternative finish methods

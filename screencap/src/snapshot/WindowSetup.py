@@ -1,3 +1,5 @@
+from ctypes import c_void_p
+from ctypes.wintypes import HWND, INT, UINT
 from enum import Enum
 import sys
 
@@ -5,6 +7,7 @@ from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QByteArray, QPoint, QRect, Qt
 from PySide6.QtGui import QPainter
+from win32con import HTCAPTION, WVR_REDRAW, WVR_VALIDRECTS
 
 
 class ResizeDir(Enum):
@@ -17,7 +20,7 @@ class ResizeDir(Enum):
 if sys.platform == "win32":
     if TYPE_CHECKING:
         from screencap.src.snapshot.Snapshot import Snapshot
-    from ctypes import POINTER, cast, wintypes, c_short
+    from ctypes import POINTER, cast, wintypes, c_short, Structure
     from ctypes.wintypes import MSG, RECT
 
     from win32con import (
@@ -41,7 +44,47 @@ if sys.platform == "win32":
         WMSZ_TOP,
         WMSZ_TOPLEFT,
         WMSZ_TOPRIGHT,
+        WM_NCCALCSIZE,
     )
+
+    class WINDOWPOS(Structure):
+        """
+        https://learn.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-windowpos
+        """
+
+        hwnd: HWND
+        hwndInsertAfter: HWND
+        x: INT
+        y: INT
+        cx: INT
+        cy: INT
+        flags: UINT
+
+        _fields_ = [
+            ("hwnd", HWND),
+            ("hwndInsertAfter", HWND),
+            ("x", INT),
+            ("y", INT),
+            ("cx", INT),
+            ("cy", INT),
+            ("flags", UINT),
+        ]
+
+    class NCCALCSIZE_PARAMS(Structure):
+        """
+        https://learn.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-nccalcsize_params
+
+        Notes on how rgrc works,
+
+        """
+
+        rgrc: list[RECT]
+        lppos: int
+
+        _fields_ = [
+            ("rgrc", RECT * 3),
+            ("lppos", c_void_p),
+        ]
 
     class WindowResizeHelper:
         """
@@ -59,6 +102,12 @@ if sys.platform == "win32":
             self.lastWidth = 0
             self.lastHeight = 0
 
+            self.window.setWindowFlags(
+                Qt.WindowType.WindowStaysOnTopHint
+                | Qt.WindowType.FramelessWindowHint
+                | Qt.WindowType.SubWindow
+            )
+
         def nativeEvent(
             self,
             eventType: QByteArray | bytes | bytearray | memoryview,
@@ -70,8 +119,7 @@ if sys.platform == "win32":
             return type: (boolean (if event is handled), result (lparam, for windows only))
             """
 
-            msg = cast(int(message), POINTER(wintypes.MSG)).contents
-
+            msg = cast(int(message), POINTER(MSG)).contents
             if msg.message == WM_ENTERSIZEMOVE:
                 self.isResizing = True
                 self.lastWidth = self.window.width() * self.window.devicePixelRatio()
@@ -209,7 +257,8 @@ if sys.platform == "win32":
             elif x > right - self.margin:
                 self.resizeDir = ResizeDir.HOR
                 return True, HTRIGHT
-            return False
+            else:
+                return True, HTCAPTION # Treat the entire window as draggable
 
         def handleResize(self):
             """
@@ -223,3 +272,4 @@ if sys.platform == "win32":
             self.window.pixmapItem.setScale(self.window.scale)
             self.window.view.setFixedSize(self.window.size())
             self.window.view.setSceneRect(QRect(QPoint(), self.window.size()))
+            self.window.setBorder(self.window.rect().toRectF())

@@ -46,10 +46,8 @@ class SelectionBox(QRubberBand):
         else:
             self.clampRect = parent.rect()
 
-
     def setRect(self, p1: QPoint, p2: QPoint):
         self.setGeometry(QRect(p1, p2).normalized())
-
 
     def setUseMinSize(self, opt: bool):
         if opt:
@@ -57,8 +55,8 @@ class SelectionBox(QRubberBand):
             self.setMinimumSize(self.margin * 3, self.margin * 3)
         else:
             self.margin = 0
-            self.setMinimumSize(QSize(0,0))
-            self.setGeometry(QRect(self.pos(), QSize(0,0)))
+            self.setMinimumSize(QSize(0, 0))
+            self.setGeometry(QRect(self.pos(), QSize(0, 0)))
 
     def mousePressEvent(self, e: QMouseEvent) -> None:
         if not e.buttons() & Qt.MouseButton.LeftButton:
