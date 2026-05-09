@@ -1,27 +1,41 @@
-from ctypes import c_void_p
-from ctypes.wintypes import HWND, INT, UINT
-from enum import Enum
 import sys
 
 from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QByteArray, QPoint, QRect, Qt
 from PySide6.QtGui import QPainter
-from win32con import HTCAPTION, WVR_REDRAW, WVR_VALIDRECTS
+
+if TYPE_CHECKING:
+    from screencap.src.snapshot.Snapshot import Snapshot
 
 
-class ResizeDir(Enum):
-    NONE = 0
-    VER = 1
-    HOR = 2
-    BOTH = 3
+class WindowResizeHelper:
+    """
+    Placeholder for platform-specific window resize handling.
+    """
+
+    def __init__(self, window: "Snapshot"):
+        pass
+
+    def nativeEvent(
+        self, eventType: QByteArray | bytes | bytearray | memoryview, message: int
+    ):
+        """
+        Processes native events sent to this window, needed for win32
+        """
+        pass
+
+    def handleResize(self):
+        """
+        Corrects aspect ratio of image when window is resized.
+        """
+        pass
 
 
 if sys.platform == "win32":
-    if TYPE_CHECKING:
-        from screencap.src.snapshot.Snapshot import Snapshot
-    from ctypes import POINTER, cast, wintypes, c_short, Structure
-    from ctypes.wintypes import MSG, RECT
+
+    from ctypes import POINTER, cast, c_short, Structure, c_void_p
+    from ctypes.wintypes import MSG, RECT, HWND, INT, UINT
 
     from win32con import (
         WM_NCHITTEST,
@@ -44,7 +58,7 @@ if sys.platform == "win32":
         WMSZ_TOP,
         WMSZ_TOPLEFT,
         WMSZ_TOPRIGHT,
-        WM_NCCALCSIZE,
+        HTCAPTION,
     )
 
     class WINDOWPOS(Structure):
@@ -86,7 +100,7 @@ if sys.platform == "win32":
             ("lppos", c_void_p),
         ]
 
-    class WindowResizeHelper:
+    class Win32WindowResizeHelper(WindowResizeHelper):
         """
         Intercepts Windows API messages to enforce a fixed aspect ratio when the snapshot window is resized.
         """
@@ -94,7 +108,6 @@ if sys.platform == "win32":
         def __init__(self, window: "Snapshot") -> None:
             self.margin = 10
             self.window = window
-            self.resizeDir: ResizeDir = ResizeDir.NONE
             self.isResizing = False
 
             self.aspectRatio = 1
@@ -233,32 +246,24 @@ if sys.platform == "win32":
 
             if y < top + self.margin:
                 if x < left + self.margin:
-                    self.resizeDir = ResizeDir.BOTH
                     return True, HTTOPLEFT
                 elif x > right - self.margin:
-                    self.resizeDir = ResizeDir.BOTH
                     return True, HTTOPRIGHT
                 else:
-                    self.resizeDir = ResizeDir.VER
                     return True, HTTOP
             elif y > bottom - self.margin:
                 if x < left + self.margin:
-                    self.resizeDir = ResizeDir.BOTH
                     return True, HTBOTTOMLEFT
                 elif x > right - self.margin:
-                    self.resizeDir = ResizeDir.BOTH
                     return True, HTBOTTOMRIGHT
                 else:
-                    self.resizeDir = ResizeDir.VER
                     return True, HTBOTTOM
             elif x < left + self.margin:
-                self.resizeDir = ResizeDir.HOR
                 return True, HTLEFT
             elif x > right - self.margin:
-                self.resizeDir = ResizeDir.HOR
                 return True, HTRIGHT
             else:
-                return True, HTCAPTION # Treat the entire window as draggable
+                return True, HTCAPTION  # Treat the entire window as draggable
 
         def handleResize(self):
             """
@@ -273,3 +278,25 @@ if sys.platform == "win32":
             self.window.view.setFixedSize(self.window.size())
             self.window.view.setSceneRect(QRect(QPoint(), self.window.size()))
             self.window.setBorder(self.window.rect().toRectF())
+
+
+if sys.platform.startswith("linux"):
+    import os
+
+    os.environ["QT_QPA_PLATFORM"] = "xcb"
+
+    class LinuxWindowResizeHelper(WindowResizeHelper):
+        """
+        Only support ubuntu for now.
+        """
+
+        pass
+
+
+def getResizeHelper(window: "Snapshot") -> WindowResizeHelper:
+    if sys.platform == "win32":
+        return Win32WindowResizeHelper(window)
+    elif sys.platform.startswith("linux"):
+        return LinuxWindowResizeHelper(window)
+    else:
+        raise NotImplementedError(f"Unsupported platform: {sys.platform}")

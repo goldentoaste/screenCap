@@ -31,7 +31,7 @@ from screencap.src.GlobalContext import GlobalContext
 from screencap.src.hotkeys.LocalKeyManager import LocalKeyManager
 from screencap.src.Selection import SelectionBox
 from screencap.src.snapshot.Utils import getCurrentScreen
-from screencap.src.snapshot.WindowSetup import WindowResizeHelper
+from screencap.src.snapshot.WindowSetup import WindowResizeHelper, getResizeHelper
 
 DEBUG = False
 MARGIN = 30
@@ -105,7 +105,7 @@ class Snapshot(QWidget):
         self.cropOffset = 0
 
         self.scale = 1.0
-        self.resizeHelper = WindowResizeHelper(self)
+        self.resizeHelper = getResizeHelper(self)
 
         self.initialize()
 
@@ -230,7 +230,7 @@ class Snapshot(QWidget):
             self.selectionBox.move(event.position().toPoint())
             self.selectionBox.show()
         else:
-            pass # Use native move logic for now.
+            pass  # Use native move logic for now.
             # if event.buttons() & Qt.MouseButton.LeftButton:
             #     self.setCursor(Qt.CursorShape.ClosedHandCursor)
         event.accept()
@@ -240,7 +240,7 @@ class Snapshot(QWidget):
             self.selectionBox.setRect(self.originPos, event.position().toPoint())
             self.selectionBox.clamp()
         else:
-            pass # maybe delete, using native calls for now.
+            pass  # maybe delete, using native calls for now.
             # if event.buttons() & Qt.MouseButton.LeftButton:
             #     self.move(event.globalPosition().toPoint() - self.originPos)
 
