@@ -1,9 +1,9 @@
 import sys
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, override
 
 from PySide6.QtCore import QByteArray, QPoint, QRect, Qt
-from PySide6.QtGui import QPainter
+from PySide6.QtGui import QMouseEvent, QPainter
 
 if TYPE_CHECKING:
     from screencap.src.snapshot.Snapshot import Snapshot
@@ -15,7 +15,7 @@ class WindowResizeHelper:
     """
 
     def __init__(self, window: "Snapshot"):
-        pass
+        self.window = window
 
     def nativeEvent(
         self, eventType: QByteArray | bytes | bytearray | memoryview, message: int
@@ -30,6 +30,9 @@ class WindowResizeHelper:
         Corrects aspect ratio of image when window is resized.
         """
         pass
+
+    def onMouseDown(self, e: QMouseEvent):
+        raise NotImplementedError()
 
 
 if sys.platform == "win32":
@@ -106,8 +109,8 @@ if sys.platform == "win32":
         """
 
         def __init__(self, window: "Snapshot") -> None:
+            super().__init__(window)
             self.margin = 10
-            self.window = window
             self.isResizing = False
 
             self.aspectRatio = 1
@@ -279,6 +282,11 @@ if sys.platform == "win32":
             self.window.view.setSceneRect(QRect(QPoint(), self.window.size()))
             self.window.setBorder(self.window.rect().toRectF())
 
+        @override
+        def onMouseDown(self, e: QMouseEvent):
+            pass
+
+
 
 if sys.platform.startswith("linux"):
     import os
@@ -290,7 +298,17 @@ if sys.platform.startswith("linux"):
         Only support ubuntu for now.
         """
 
-        pass
+        def __init__(self, window: "Snapshot"):
+            super().__init__(window)
+            self.window.setWindowFlags(
+                Qt.WindowType.WindowStaysOnTopHint
+                | Qt.WindowType.FramelessWindowHint
+                | Qt.WindowType.SubWindow
+            )
+
+        @override
+        def onMouseDown(self, e: QMouseEvent):
+            self.window.windowHandle().startSystemMove()
 
 
 def getResizeHelper(window: "Snapshot") -> WindowResizeHelper:

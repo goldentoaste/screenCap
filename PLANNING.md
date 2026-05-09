@@ -1,7 +1,27 @@
 # Planning
 
+## Linux Exception HELL
+* I AM IN HELL
+* only look into ubuntu for now
+### Ubuntu/GNOME
+
+#### Screenshot
+* x11 screenshot is sandboxed, wayland is also locked down hell
+* Use cli utils in a subprocess to screenshot.
+    * 2 options, screenshot to disk, in load from disk.
+    * Or use some complicated pipesetup, might be over kill
+
+#### Window Positioning/Borderless window.
+* investigating.
+
 
 ## Snapshot
+### Window Positioning
+* Windows
+    - native events, processing WM_NCHITTEST events, def over kill.
+    - revisit Calc size message in future, maybe, for only overriding some of native window manager.
+
+    
 ### Crop
 * Initial full screen crop seems smooth
 * Secondary crop very jank rn

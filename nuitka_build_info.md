@@ -27,6 +27,7 @@ nuitka ./screencap/debug/testLinux.py --standalone --enable-plugin=pyside6  --no
 MinGW64 is needed, use "--mingw64" flag
 
 ## Linux
+* `libxcb-cursor-dev` is needed for xcb (x11 mode), may or may not already be present. Or may not be needed for prod.
 * `sudo apt install libclang-dev` is needed for Qt6
 * `sudo apt install qt6-base-dev` for Qt6
 * `sudo apt install libqt6core6 `
