@@ -30,7 +30,7 @@ from PySide6.QtWidgets import (
 from screencap.src.GlobalContext import GlobalContext
 from screencap.src.hotkeys.LocalKeyManager import LocalKeyManager
 from screencap.src.Selection import SelectionBox
-from screencap.src.snapshot.Utils import getCurrentScreen
+from screencap.src.snapshot.ScreenshotProvider import ScreenshotProvider
 from screencap.src.snapshot.WindowSetup import getResizeHelper
 
 DEBUG = False
@@ -149,10 +149,9 @@ class Snapshot(QWidget):
 
     def fromFullscreen(self):
         self.initialCrop = True
-        curScreen = getCurrentScreen()
-        img = curScreen.grabWindow()
+        img, screen = ScreenshotProvider.takeScreenShot()
         self.loadImage(img)
-        self.move(curScreen.geometry().topLeft())
+        self.move(screen.geometry().topLeft())
         self.startCrop()
         self.showNormal()
 
