@@ -1,6 +1,9 @@
 
-## Build commands
+## On local development
+https://docs.syncthing.net/intro/getting-started.html
+https://127.0.0.1:8384/
 
+## Build commands
 
 ### Windows
 * One file upx

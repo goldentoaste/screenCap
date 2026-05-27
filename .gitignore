@@ -14,3 +14,5 @@ nuitka-crash-report.xml
 *.bin
 upx.*
 nuitka-crash-report.xml
+.stignore
+.stfolder

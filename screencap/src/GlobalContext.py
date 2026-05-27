@@ -12,7 +12,6 @@ class GlobalContext:
 
     __instance: "GlobalContext | None" = None
 
-
     def __init__(self) -> None:
         self.config = createConfigInstance(defaultConfigLocation, Config)
 

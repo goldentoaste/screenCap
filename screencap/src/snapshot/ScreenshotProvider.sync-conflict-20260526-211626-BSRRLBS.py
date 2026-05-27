@@ -1,8 +1,8 @@
 import sys
-from typing import Any, override
+from typing import override
 
-from PySide6.QtCore import SLOT, QEventLoop, QObject, QTimer, Slot
-from PySide6.QtDBus import QDBusConnection, QDBusInterface, QDBusObjectPath, QDBusPendingCall, QDBusPendingCallWatcher
+from PySide6.QtCore import QEventLoop
+from PySide6.QtDBus import QDBusConnection, QDBusInterface, QDBusObjectPath
 from PySide6.QtGui import QPixmap, QScreen
 
 
@@ -56,50 +56,36 @@ if sys.platform == "linux":
         QDBusConnection.sessionBus(),
     )
 
+    def waitForResponse(req: QDBusObjectPath):
 
+        loop = QEventLoop()
+        res = {}
 
-    class QDBusAwait(QObject):
+        def onRes(code, result: dict):
+            if code == 0:
+                res.update(result)
+            else:
+                print("Error awaiting response: ", req.path(), "\nError code", code)
+            loop.quit()
 
-        def __init__(self) -> None:
-            super().__init__(None)
-
-            self.path = f'/org/freedesktop/portal/desktop/request/{QDBusConnection.sessionBus().baseService()[1:].replace('.', '_')}/goldentoaste_screencap'
-
-            self.loop = QEventLoop()
-            self.result = {}
-            self.code = -1
-
-
-
-        def waitForResponse(self, *args):
-            self.setup()
-            res = interface.call(*args)
-            print(res.arguments()[0].path())
-            self.loop.exec()
-
-
-        @Slot('uint', dict)
-        def onResult(self, code:int, res:dict[Any, Any]):
-            print(code, res)
-            self.loop.quit()
-
-        def setup(self):
-            print(self.path)
-            success = (
-                QDBusConnection.sessionBus().connect(  # pyright: ignore[reportCallIssue]
-                    "org.freedesktop.portal.Desktop",
-                    self.path,
-                    "org.freedesktop.portal.Request",
-                    "Response",
-                    self,
-                    SLOT('onResult(uint, QVariantMap)')
-                )
+        path = req.path()
+        success = (
+            QDBusConnection.sessionBus().connect(  # pyright: ignore[reportCallIssue]
+                "org.freedesktop.portal.Desktop",
+                path,
+                "org.freedesktop.portal.Request",
+                "Response",
+                onRes,
             )
+        )
 
-            if not success:
-                print("failed in connect to Dbus success signal")
-                return None
+        if not success:
+            print("failed in connect to Dbus success signal")
+            return None
 
+        loop.exec()
+
+        return res
 
     def grantFreeDK_Permission():
         """
@@ -108,23 +94,16 @@ if sys.platform == "linux":
         Hopefully this permission is remembered.
         """
 
-        waiter = QDBusAwait()
-
         # Create session and get it's path
         opts = {
             "handle_token": "goldentoaste_screencap",
             "session_handle_token": "goldentoaste_screencap",
         }
-        # res = interface.call("CreateSession", opts)
-        # print(res.arguments()[0].path())
-        # waiter.waitForResponse(res.arguments()[0])
-        waiter.waitForResponse("CreateSession", opts)
-        # sessionPath = res.arguments()[0]
-        # print("create session res", res.arguments(), sessionPath.path())
-        # session = waiter.waitForResponse(sessionPath)
-        # print(session)
-
-        return
+        res = interface.call("CreateSession", opts)
+        sessionPath = res.arguments()[0]
+        print("create session res", res.arguments(), sessionPath.path())
+        session = waitForResponse(sessionPath)
+        print(session)
 
         # Select record monitor source
         opts = {"persist_mode": 2}
@@ -136,16 +115,7 @@ if sys.platform == "linux":
         print("Start session res", res.arguments())
 
     if __name__ == "__main__":
-        from PySide6.QtWidgets import QApplication
-        a = QApplication()
-        timer = QTimer()
-        timer.timeout.connect(grantFreeDK_Permission)
-        timer.setInterval(10)
-        timer.setSingleShot(True)
-        timer.start()
-
-        a.exec()
-
+        grantFreeDK_Permission()  # testing
 
     class LinuxScreenshotProvider(_ScreenshotProvider):
 
