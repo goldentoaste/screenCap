@@ -4,8 +4,8 @@ from weakref import ref
 from PySide6.QtCore import QPoint, QPointF, QRect, QSize, QSizeF, Qt
 from PySide6.QtGui import QBrush, QColor, QMouseEvent, QPaintEvent, QPainter, QPen
 from PySide6.QtWidgets import QApplication, QRubberBand, QWidget
-
-from screencap.src.GlobalContext import GlobalContext
+print(sys.path)
+from screencap.GlobalContext import GlobalContext
 
 
 class Dir(Enum):

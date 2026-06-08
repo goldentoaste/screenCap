@@ -6,7 +6,7 @@ from PySide6.QtCore import QByteArray, QPoint, QRect, Qt
 from PySide6.QtGui import QMouseEvent, QPainter
 
 if TYPE_CHECKING:
-    from screencap.src.snapshot.Snapshot import Snapshot
+    from screencap.snapshot.Snapshot import Snapshot
 
 
 class WindowResizeHelper:

@@ -2,8 +2,9 @@ import sys
 from typing import Any, override
 
 from PySide6.QtCore import SLOT, QEventLoop, QObject, QTimer, Slot
-from PySide6.QtDBus import QDBusConnection, QDBusInterface, QDBusObjectPath, QDBusPendingCall, QDBusPendingCallWatcher
 from PySide6.QtGui import QPixmap, QScreen
+print(sys.path)
+from screencap.GlobalContext import GlobalContext
 
 
 def getCurrentScreen() -> QScreen:
@@ -47,7 +48,7 @@ if sys.platform == "win32":
 
 
 if sys.platform == "linux":
-    from PySide6.QtDBus import QDBus
+    from PySide6.QtDBus import QDBus,QDBusConnection, QDBusInterface, QDBusObjectPath, QDBusPendingCall, QDBusPendingCallWatcher
 
     interface = QDBusInterface(
         "org.freedesktop.portal.Desktop",
@@ -66,10 +67,8 @@ if sys.platform == "linux":
             self.path = f'/org/freedesktop/portal/desktop/request/{QDBusConnection.sessionBus().baseService()[1:].replace('.', '_')}/goldentoaste_screencap'
 
             self.loop = QEventLoop()
-            self.result = {}
+            self.result: dict[str, Any] = {}
             self.code = -1
-
-
 
         def waitForResponse(self, *args):
             self.setup()
@@ -77,10 +76,12 @@ if sys.platform == "linux":
             print(res.arguments()[0].path())
             self.loop.exec()
 
+            return self.result
 
-        @Slot('uint', dict)
+
+        @Slot('uint', dict)  # pyright: ignore[reportCallIssue, reportArgumentType]
         def onResult(self, code:int, res:dict[Any, Any]):
-            print(code, res)
+            self.result = res
             self.loop.quit()
 
         def setup(self):
@@ -92,7 +93,7 @@ if sys.platform == "linux":
                     "org.freedesktop.portal.Request",
                     "Response",
                     self,
-                    SLOT('onResult(uint, QVariantMap)')
+                    SLOT('onResult(uint, QVariantMap)')  # pyright: ignore[reportArgumentType]
                 )
             )
 
@@ -109,37 +110,39 @@ if sys.platform == "linux":
         """
 
         waiter = QDBusAwait()
+        config = GlobalContext.getCtx().getConfig()
 
         # Create session and get it's path
         opts = {
             "handle_token": "goldentoaste_screencap",
             "session_handle_token": "goldentoaste_screencap",
         }
-        # res = interface.call("CreateSession", opts)
-        # print(res.arguments()[0].path())
-        # waiter.waitForResponse(res.arguments()[0])
-        waiter.waitForResponse("CreateSession", opts)
-        # sessionPath = res.arguments()[0]
-        # print("create session res", res.arguments(), sessionPath.path())
-        # session = waiter.waitForResponse(sessionPath)
-        # print(session)
 
-        return
+        res = waiter.waitForResponse("CreateSession", opts)
+        if not res["session_handle"]:
+            raise Exception("Failed to create session, no session handle returned")
+
+        sessionHandle = QDBusObjectPath(res['session_handle'])
+
 
         # Select record monitor source
-        opts = {"persist_mode": 2}
-        res = interface.call("SelectSources", sessionPath, opts)
-        print("select source res", res.arguments())
+        opts: dict[str, Any] = {"persist_mode": 2, 'cursor_mode': 1}
+
+        if config.permToken:
+            opts['restore_token'] = config.permToken
+
+        res = waiter.waitForResponse("SelectSources", sessionHandle, opts)
+        print(res)
 
         # Start the session
-        res = interface.call("Start", sessionPath, "")
-        print("Start session res", res.arguments())
+        # res = interface.call("Start", sessionHandle, "")
+        # print("Start session res", res.arguments())
 
     if __name__ == "__main__":
         from PySide6.QtWidgets import QApplication
         a = QApplication()
         timer = QTimer()
-        timer.timeout.connect(grantFreeDK_Permission)
+        timer.timeout.connect(lambda: (grantFreeDK_Permission(), sys.exit()))
         timer.setInterval(10)
         timer.setSingleShot(True)
         timer.start()

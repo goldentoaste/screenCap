@@ -1,8 +1,8 @@
 import gc
-from screencap.src.hotkeys.Common import QT_KEY_TO_WIN_VK, HotkeyEdit, QT_NumPad_WIN_VK
+from screencap.hotkeys.Common import QT_KEY_TO_WIN_VK, HotkeyEdit, QT_NumPad_WIN_VK
 
-from screencap.src.snapshot.Snapshot import Snapshot
-from screencap.src.Utils import Logger as L
+from screencap.snapshot.Snapshot import Snapshot
+from screencap.Utils import Logger as L
 import sys
 from typing import Callable, Dict, List, Literal, Tuple, Union
 from PySide6.QtCore import (

@@ -13,7 +13,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from screencap.src.hotkeys.Common import (
+from screencap.hotkeys.Common import (
     QT_KEY_TO_WIN_VK,
     QT_MODIFIERS,
     QT_SHIFT_NUMPAD_WIN_CASE,

@@ -15,3 +15,6 @@ nuitka-crash-report.xml
 *.bin
 upx.*
 nuitka-crash-report.xml
+poetry.lock
+.venv
+uv.lock

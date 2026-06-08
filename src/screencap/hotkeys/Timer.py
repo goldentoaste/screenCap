@@ -10,8 +10,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from screencap.src.hotkeys.GlobalKeyManager import WinGlobalHotkey
-from screencap.src.hotkeys.Common import HotkeyEdit
+from screencap.hotkeys.GlobalKeyManager import WinGlobalHotkey
+from screencap.hotkeys.Common import HotkeyEdit
 
 
 class HotkeyTimer(QWidget):

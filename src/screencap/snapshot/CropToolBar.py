@@ -12,8 +12,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from screencap.src.GlobalContext import GlobalContext
-from screencap.src.Utils import pixmapWithMaskedColor
+from screencap.GlobalContext import GlobalContext
+from screencap.Utils import pixmapWithMaskedColor
 
 
 class CropUI(object):

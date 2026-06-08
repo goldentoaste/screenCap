@@ -27,11 +27,11 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from screencap.src.GlobalContext import GlobalContext
-from screencap.src.hotkeys.LocalKeyManager import LocalKeyManager
-from screencap.src.Selection import SelectionBox
-from screencap.src.snapshot.ScreenshotProvider import ScreenshotProvider
-from screencap.src.snapshot.WindowSetup import getResizeHelper
+from screencap.GlobalContext import GlobalContext
+from screencap.hotkeys.LocalKeyManager import LocalKeyManager
+from screencap.Selection import SelectionBox
+from screencap.snapshot.ScreenshotProvider import ScreenshotProvider
+from screencap.snapshot.WindowSetup import getResizeHelper
 
 DEBUG = False
 MARGIN = 30

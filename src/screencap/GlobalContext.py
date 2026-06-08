@@ -1,5 +1,5 @@
 
-from screencap.src.Config import ConfigBase, createConfigInstance
+from screencap.Config import ConfigBase, createConfigInstance
 
 
 defaultConfigLocation = "./screenCap.config"
@@ -42,3 +42,6 @@ class Config(ConfigBase):
 
     #### SNAPSHOT CONTROLS ####
     quickSnap : bool = True
+    
+    #### Linux Specifics ####
+    permToken: str
